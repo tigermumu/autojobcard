@@ -1,0 +1,88 @@
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+.ant-layout-sider {
+  background: #001529 !important;
+}
+
+.ant-menu-dark {
+  background: #001529 !important;
+}
+
+.page-header {
+  margin-bottom: 24px;
+}
+
+.page-header h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.stats-card {
+  text-align: center;
+}
+
+.stats-card .ant-statistic-title {
+  color: #666;
+}
+
+.stats-card .ant-statistic-content {
+  color: #1890ff;
+}
+
+.action-buttons {
+  margin-bottom: 16px;
+}
+
+.action-buttons .ant-btn {
+  margin-right: 8px;
+}
+
+.table-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.matching-progress {
+  margin-bottom: 16px;
+}
+
+.candidate-card {
+  margin-bottom: 16px;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  padding: 16px;
+}
+
+.candidate-card.selected {
+  border-color: #1890ff;
+  background-color: #f0f8ff;
+}
+
+.similarity-score {
+  font-size: 18px;
+  font-weight: bold;
+  color: #52c41a;
+}
+
+.similarity-score.low {
+  color: #ff4d4f;
+}
+
+.similarity-score.medium {
+  color: #faad14;
+}
+
+
