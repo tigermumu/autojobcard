@@ -4,29 +4,32 @@ services:
     environment:
       POSTGRES_DB: aircraft_workcard
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: Pk26605164
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"  # 仅本地访问
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - aircraft_network
+    restart: unless-stopped
 
   redis:
     image: redis:6-alpine
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"  # 仅本地访问
     volumes:
       - redis_data:/data
     networks:
       - aircraft_network
+    restart: unless-stopped
 
   backend:
     build: ./backend
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"  # 仅本地访问，通过 Nginx 代理
+    command: python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
     environment:
-      - DATABASE_URL=postgresql://postgres:password@postgres:5432/aircraft_workcard
+      - DATABASE_URL=postgresql://postgres:Pk26605164@postgres:5432/aircraft_workcard
       - REDIS_URL=redis://redis:6379
       - QWEN_API_KEY=${QWEN_API_KEY}
       - QWEN_BASE_URL=${QWEN_BASE_URL}
@@ -38,33 +41,38 @@ services:
       - ./backend:/app
     networks:
       - aircraft_network
+    restart: unless-stopped
 
   frontend:
     build: ./frontend
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"  # 仅本地访问，通过 Nginx 代理
     volumes:
       - ./frontend:/app
       - /app/node_modules
     networks:
       - aircraft_network
+    restart: unless-stopped
 
-  celery:
-    build: ./backend
-    command: celery -A app.celery worker --loglevel=info
-    environment:
-      - DATABASE_URL=postgresql://postgres:password@postgres:5432/aircraft_workcard
-      - REDIS_URL=redis://redis:6379
-      - QWEN_API_KEY=${QWEN_API_KEY}
-      - QWEN_BASE_URL=${QWEN_BASE_URL}
-      - QWEN_MODEL=${QWEN_MODEL}
-    depends_on:
-      - postgres
-      - redis
-    volumes:
-      - ./backend:/app
-    networks:
-      - aircraft_network
+  # Celery 服务已注释，因为项目中尚未实现 celery 应用
+  # 如果将来需要异步任务处理，请先创建 app/celery.py 文件，然后取消注释
+  # celery:
+  #   build: ./backend
+  #   command: python -m celery -A app.celery worker --loglevel=info
+  #   environment:
+  #     - DATABASE_URL=postgresql://postgres:Pk26605164@postgres:5432/aircraft_workcard
+  #     - REDIS_URL=redis://redis:6379
+  #     - QWEN_API_KEY=${QWEN_API_KEY}
+  #     - QWEN_BASE_URL=${QWEN_BASE_URL}
+  #     - QWEN_MODEL=${QWEN_MODEL}
+  #   depends_on:
+  #     - postgres
+  #     - redis
+  #   volumes:
+  #     - ./backend:/app
+  #   networks:
+  #     - aircraft_network
+  #   restart: unless-stopped
 
 volumes:
   postgres_data:

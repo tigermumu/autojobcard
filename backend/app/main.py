@@ -25,7 +25,9 @@ app = FastAPI(
     title="飞机方案处理系统",
     description="智能化的飞机工卡数据处理系统",
     version="1.0.0",
-    openapi_url=f"{settings.API_V1_STR}/openapi.json"
+    openapi_url=f"{settings.API_V1_STR}/openapi.json",
+    docs_url=f"{settings.API_V1_STR}/docs",
+    redoc_url=f"{settings.API_V1_STR}/redoc"
 )
 
 # 设置CORS
