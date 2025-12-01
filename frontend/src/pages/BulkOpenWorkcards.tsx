@@ -321,16 +321,9 @@ const readyForMatch = matchResults.length > 0 || selectedImportBatchId !== undef
   }, [matchResults])
 
   const composeCookies = (values: any) => {
-    const parts: string[] = []
-    const session = (values.session_id || '').trim()
-    const obscure = (values.obscure_key || '').trim()
-    if (session) {
-      parts.push(`CPCVPN_SESSION_ID=${session}`)
-    }
-    if (obscure) {
-      parts.push(`CPCVPN_OBSCURE_KEY=${obscure}`)
-    }
-    return parts.join('; ')
+    // 内网直连模式：如果提供了Cookie字符串，直接使用；否则返回空字符串
+    const cookies = (values.cookies || '').trim()
+    return cookies
   }
 
   const getImportParams = () => ({
@@ -407,7 +400,7 @@ const readyForMatch = matchResults.length > 0 || selectedImportBatchId !== undef
 
   const handlePreviewImport = async () => {
     try {
-      const values = await importForm.validateFields(['session_id', 'obscure_key'])
+      const values = await importForm.validateFields(['cookies'])
       await fetchPreviewData(values)
     } catch (error: any) {
       if (!error?.errorFields) {
@@ -418,7 +411,7 @@ const readyForMatch = matchResults.length > 0 || selectedImportBatchId !== undef
 
   const handleRunImport = async () => {
     try {
-      const values = await importForm.validateFields(['session_id', 'obscure_key'])
+      const values = await importForm.validateFields(['cookies'])
       const baseParams = getImportParams()
       const preview = await ensurePreviewData(values)
       if (!preview) {
@@ -467,7 +460,7 @@ const readyForMatch = matchResults.length > 0 || selectedImportBatchId !== undef
 
   const handleTestConnection = async () => {
     try {
-      const values = await importForm.validateFields(['session_id', 'obscure_key'])
+      const values = await importForm.validateFields(['cookies'])
       const baseParams = getImportParams()
       setTestLoading(true)
       setConnectionStatus(null)
@@ -571,7 +564,7 @@ const readyForMatch = matchResults.length > 0 || selectedImportBatchId !== undef
       return
     }
     try {
-      const cookieValues = await importForm.validateFields(['session_id', 'obscure_key'])
+      const cookieValues = await importForm.validateFields(['cookies'])
       const importParams = await importParamsForm.validateFields()
       
       // 确认是否开出工卡
@@ -646,7 +639,7 @@ const readyForMatch = matchResults.length > 0 || selectedImportBatchId !== undef
       return
     }
     try {
-      const cookieValues = await importForm.validateFields(['session_id', 'obscure_key'])
+      const cookieValues = await importForm.validateFields(['cookies'])
       const importParams = await importParamsForm.validateFields()
       const cookies = composeCookies(cookieValues)
 
@@ -747,7 +740,7 @@ const readyForMatch = matchResults.length > 0 || selectedImportBatchId !== undef
     }
     
     try {
-      const cookieValues = await importForm.validateFields(['session_id', 'obscure_key'])
+      const cookieValues = await importForm.validateFields(['cookies'])
       const importParams = await importParamsForm.validateFields()
       const cookies = composeCookies(cookieValues)
       
@@ -824,7 +817,7 @@ const readyForMatch = matchResults.length > 0 || selectedImportBatchId !== undef
     }
     
     try {
-      const cookieValues = await importForm.validateFields(['session_id', 'obscure_key'])
+      const cookieValues = await importForm.validateFields(['cookies'])
       const importParams = await importParamsForm.validateFields()
       const cookies = composeCookies(cookieValues)
       
@@ -1402,25 +1395,28 @@ const readyForMatch = matchResults.length > 0 || selectedImportBatchId !== undef
         <Space direction="vertical" style={{ width: '100%' }} size="large">
           <Form form={importForm} layout="vertical">
             <Form.Item
-              label="CPCVPN_SESSION_ID"
-              name="session_id"
-              rules={[{ required: true, message: '请输入 CPCVPN_SESSION_ID' }]}
+              label="Cookie（可选）"
+              name="cookies"
+              tooltip="内网直连模式下，如果系统需要认证Cookie，请在此输入完整的Cookie字符串。如果看到两个JSESSIONID（如：JSESSIONID=xxx; JSESSIONID=yyy），这是正常的，请完整复制所有Cookie值。"
             >
-              <Input placeholder="请粘贴 Cookie 中的 CPCVPN_SESSION_ID 值" />
-            </Form.Item>
-            <Form.Item
-              label="CPCVPN_OBSCURE_KEY"
-              name="obscure_key"
-              rules={[{ required: true, message: '请输入 CPCVPN_OBSCURE_KEY' }]}
-            >
-              <Input placeholder="请粘贴 Cookie 中的 CPCVPN_OBSCURE_KEY 值" />
+              <Input.TextArea 
+                placeholder="请输入Cookie字符串（可选），例如：JSESSIONID=ABC123; JSESSIONID=XYZ789; other_cookie=value" 
+                rows={3}
+              />
             </Form.Item>
           </Form>
           <Alert
             type="info"
             showIcon
             style={{ marginBottom: 16 }}
-            message="请从浏览器复制 Cookie 中的 CPCVPN_SESSION_ID 与 CPCVPN_OBSCURE_KEY，并粘贴到上方文本框。"
+            message="内网直连模式 - Cookie输入说明"
+            description={
+              <div>
+                <p>系统已切换为内网直连模式，不再需要VPN Cookie。</p>
+                <p><strong>重要提示：</strong>如果内网系统需要认证，请从浏览器开发者工具中复制完整的Cookie字符串。</p>
+                <p>如果看到两个JSESSIONID（如：<code>JSESSIONID=ABC123; JSESSIONID=XYZ789</code>），这是<strong>正常现象</strong>，请完整复制所有Cookie值，系统会自动处理。</p>
+              </div>
+            }
           />
           <Space wrap>
             <Button onClick={handleTestConnection} loading={testLoading}>

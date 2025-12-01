@@ -127,9 +127,9 @@ class WorkCardImportService:
         self.logger = logging.getLogger(__name__)
         base = settings.WORKCARD_IMPORT_BASE_URL.rstrip("/")
         self.urls = {
-            "query": f"{base}/Web/trace/fgm/workOrder/checkData.jsp,CVPNHost=10.240.2.131:9080,CVPNProtocol=http,CVPNOrg=rel,CVPNExtension=.jsp?from=manage",
-            "dialog": f"{base}/Web/trace/fgm/workOrder/jobcard/copy/bathImportNrcStep.jsp,CVPNHost=10.240.2.131:9080,CVPNProtocol=http,CVPNOrg=rel,CVPNExtension=.jsp",
-            "import": f"{base}/Web/trace/fgm/workOrder/jobcard/copy/doBathImportNrcStep.jsp,CVPNHost=10.240.2.131:9080,CVPNProtocol=http,CVPNOrg=rel,CVPNExtension=.jsp",
+            "query": f"{base}/trace/fgm/workOrder/checkData.jsp?from=manage",
+            "dialog": f"{base}/trace/fgm/workOrder/jobcard/copy/bathImportNrcStep.jsp",
+            "import": f"{base}/trace/fgm/workOrder/jobcard/copy/doBathImportNrcStep.jsp",
         }
         output_dir = Path(settings.WORKCARD_IMPORT_OUTPUT_DIR)
         if settings.WORKCARD_IMPORT_SAVE_HTML:
@@ -267,11 +267,7 @@ class WorkCardImportService:
         session = self._create_session(params.cookies)
 
         callback = f"jsonp{int(datetime.now().timestamp() * 1000)}"
-        base_url = (
-            "https://vpn.gameco.com.cn/Web/trace/nrc/getACInfo.jsp"
-            ",CVPNTransDest=0,CVPNHost=10.240.2.131:9080"
-            ",CVPNProtocol=http,CVPNOrg=rel,CVPNExtension=.jsp"
-        )
+        base_url = f"{settings.WORKCARD_IMPORT_BASE_URL}/trace/nrc/getACInfo.jsp"
         query_params = {
             "txtFlag": "",
             "txtACNO": "GAM-GAM",
@@ -280,7 +276,7 @@ class WorkCardImportService:
         }
         headers = {
             "Accept": "text/javascript, application/javascript, */*",
-            "Referer": "https://vpn.gameco.com.cn/Web/trace/nrc/fault/faultAdd.jsp,CVPNHost=10.240.2.131:9080,CVPNProtocol=http,CVPNOrg=rel,CVPNExtension=.jsp?txtParentID=13112&txtMenuID=13541",
+            "Referer": f"{settings.WORKCARD_IMPORT_BASE_URL}/trace/nrc/fault/faultAdd.jsp?txtParentID=13112&txtMenuID=13541",
             "X-Requested-With": "XMLHttpRequest",
         }
         expected_token = '"customerworkorder":"","wo":"120000036656","reg":"GAM-GAM"'
@@ -437,7 +433,7 @@ class WorkCardImportService:
         headers = {
             "Content-Type": "application/x-www-form-urlencoded",
             "Origin": settings.WORKCARD_IMPORT_BASE_URL,
-            "Referer": f"{settings.WORKCARD_IMPORT_BASE_URL}/Web/trace/fgm/workOrder/manageIndex.jsp,CVPNHost=10.240.2.131:9080,CVPNProtocol=http,CVPNOrg=rel,CVPNExtension=.jsp?wgp={work_group}&txtParentID=10008&txtMenuID=22800",
+            "Referer": f"{settings.WORKCARD_IMPORT_BASE_URL}/trace/fgm/workOrder/manageIndex.jsp?wgp={work_group}&txtParentID=10008&txtMenuID=22800",
         }
 
         try:
@@ -480,7 +476,7 @@ class WorkCardImportService:
     ) -> Optional[str]:
         params = {"jcRidArr": jc_rid}
         headers = {
-            "Referer": f"{settings.WORKCARD_IMPORT_BASE_URL}/Web/trace/fgm/workOrder/checkData.jsp,CVPNHost=10.240.2.131:9080,CVPNProtocol=http,CVPNOrg=rel,CVPNExtension=.jsp?from=manage",
+            "Referer": f"{settings.WORKCARD_IMPORT_BASE_URL}/trace/fgm/workOrder/checkData.jsp?from=manage",
         }
 
         try:
@@ -660,9 +656,11 @@ class WorkCardImportService:
                 "Accept-Language": "zh-CN,zh;q=0.9",
             }
         )
-        cookies = self._parse_cookies(raw_cookies)
-        for name, value in cookies.items():
-            session.cookies.set(name, value)
+        # 直接设置Cookie头，保留所有Cookie值（包括同名的多个JSESSIONID）
+        # 这样可以正确处理内网系统中可能存在的多个JSESSIONID的情况
+        cookie_string = raw_cookies.strip() if raw_cookies else settings.WORKCARD_IMPORT_COOKIES.strip()
+        if cookie_string:
+            session.headers['Cookie'] = cookie_string
         return session
 
     def _parse_cookies(self, raw: Optional[str] = None) -> Dict[str, str]:
@@ -847,7 +845,7 @@ class WorkCardImportService:
         session = self._create_session(cookies)
         
         # 构建请求URL
-        url = f"{settings.WORKCARD_IMPORT_BASE_URL}/Web/trace/nrc/fault/faultAddSend.jsp,CVPNHost=10.240.2.131:9080,CVPNProtocol=http,CVPNOrg=rel,CVPNExtension=.jsp"
+        url = f"{settings.WORKCARD_IMPORT_BASE_URL}/trace/nrc/fault/faultAddSend.jsp"
         
         # 准备表单数据
         desc_chn = params.get('txtDescChn', '')
@@ -899,9 +897,9 @@ class WorkCardImportService:
             'Cache-Control': 'max-age=0',
             'Connection': 'keep-alive',
             'Content-Type': 'application/x-www-form-urlencoded',
-            'Host': 'vpn.gameco.com.cn',
+            'Host': '10.240.2.131:9080',
             'Origin': settings.WORKCARD_IMPORT_BASE_URL,
-            'Referer': f"{settings.WORKCARD_IMPORT_BASE_URL}/Web/trace/nrc/fault/faultAdd.jsp,CVPNHost=10.240.2.131:9080,CVPNProtocol=http,CVPNOrg=rel,CVPNExtension=.jsp?txtParentID={post_data['txtParentID']}&txtMenuID={post_data['txtMenuID']}",
+            'Referer': f"{settings.WORKCARD_IMPORT_BASE_URL}/trace/nrc/fault/faultAdd.jsp?txtParentID={post_data['txtParentID']}&txtMenuID={post_data['txtMenuID']}",
             'Sec-Fetch-Dest': 'frame',
             'Sec-Fetch-Mode': 'navigate',
             'Sec-Fetch-Site': 'same-origin',
@@ -1150,7 +1148,7 @@ class WorkCardImportService:
         headers = {
             "Content-Type": "application/x-www-form-urlencoded",
             "Origin": settings.WORKCARD_IMPORT_BASE_URL,
-            "Referer": f"{settings.WORKCARD_IMPORT_BASE_URL}/Web/trace/fgm/workOrder/checkData.jsp,CVPNHost=10.240.2.131:9080,CVPNProtocol=http,CVPNOrg=rel,CVPNExtension=.jsp?from=manage",
+            "Referer": f"{settings.WORKCARD_IMPORT_BASE_URL}/trace/fgm/workOrder/checkData.jsp?from=manage",
         }
         
         # 记录请求关键信息

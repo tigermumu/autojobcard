@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     DEFAULT_LLM_MODEL: str = os.getenv("DEFAULT_LLM_MODEL", "Qwen")
 
     # 工卡导入配置
-    WORKCARD_IMPORT_BASE_URL: str = os.getenv("WORKCARD_IMPORT_BASE_URL", "https://vpn.gameco.com.cn")
+    WORKCARD_IMPORT_BASE_URL: str = os.getenv("WORKCARD_IMPORT_BASE_URL", "http://10.240.2.131:9080")
     WORKCARD_IMPORT_VERIFY_SSL: bool = os.getenv("WORKCARD_IMPORT_VERIFY_SSL", "false").lower() == "true"
     WORKCARD_IMPORT_COOKIES: str = os.getenv("WORKCARD_IMPORT_COOKIES", "")
     WORKCARD_IMPORT_PRINTER: str = os.getenv("WORKCARD_IMPORT_PRINTER", r"\\lx-ps01\\Prt2Q09L非例卡(机上客舱工艺组)")
