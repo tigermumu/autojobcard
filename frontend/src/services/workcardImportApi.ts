@@ -127,8 +127,10 @@ export const workcardImportApi = {
   importDefect(payload: ImportDefectRequest) {
     return apiClient.post<ImportDefectResponse>('/workcard-import/import-defect', payload)
   },
+  importEnglishDefect(payload: ImportDefectRequest) {
+    return apiClient.post<ImportDefectResponse>('/workcard-import/import-english-defect', payload)
+  },
   importSteps(payload: ImportStepsRequest) {
     return apiClient.post<ImportStepsResponse>('/workcard-import/import-steps', payload)
   }
 }
-

@@ -1,0 +1,43 @@
+# U盘部署专用 docker-compose 配置
+# 数据卷映射到U盘路径，支持便携部署
+
+services:
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: aircraft_workcard
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Pk26605164
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      # 使用U盘相对路径存储PostgreSQL数据
+      - ./docker_data/postgres:/var/lib/postgresql/data
+    networks:
+      - aircraft_network
+    restart: unless-stopped
+    # 性能优化：减少fsync以提高U盘性能（注意：数据安全性略降）
+    command: postgres -c fsync=off -c synchronous_commit=off
+
+  redis:
+    image: redis:6-alpine
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      # 使用U盘相对路径存储Redis数据
+      - ./docker_data/redis:/data
+    networks:
+      - aircraft_network
+    restart: unless-stopped
+    # Redis持久化配置（可选，U盘性能考虑）
+    command: redis-server --appendonly yes --appendfsync everysec
+
+networks:
+  aircraft_network:
+    driver: bridge
+
+
+
+
+
+

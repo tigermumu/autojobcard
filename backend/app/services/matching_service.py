@@ -456,6 +456,19 @@ class MatchingService:
             description_cn = descriptions["description_cn"]
             description_en = descriptions["description_en"]
 
+            # 从 raw_data 中提取其他字段
+            raw_data = record.raw_data or {}
+            if isinstance(raw_data, str):
+                try:
+                    import json
+                    raw_data = json.loads(raw_data)
+                except Exception:
+                    raw_data = {}
+
+            txt_zone_ten = raw_data.get("txtZoneTen", "") or raw_data.get("Zone Ten", "")
+            txt_crn = raw_data.get("txtCRN", "") or raw_data.get("CRN", "")
+            ref_no = raw_data.get("refNo", "") or raw_data.get("Ref No", "")
+
             results.append({
                 "defect_record_id": record.id,
                 "defect_number": record.defect_number,
@@ -463,7 +476,10 @@ class MatchingService:
                 "description_en": description_en,
                 "candidates": candidates_data,
                 "selected_workcard_id": record.selected_workcard_id,
-                "issued_workcard_number": record.issued_workcard_number  # 已开出的工卡号
+                "issued_workcard_number": record.issued_workcard_number,  # 已开出的工卡号
+                "txtZoneTen": txt_zone_ten,
+                "txtCRN": txt_crn,
+                "refNo": ref_no
             })
 
         return results

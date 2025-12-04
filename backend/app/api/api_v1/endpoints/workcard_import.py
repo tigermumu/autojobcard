@@ -528,3 +528,58 @@ def import_steps(
         logger.error(f"完整错误堆栈:\n{error_traceback}")
         raise HTTPException(status_code=500, detail=f"导入步骤失败: {error_detail}") from exc
 
+
+class ImportEnglishDefectRequest(BaseModel):
+    params: Dict[str, Any] = Field(..., description="导入参数字典")
+    cookies: Optional[str] = Field(None, description="Cookie字符串")
+    is_test_mode: bool = Field(True, description="是否为测试模式")
+
+
+@router.post("/import-english-defect", response_model=ImportDefectResponse)
+def import_english_defect_to_nrc(
+    request: ImportEnglishDefectRequest,
+    service: WorkCardImportService = Depends(get_service),
+):
+    """导入英文工卡到NRC系统"""
+    import logging
+    import traceback
+    logger = logging.getLogger(__name__)
+    
+    try:
+        logger.info(f"开始导入英文工卡，测试模式: {request.is_test_mode}")
+        logger.debug(f"导入参数: {request.params}")
+        
+        success, message, workcard_number, logs, artifacts = service.import_english_defect_to_nrc(
+            params=request.params,
+            cookies=request.cookies,
+            is_test_mode=request.is_test_mode,
+        )
+        
+        logger.info(f"服务方法执行完成，成功: {success}, 消息: {message}, 工卡号: {workcard_number}")
+        
+        # 转换日志和文件
+        try:
+            converted_logs = _convert_logs(logs)
+            converted_artifacts = _convert_artifacts(artifacts)
+        except Exception as convert_exc:
+            logger.error(f"转换日志或文件时发生错误: {convert_exc}", exc_info=True)
+            converted_logs = []
+            converted_artifacts = []
+            converted_logs.append(LogEntrySchema(
+                step="error",
+                message=f"日志转换失败: {str(convert_exc)}",
+                detail=None
+            ))
+        
+        return ImportDefectResponse(
+            success=success,
+            message=message,
+            workcard_number=workcard_number,
+            logs=converted_logs,
+            artifacts=converted_artifacts,
+        )
+        
+    except Exception as exc:
+        error_detail = str(exc)
+        logger.error(f"导入英文工卡时发生未捕获的异常: {error_detail}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"导入失败: {error_detail}") from exc

@@ -6,6 +6,7 @@ import WorkCardManagement from './pages/WorkCardManagement'
 import AddWorkCardData from './pages/AddWorkCardData'
 import DefectProcessing from './pages/DefectProcessing'
 import BulkOpenWorkcards from './pages/BulkOpenWorkcards'
+import EnglishBatchImportDebug from './pages/EnglishBatchImportDebug'
 import { fetchLLMModels, selectLLMModel, LLMModelInfo } from './services/llmApi'
 
 const { Content } = Layout
@@ -21,7 +22,8 @@ const Home: React.FC = () => {
     { title: '📁 构型与索引', path: '/configurations', color: '#1890ff', desc: '管理飞机构型及索引清单' },
     { title: '📋 标准工卡数据库管理', path: '/workcards', color: '#52c41a', desc: '管理标准工卡数据库' },
     { title: '🐛 缺陷处理与匹配', path: '/defect-processing', color: '#722ed1', desc: '缺陷清单处理、清洗与工卡匹配' },
-    { title: '🔗 批量导入调试', path: '/defect-processing/batch-open', color: '#fa8c16', desc: '对接公司系统执行批量开卡导入' }
+    { title: '🔗 批量导入调试', path: '/defect-processing/batch-open', color: '#fa8c16', desc: '对接公司系统执行批量开卡导入' },
+    { title: '🌍 英文工卡批量导入调试', path: '/english-batch-import', color: '#eb2f96', desc: '英文工卡批量导入调试与验证' }
   ]
 
   useEffect(() => {
@@ -145,6 +147,7 @@ const App: React.FC = () => {
       <Route path="/workcard/add" element={<AddWorkCardData />} />
       <Route path="/defect-processing" element={<DefectProcessing />} />
       <Route path="/defect-processing/batch-open" element={<BulkOpenWorkcards />} />
+      <Route path="/english-batch-import" element={<EnglishBatchImportDebug />} />
     </Routes>
   )
 }

@@ -1786,3 +1786,170 @@ class WorkCardImportService:
         
         return steps
 
+    def import_english_defect_to_nrc(
+        self,
+        params: Dict[str, Any],
+        cookies: Optional[str] = None,
+        is_test_mode: bool = True,
+    ) -> Tuple[bool, str, Optional[str], List[LogEntry], List[Artifact]]:
+        """
+        导入英文工卡到NRC系统
+        URL: http://10.240.2.131:9080/trace/nrc/eng/engAddSend.jsp
+        """
+        logs: List[LogEntry] = []
+        artifacts: List[Artifact] = []
+        
+        session = self._create_session(cookies)
+        
+        # 构建请求URL
+        url = f"{settings.WORKCARD_IMPORT_BASE_URL}/trace/nrc/eng/engAddSend.jsp"
+        
+        # 准备表单数据
+        desc_eng = params.get('txtDescEng', '')
+        
+        # 测试模式下添加前缀
+        if is_test_mode:
+            desc_eng = f"TEST {desc_eng}" if desc_eng else "TEST"
+        
+        # 构建POST数据（需要GBK编码）
+        # 根据用户提供的参数列表构建
+        post_data = {
+            'txtCust': params.get('txtCust', 'EK'),
+            'txtACNO': params.get('txtACNO', ''),
+            'txtWO': params.get('txtWO', ''),
+            'txtML': params.get('txtML', '6C+6000D'),
+            'txtACType': params.get('txtACType', 'B777-300'),
+            'txtZoneName': params.get('txtZoneName', '%BB%FA%C9%CF'), # 默认机上
+            'txtZoneTen': params.get('txtZoneTen', '240'),
+            'txtRII': params.get('txtRII', ''),
+            'txtCJC': params.get('txtCJC', ''),
+            'txtCRN': params.get('txtCRN', '777-25-415-00-ES-01/200'),
+            'refNo': params.get('refNo', '00967'),
+            'txtRemark': params.get('txtRemark', ''),
+            'txtDescEng': desc_eng,
+            'txtDept1': params.get('txtDept1', ''),
+            'selDocType': params.get('selDocType', 'NR'),
+            'txtMenuID': params.get('txtMenuID', '15196'),
+            'txtParentID': params.get('txtParentID', '13112'),
+            'txtFleet': params.get('txtFleet', '777'),
+            'txtACPartNo': params.get('txtACPartNo', ''),
+            'txtACSerialNo': params.get('txtACSerialNo', ''),
+            'txtStation': params.get('txtStation', 'CAN'),
+            'txtDept': params.get('txtDept', '3_CABIN_TPG'),
+        }
+        
+        # 构建请求头
+        headers = {
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+            'Accept-Encoding': 'gzip, deflate',
+            'Accept-Language': 'zh-CN,zh;q=0.9',
+            'Cache-Control': 'max-age=0',
+            'Connection': 'keep-alive',
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Host': '10.240.2.131:9080',
+            'Origin': 'http://10.240.2.131:9080',
+            'Referer': f"http://10.240.2.131:9080/trace/nrc/eng/engAdd.jsp?txtParentID={post_data['txtParentID']}&txtMenuID={post_data['txtMenuID']}",
+            'Upgrade-Insecure-Requests': '1',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
+        }
+        
+        try:
+            # 将数据编码为GBK格式的URL编码字符串
+            self.logger.info(f"开始准备导入英文工卡请求，参数数量: {len(post_data)}")
+            self.logger.debug(f"POST数据: {post_data}")
+            
+            # 注意：requests会自动处理URL编码，但我们需要确保使用GBK编码
+            # 这里对于 txtZoneName 这种已经是 %编码 的字符串，urlencode 可能会再次编码
+            # 如果用户传入的是原始字符串（如"机上"），则需要编码为GBK
+            # 如果传入的是已经编码的字符串（如"%BB%FA%C9%CF"），则不应再次编码
+            # 为了安全起见，我们假设传入的是原始字符串（除了一些预设的编码值）
+            # 对于预设的 %BB%FA%C9%CF，我们需要特殊处理，或者让用户传入解码后的值
+            
+            # 这里简单处理：构建一个新的字典，对值进行GBK编码
+            encoded_post_data = {}
+            for k, v in post_data.items():
+                if k == 'txtZoneName' and v == '%BB%FA%C9%CF':
+                     # 如果是预设的编码值，直接使用（urlencode时不encode key，但这里我们手动构建body string）
+                     # 但 requests data参数接受 dict 或 string。
+                     # 如果传 dict，requests 会自动 urlencode (UTF-8 by default usually)
+                     # 我们手动构建 GBK urlencode string
+                     pass 
+                
+            # 手动构建 GBK urlencoded string
+            parts = []
+            for k, v in post_data.items():
+                # 特殊处理 txtZoneName 如果已经是 encoded string
+                if k == 'txtZoneName' and str(v).startswith('%'):
+                    parts.append(f"{k}={v}")
+                else:
+                    parts.append(f"{k}={quote(str(v), safe='', encoding='gbk')}")
+            
+            encoded_data = '&'.join(parts)
+            
+            self.logger.debug(f"URL编码后的数据长度: {len(encoded_data)} 字符")
+            
+            self._log(logs, "import_english_defect", f"开始导入英文工卡，飞机号: {post_data['txtACNO']}, 工单号: {post_data['txtWO']}")
+            
+            self.logger.info(f"发送POST请求到: {url}")
+            
+            # 添加请求间隔
+            time.sleep(2)
+            response = session.post(
+                url,
+                data=encoded_data,
+                headers=headers,
+                verify=settings.WORKCARD_IMPORT_VERIFY_SSL,
+                timeout=30,
+            )
+            
+            self.logger.info(f"收到响应，状态码: {response.status_code}, 响应大小: {len(response.content)} 字节")
+            
+            # 尝试解析响应
+            # 这里假设英文版返回的编码可能也是GBK或UTF-8，先试GBK
+            response.encoding = 'GBK' 
+            html = response.text
+            
+            # 保存响应HTML用于调试
+            artifact = self._save_artifact("import_english_defect_response.html", html)
+            if artifact:
+                artifacts.append(Artifact(step="import_english_defect", filename=artifact.name, path=str(artifact)))
+            
+            self._log(logs, "import_english_defect", f"收到响应，状态码: {response.status_code}")
+            
+            # 解析工卡号
+            # 用户提到: window.alert('NRC NO: NR/000001258 !')
+            workcard_number = None
+            patterns = [
+                r"window\.alert\(['\"]NRC NO:\s*(NR/[\d]+)\s*!['\"]\)",
+                r"NRC NO:\s*(NR/[\d]+)",
+                r"(NR/[\d]+)"
+            ]
+            
+            for pattern in patterns:
+                match = re.search(pattern, html, re.IGNORECASE)
+                if match:
+                    workcard_number = match.group(1)
+                    self._log(logs, "import_english_defect", f"提取到工卡号: {workcard_number}")
+                    break
+            
+            if response.status_code == 200:
+                if workcard_number:
+                    message = f"导入成功，工卡号: {workcard_number}"
+                    return True, message, workcard_number, logs, artifacts
+                else:
+                    # 检查是否有成功提示但没提取到工卡号
+                    if "成功" in html or "Success" in html or "saved" in html.lower():
+                         message = "导入看似成功，但未提取到工卡号"
+                         return True, message, None, logs, artifacts
+                    
+                    message = "导入完成，未提取到工卡号"
+                    return False, message, None, logs, artifacts
+            else:
+                return False, f"HTTP错误: {response.status_code}", None, logs, artifacts
+
+        except Exception as exc:
+            import traceback
+            error_msg = f"导入英文工卡失败: {exc}"
+            self.logger.exception(error_msg)
+            self._log(logs, "import_english_defect", error_msg, detail=traceback.format_exc())
+            return False, error_msg, None, logs, artifacts
