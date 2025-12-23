@@ -18,9 +18,14 @@ class ImportBatchItemCreate(BaseModel):
     defect_number: str
     description_cn: Optional[str] = ""
     description_en: Optional[str] = ""
-    workcard_number: str
+    workcard_number: Optional[str] = None  # 候选工卡，Excel中没有数据时可以留空
+    issued_workcard_number: Optional[str] = None
     selected_workcard_id: Optional[int] = None
     similarity_score: Optional[float] = None
+    reference_workcard_number: Optional[str] = None
+    reference_workcard_item: Optional[str] = None
+    area: Optional[str] = None
+    zone_number: Optional[str] = None
 
 
 class ImportBatchCreate(BaseModel):
@@ -49,10 +54,15 @@ class ImportBatchItem(BaseModel):
     defect_number: str
     description_cn: Optional[str] = ""
     description_en: Optional[str] = ""
-    workcard_number: str
+    workcard_number: Optional[str] = None  # 候选工卡，Excel中没有数据时可以留空
     selected_workcard_id: Optional[int] = None
     similarity_score: Optional[float] = None
     issued_workcard_number: Optional[str] = None  # 已开出的工卡号
+    # Add new fields for API response
+    reference_workcard_number: Optional[str] = None
+    reference_workcard_item: Optional[str] = None
+    area: Optional[str] = None
+    zone_number: Optional[str] = None
 
     class Config:
         from_attributes = True

@@ -11,6 +11,26 @@ class ImportBatchService:
     def __init__(self, db: Session):
         self.db = db
 
+    def delete_batch(self, batch_id: int) -> bool:
+        batch = (
+            self.db.query(ImportBatch)
+            .filter(ImportBatch.id == batch_id)
+            .first()
+        )
+        if not batch:
+            return False
+
+        # Cascade delete items (if not handled by DB foreign key cascade)
+        # Assuming we want to explicitly delete items or rely on cascade
+        # For safety, let's just delete the batch and let SQLAlchemy/DB handle cascade if configured,
+        # or we might need to delete items first if strict.
+        # Given potential SQLite limitations or explicit needs:
+        self.db.query(ImportBatchItem).filter(ImportBatchItem.batch_id == batch.id).delete()
+        
+        self.db.delete(batch)
+        self.db.commit()
+        return True
+
     def create_batch(
         self,
         metadata: Dict[str, Any],
@@ -34,9 +54,15 @@ class ImportBatchService:
                 defect_number=item["defect_number"],
                 description_cn=item.get("description_cn"),
                 description_en=item.get("description_en"),
-                workcard_number=item["workcard_number"],
+                workcard_number=item.get("workcard_number"),  # 候选工卡，可以为空
                 selected_workcard_id=item.get("selected_workcard_id"),
-                similarity_score=item.get("similarity_score")
+                similarity_score=item.get("similarity_score"),
+                issued_workcard_number=item.get("issued_workcard_number"),
+                # Add new fields
+                reference_workcard_number=item.get("reference_workcard_number"),
+                reference_workcard_item=item.get("reference_workcard_item"),
+                area=item.get("area"),
+                zone_number=item.get("zone_number")
             )
             self.db.add(batch_item)
 
@@ -120,8 +146,13 @@ class ImportBatchService:
                         defect_records_map[item.defect_record_id].issued_workcard_number
                         if item.defect_record_id and item.defect_record_id in defect_records_map
                         and hasattr(defect_records_map[item.defect_record_id], 'issued_workcard_number')
-                        else None
-                    )
+                        else item.issued_workcard_number
+                    ),
+                    # Add new fields
+                    "reference_workcard_number": item.reference_workcard_number,
+                    "reference_workcard_item": item.reference_workcard_item,
+                    "area": item.area,
+                    "zone_number": item.zone_number
                 }
                 for item in items
             ]

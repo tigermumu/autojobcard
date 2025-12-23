@@ -26,7 +26,7 @@ def upgrade() -> None:
         sa.Column('maintenance_level', sa.String(length=100), nullable=False),
         sa.Column('aircraft_type', sa.String(length=100), nullable=False),
         sa.Column('customer', sa.String(length=100), nullable=False),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),
         sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
         sa.ForeignKeyConstraint(['defect_list_id'], ['defect_lists.id'], ondelete="SET NULL")
     )
@@ -43,7 +43,7 @@ def upgrade() -> None:
         sa.Column('workcard_number', sa.String(length=100), nullable=False),
         sa.Column('selected_workcard_id', sa.Integer(), nullable=True),
         sa.Column('similarity_score', sa.Float(), nullable=True),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),
         sa.ForeignKeyConstraint(['batch_id'], ['import_batches.id'], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(['defect_record_id'], ['defect_records.id'], ondelete="SET NULL")
     )

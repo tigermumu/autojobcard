@@ -17,33 +17,43 @@ import {
   List,
   Spin,
   Result,
-  Switch,
   Row,
   Col,
-  Modal
+  Modal,
+  Popconfirm
 } from 'antd'
 import {
   LeftOutlined,
   HomeOutlined,
   ReloadOutlined,
-  RightOutlined,
   EditOutlined,
-  FileTextOutlined
+  FileTextOutlined,
+  UploadOutlined,
+  DeleteOutlined
 } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
+import type { UploadProps } from 'antd'
+import { Upload } from 'antd'
+import * as XLSX from 'xlsx'
 import { defectApi, CandidateWorkCard } from '../services/defectApi'
-import { workcardImportApi, PreviewResponse, RunResponse, ImportStepsResponse } from '../services/workcardImportApi'
+import { workcardImportApi, PreviewResponse, RunResponse } from '../services/workcardImportApi'
 import { matchingApi } from '../services/matchingApi'
-import { importBatchApi, ImportBatchSummary, ImportBatchDetail } from '../services/importBatchApi'
+import { WorkCardGroup } from '../services/workcardApi'
+import { importBatchApi, ImportBatchSummary } from '../services/importBatchApi'
 
 const { Title, Paragraph } = Typography
 const { Option } = Select
 
 interface MatchResult {
+  item_id?: number // 导入Excel时使用，替代defect_record_id
   defect_record_id: number
   defect_number: string
   description_cn?: string
   description_en?: string
+  relative_jobcard_number?: string // 相关工卡号 (txtCRN)
+  relative_jobcard_sequence?: string // 相关工卡序号 (refNo)
+  zone?: string // 区域 (txtZoneName)
+  zone_ten?: string // 区域号 (txtZoneTen)
   candidates: CandidateWorkCard[]
   selected_workcard_id?: number
   issued_workcard_number?: string  // 已开出的工卡号
@@ -76,20 +86,20 @@ const BulkOpenWorkcards: React.FC = () => {
     locationState.workcardGroup ??
     (configurationIdFromQuery
       ? {
-          configuration_id: Number(configurationIdFromQuery),
-          aircraft_number: aircraftNumberFromQuery || undefined,
-          aircraft_type: aircraftTypeFromQuery || undefined,
-          msn: msnFromQuery || undefined,
-          amm_ipc_eff: ammIpcEffFromQuery || undefined,
-          count: locationState.workcardGroup?.count ?? 0,
-          min_id: locationState.workcardGroup?.min_id ?? 0
-        }
+        configuration_id: Number(configurationIdFromQuery),
+        aircraft_number: aircraftNumberFromQuery || undefined,
+        aircraft_type: aircraftTypeFromQuery || undefined,
+        msn: msnFromQuery || undefined,
+        amm_ipc_eff: ammIpcEffFromQuery || undefined,
+        count: locationState.workcardGroup?.count ?? 0,
+        min_id: locationState.workcardGroup?.min_id ?? 0
+      }
       : undefined)
 
   const [importForm] = Form.useForm()
   const [importParamsForm] = Form.useForm()
   const [defectListInfo, setDefectListInfo] = useState<LocationState['defectListInfo']>(
-    locationState.defectListInfo ?? null
+    locationState.defectListInfo
   )
   const [defectListId, setDefectListId] = useState<number | undefined>(initialDefectListId)
   const [workcardGroup, setWorkcardGroup] = useState<WorkCardGroup | null>(initialWorkcardGroup ?? null)
@@ -97,10 +107,10 @@ const BulkOpenWorkcards: React.FC = () => {
   const initialMatchResults: MatchResult[] =
     locationState.matchResults && Array.isArray(locationState.matchResults)
       ? locationState.matchResults.map((item) => ({
-          ...item,
-          description_cn: item.description_cn || (item as any).title || '',
-          description_en: item.description_en || ''
-        }))
+        ...item,
+        description_cn: item.description_cn || (item as any).title || '',
+        description_en: item.description_en || ''
+      }))
       : []
 
   const [matchResults, setMatchResults] = useState<MatchResult[]>(initialMatchResults)
@@ -111,7 +121,6 @@ const BulkOpenWorkcards: React.FC = () => {
   const [importingRecordIds, setImportingRecordIds] = useState<number[]>([])
 
   const [importPreviewLoading, setImportPreviewLoading] = useState(false)
-  const [importRunLoading, setImportRunLoading] = useState(false)
   const [importPreviewData, setImportPreviewData] = useState<PreviewResponse | null>(null)
   const [selectedPreviewWorkcardRid, setSelectedPreviewWorkcardRid] = useState<string | undefined>()
   const [selectedPreviewHistoryRid, setSelectedPreviewHistoryRid] = useState<string | undefined>()
@@ -122,20 +131,153 @@ const BulkOpenWorkcards: React.FC = () => {
   const [connectionStatus, setConnectionStatus] = useState<string | null>(null)
   const [batchImportLoading, setBatchImportLoading] = useState(false)
 
-const [importBatches, setImportBatches] = useState<ImportBatchSummary[]>([])
-const [loadingImportBatches, setLoadingImportBatches] = useState(false)
-const [selectedImportBatchId, setSelectedImportBatchId] = useState<number | undefined>(
-  locationState.importBatchId
-)
-const [currentImportBatch, setCurrentImportBatch] = useState<ImportBatchDetail | null>(null)
-const [editingWorkcardNumber, setEditingWorkcardNumber] = useState<{ defect_record_id: number; value: string } | null>(null)
-const [updatingWorkcardNumber, setUpdatingWorkcardNumber] = useState<number[]>([])
+  const [importBatches, setImportBatches] = useState<ImportBatchSummary[]>([])
+  const [loadingImportBatches, setLoadingImportBatches] = useState(false)
+  const [selectedImportBatchId, setSelectedImportBatchId] = useState<number | undefined>(
+    locationState.importBatchId
+  )
+  const [editingWorkcardNumber, setEditingWorkcardNumber] = useState<{ defect_record_id: number; value: string } | null>(null)
+  const [updatingWorkcardNumber, setUpdatingWorkcardNumber] = useState<number[]>([])
   const [batchImportStepsLoading, setBatchImportStepsLoading] = useState(false)
   const [importingStepsRecordIds, setImportingStepsRecordIds] = useState<number[]>([])
+  const [savingBatch, setSavingBatch] = useState(false)
+  const [saveModalVisible, setSaveModalVisible] = useState(false)
+  const [metadataForm] = Form.useForm()
 
-const autoLoadTriggeredRef = useRef(false)
+  const [acInfoLoading, setAcInfoLoading] = useState(false)
 
-const readyForMatch = matchResults.length > 0 || selectedImportBatchId !== undefined
+  const handleGetACInfo = async () => {
+    try {
+      const values = await importParamsForm.validateFields(['txtACNO', 'txtWO'])
+      const cookieValues = await importForm.validateFields(['cookies'])
+      setAcInfoLoading(true)
+
+      const response = await workcardImportApi.getACInfo({
+        tail_no: values.txtACNO,
+        work_order: values.txtWO,
+        cookies: composeCookies(cookieValues)
+      })
+
+      if (response.success && response.data) {
+        const info = response.data
+        // Fleet mapping: user said "fleet = txtFleet" which is in response as 'fleet'
+        // PartNo: 'partno'
+        // SerialNo: 'serialno'
+        // tsn: 'tsn'
+        // csn: 'csn'
+
+        importParamsForm.setFieldsValue({
+          txtFleet: info.fleet,
+          txtACPartNo: info.partno,
+          txtACSerialNo: info.serialno,
+          txtTsn: info.tsn,
+          txtCsn: info.csn,
+          csn: `CSN:${info.csn}`, // Auto-format CSN: e.g. CSN:22692
+          // tsn: info.tsn, // User manually inputs formatted TSN (e.g. TSN:46564:21)
+        })
+        message.success('获取飞机信息成功 (请手动填写格式化的TSN)')
+      } else {
+        message.warning(response.message || '未获取到匹配的飞机信息')
+      }
+    } catch (error: any) {
+      console.error('获取飞机信息失败', error)
+      message.error('获取飞机信息失败: ' + (error.message || '未知错误'))
+    } finally {
+      setAcInfoLoading(false)
+    }
+  }
+
+  const autoLoadTriggeredRef = useRef(false)
+
+  const readyForMatch = matchResults.length > 0 || selectedImportBatchId !== undefined
+
+  // 处理外部Excel文件导入
+  const handleExternalImport: UploadProps['beforeUpload'] = (file) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      try {
+        const data = e.target?.result
+        const workbook = XLSX.read(data, { type: 'binary' })
+        const sheetName = workbook.SheetNames[0]
+        const sheet = workbook.Sheets[sheetName]
+        const jsonData = XLSX.utils.sheet_to_json(sheet) as any[]
+
+        if (!jsonData || jsonData.length === 0) {
+          message.error('文件中没有数据')
+          return
+        }
+
+        const newMatchResults: MatchResult[] = jsonData.map((row, index) => {
+          // 按照用户指定的对应关系映射字段
+          const defectNumber = row['缺陷编号'] || row['Defect Number'] || `IMP-${index + 1}`
+          const descriptionCn = row['工卡描述中文'] || row['工卡描述（中文）'] || row['缺陷描述'] || row['Description (CN)'] || ''
+          const descriptionEn = row['工卡描述英文'] || row['工卡描述（英文）'] || row['Description (EN)'] || ''
+          const relativeJobcardNumber = row['相关工卡号'] || row['relative jobcard'] || ''
+          const relativeJobcardSequence = row['相关工卡序号'] || ''
+          const zone = row['区域'] || row['Zone'] || ''
+          const zoneTen = row['区域号'] || row['Zone Ten'] || ''
+
+          // 关键字段：已开出工卡号
+          // 根据用户指定的对应关系：Excel列名 '已开工卡号' 对应数据库字段 issued_workcard_number
+          const issuedWorkcardNumber = row['已开工卡号'] || row['已开出工卡号'] || row['Issued Workcard'] || 'NR/000'
+
+          // 关键字段：候选工卡指令号
+          // 根据用户指定的对应关系：Excel列名 '候选工卡' 对应数据库字段 workcard_number
+          const candidateWorkOrder = row['候选工卡'] || row['候选工卡指令号'] || row['Candidate Workcard'] || row['工卡指令号'] || ''
+
+          // 如果有候选工卡指令号，构建一个虚拟的候选工卡对象
+          const candidates: CandidateWorkCard[] = []
+          let selectedWorkcardId: number | undefined = undefined
+
+          if (candidateWorkOrder) {
+            // 使用负数ID作为临时ID，避免与数据库ID冲突
+            const mockCandidateId = -(index + 1000)
+            candidates.push({
+              id: mockCandidateId,
+              workcard_number: candidateWorkOrder,
+              description: descriptionCn || '导入数据',
+              similarity_score: 100 // 默认给满分
+            })
+            selectedWorkcardId = mockCandidateId
+          }
+
+          return {
+            defect_record_id: -(index + 1), // 使用负数ID
+            defect_number: defectNumber,
+            description_cn: descriptionCn,
+            description_en: descriptionEn,
+            relative_jobcard_number: relativeJobcardNumber,
+            relative_jobcard_sequence: relativeJobcardSequence,
+            zone: zone,
+            zone_ten: zoneTen,
+            candidates: candidates,
+            selected_workcard_id: selectedWorkcardId,
+            issued_workcard_number: issuedWorkcardNumber
+          }
+        })
+
+        // 更新状态
+        setMatchResults(newMatchResults)
+        setSelectedImportBatchId(undefined) // 清除选中的数据库批次
+        setPendingSelections({})
+        setSelectedBatchIds([])
+
+        // 尝试从文件名提取飞机号等信息
+        const fileName = (file as File).name
+        // 简单的正则匹配飞机号 (B-XXXX)
+        const acMatch = fileName.match(/B-\d{4}/)
+        if (acMatch) {
+          importParamsForm.setFieldsValue({ txtACNO: acMatch[0] })
+        }
+
+        message.success(`成功导入 ${newMatchResults.length} 条数据`)
+      } catch (error: any) {
+        message.error('解析文件失败: ' + (error.message || error))
+      }
+    }
+    reader.readAsBinaryString(file as File)
+    return false // 阻止自动上传
+  }
 
   useEffect(() => {
     if (initialMatchResults.length > 0) {
@@ -144,33 +286,32 @@ const readyForMatch = matchResults.length > 0 || selectedImportBatchId !== undef
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  const fetchImportBatches = async () => {
+    try {
+      setLoadingImportBatches(true)
+      const batches = await importBatchApi.list()
+      setImportBatches(batches)
+      return batches
+    } catch (error: any) {
+      message.error('获取待导入工卡数据表失败: ' + (error?.message || error))
+      return []
+    } finally {
+      setLoadingImportBatches(false)
+    }
+  }
+
   useEffect(() => {
     let cancelled = false
-    const fetchImportBatches = async () => {
-      try {
-        setLoadingImportBatches(true)
-        const batches = await importBatchApi.list()
-        if (cancelled) {
-          return
-        }
-        setImportBatches(batches)
-        if (batches.length > 0) {
-          const targetId = selectedImportBatchId ?? batches[0].id
-          setSelectedImportBatchId(targetId)
-          loadImportBatch(targetId)
-        }
-      } catch (error: any) {
-        if (!cancelled) {
-          message.error('获取待导入工卡数据表失败: ' + (error?.message || error))
-        }
-      } finally {
-        if (!cancelled) {
-          setLoadingImportBatches(false)
-        }
+    const init = async () => {
+      const batches = await fetchImportBatches()
+      if (cancelled) return
+      if (batches && batches.length > 0) {
+        const targetId = selectedImportBatchId ?? batches[0].id
+        setSelectedImportBatchId(targetId)
+        loadImportBatch(targetId)
       }
     }
-
-    fetchImportBatches()
+    init()
     return () => {
       cancelled = true
     }
@@ -255,7 +396,6 @@ const readyForMatch = matchResults.length > 0 || selectedImportBatchId !== undef
     try {
       setLoadingMatchResults(true)
       const detail = await importBatchApi.getById(batchId)
-      setCurrentImportBatch(detail)
       setSelectedImportBatchId(batchId)
       autoLoadTriggeredRef.current = true
 
@@ -282,24 +422,40 @@ const readyForMatch = matchResults.length > 0 || selectedImportBatchId !== undef
       })
 
       const formatted: MatchResult[] = detail.items.map((item, index) => {
-        const candidateId =
-          item.selected_workcard_id ??
-          (item.defect_record_id ? item.defect_record_id : index + 1)
+        const candidates: CandidateWorkCard[] = []
+        let selectedWorkcardId: number | undefined = undefined
+        
+        // 如果数据库中有候选工卡号，创建候选工卡对象
+        if (item.workcard_number) {
+          const candidateId =
+            item.selected_workcard_id ??
+            (item.defect_record_id ? item.defect_record_id : index + 1)
+          candidates.push({
+            id: candidateId,
+            workcard_number: item.workcard_number,
+            description: item.description_cn || '',
+            similarity_score: item.similarity_score ?? 0
+          })
+          selectedWorkcardId = candidateId
+        } else if (item.selected_workcard_id) {
+          // 即使workcard_number为空，如果数据库中有selected_workcard_id，也保留它
+          // 这可能是之前保存的数据，虽然候选工卡号被清空了，但选择状态还在
+          selectedWorkcardId = item.selected_workcard_id
+        }
+        
         return {
           defect_record_id: item.defect_record_id ?? -(index + 1),
           defect_number: item.defect_number,
           description_cn: item.description_cn || '',
           description_en: item.description_en || '',
-          candidates: [
-            {
-              id: candidateId,
-              workcard_number: item.workcard_number,
-              description: item.description_cn || '',
-              similarity_score: item.similarity_score ?? 0
-            }
-          ],
-          selected_workcard_id: candidateId,
-          issued_workcard_number: (item as any).issued_workcard_number || 'NR/000'  // 默认值
+          candidates: candidates,
+          selected_workcard_id: selectedWorkcardId,
+          issued_workcard_number: (item as any).issued_workcard_number || 'NR/000',  // 默认值
+          // Map newly added fields
+          zone: (item as any).area || (item as any).zone || '',
+          zone_ten: (item as any).zone_number || (item as any).txtZoneTen || '',
+          relative_jobcard_number: (item as any).reference_workcard_number || (item as any).txtCRN || '',
+          relative_jobcard_sequence: (item as any).reference_workcard_item || (item as any).refNo || ''
         }
       })
 
@@ -351,7 +507,7 @@ const readyForMatch = matchResults.length > 0 || selectedImportBatchId !== undef
   const fetchPreviewData = async (values: any) => {
     try {
       setImportPreviewLoading(true)
-      setImportRunLoading(false)
+      // setImportRunLoading(false) removed
       setImportResult(null)
       setImportLogs([])
       setImportArtifacts([])
@@ -391,13 +547,6 @@ const readyForMatch = matchResults.length > 0 || selectedImportBatchId !== undef
     }
   }
 
-  const ensurePreviewData = async (values: any) => {
-    if (importPreviewData) {
-      return importPreviewData
-    }
-    return await fetchPreviewData(values)
-  }
-
   const handlePreviewImport = async () => {
     try {
       const values = await importForm.validateFields(['cookies'])
@@ -406,55 +555,6 @@ const readyForMatch = matchResults.length > 0 || selectedImportBatchId !== undef
       if (!error?.errorFields) {
         message.error('预加载失败: ' + (error?.message || error))
       }
-    }
-  }
-
-  const handleRunImport = async () => {
-    try {
-      const values = await importForm.validateFields(['cookies'])
-      const baseParams = getImportParams()
-      const preview = await ensurePreviewData(values)
-      if (!preview) {
-        return
-      }
-      if (!selectedPreviewWorkcardRid) {
-        message.warning('请在候选列表中选择要导入的工卡')
-        return
-      }
-      if (!selectedPreviewHistoryRid) {
-        message.warning('请在历史工卡列表中选择导入来源')
-        return
-      }
-      setImportLogs([])
-      setImportArtifacts([])
-      setImportRunLoading(true)
-      const workcardIndex = preview.workcards.findIndex(item => item.rid === selectedPreviewWorkcardRid)
-      const historyIndex = preview.history_cards.findIndex(item => item.rid === selectedPreviewHistoryRid)
-
-      const response = await workcardImportApi.run({
-        ...baseParams,
-        workcard_rid: selectedPreviewWorkcardRid,
-        workcard_index: workcardIndex >= 0 ? workcardIndex : undefined,
-        history_rid: selectedPreviewHistoryRid,
-        history_card_index: historyIndex >= 0 ? historyIndex : undefined,
-        cookies: composeCookies(values)
-      })
-
-      setImportResult(response)
-      setImportLogs(response.logs)
-      setImportArtifacts(response.artifacts)
-
-      if (response.success) {
-        message.success(response.message || '导入成功')
-      } else {
-        message.error(response.message || '导入失败')
-      }
-    } catch (error: any) {
-      if (!error?.errorFields) {
-        message.error('执行导入失败: ' + (error?.message || error))
-      }
-    } finally {
-      setImportRunLoading(false)
     }
   }
 
@@ -535,11 +635,33 @@ const readyForMatch = matchResults.length > 0 || selectedImportBatchId !== undef
     await loadImportBatch(value)
   }
 
+  const handleDeleteBatch = async (batchId: number) => {
+    try {
+      await importBatchApi.delete(batchId)
+      message.success('删除成功')
+
+      // Refresh list
+      await fetchImportBatches()
+
+      // Clean up selection if deleted batch was selected
+      if (selectedImportBatchId === batchId) {
+        setSelectedImportBatchId(undefined)
+        setMatchResults([])
+        setPendingSelections({})
+        setSelectedBatchIds([])
+        setDefectListInfo(undefined)
+        setWorkcardGroup(null)
+      }
+    } catch (error: any) {
+      message.error('删除失败: ' + (error?.message || error))
+    }
+  }
+
   const handleUpdateWorkcardNumber = async (defect_record_id: number, workcard_number: string) => {
     try {
       setUpdatingWorkcardNumber((prev) => [...prev, defect_record_id])
       await defectApi.updateIssuedWorkcardNumber(defect_record_id, workcard_number)
-      
+
       // 更新本地状态
       setMatchResults((prev) =>
         prev.map((item) =>
@@ -548,7 +670,7 @@ const readyForMatch = matchResults.length > 0 || selectedImportBatchId !== undef
             : item
         )
       )
-      
+
       message.success('工卡号更新成功')
       setEditingWorkcardNumber(null)
     } catch (error: any) {
@@ -559,14 +681,11 @@ const readyForMatch = matchResults.length > 0 || selectedImportBatchId !== undef
   }
 
   const handleImportSingle = async (record: MatchResult) => {
-    if (!record.selected_workcard_id) {
-      message.warning(`请先保存缺陷 ${record.defect_number} 的候选工卡`)
-      return
-    }
+    // 开卡操作不需要候选工卡，候选工卡只用于导入步骤
     try {
       const cookieValues = await importForm.validateFields(['cookies'])
       const importParams = await importParamsForm.validateFields()
-      
+
       // 确认是否开出工卡
       Modal.confirm({
         title: '确认开出工卡',
@@ -576,32 +695,49 @@ const readyForMatch = matchResults.length > 0 || selectedImportBatchId !== undef
         onOk: async () => {
           try {
             setImportingRecordIds((prev) => [...prev, record.defect_record_id])
-            
+
             // 构建导入参数
             const params = {
-              txtACNO: importParams.txtACNO,
-              txtWO: importParams.txtWO,
-              txtML: importParams.txtML,
-              txtCust: importParams.txtCust,
-              txtACType: importParams.txtACType || 'B737-300',
-              txtCRN: importParams.txtCRN || '客户要求/CUSTOMER REQUIREMENT',
-              txtDept: importParams.txtDept || '3_CABIN_TPG',
-              selDocType: importParams.selDocType || 'NR',
-              txtCorrosion: importParams.txtCorrosion || 'N',
-              txtDescChn: record.description_cn || '',
-              txtDescEng: record.description_en || '',
+              'txtCust': importParams.txtCust || '',
+              'txtACNO': importParams.txtACNO || '',
+              'txtWO': importParams.txtWO || '',
+              'txtML': importParams.txtML || '',
+              'txtACType': importParams.txtACType || 'B737-300',
+              'txtWorkContent': '',
+              'txtZoneName': record.zone || '',
+              'txtZoneTen': record.zone_ten || '',
+              'txtRII': '',
+              'txtCRN': record.relative_jobcard_number || '客户要求/CUSTOMER REQUIREMENT',
+              'refNo': record.relative_jobcard_sequence || '',
+              'txtEnginSn': '',
+              'txtDescChn': record.description_cn || '',
+              'txtDescEng': record.description_en || '',
+              'txtDept': '3_CABIN_TPG',
+              'selDocType': 'NR',
+              'csn': importParams.csn || '',
+              'tsn': importParams.tsn || '',
+              'txtCorrosion': 'N',
+              'txtMenuID': '13541',
+              'txtParentID': '13112',
+              'txtFleet': importParams.txtFleet || '',
+              'txtACPartNo': importParams.txtACPartNo || '',
+              'txtACSerialNo': importParams.txtACSerialNo || '',
+              'txtTsn': importParams.txtTsn || '',
+              'txtCsn': importParams.txtCsn || '',
+              'jcMode': 'C',
+              'flagEu': '',
+              'txtFlag': '',
             }
-            
+
             const response = await workcardImportApi.importDefect({
               defect_record_id: record.defect_record_id,
               params,
               cookies: composeCookies(cookieValues),
-              is_test_mode: importParams.is_test_mode !== false
             })
-            
+
             setImportLogs(response.logs)
             setImportArtifacts(response.artifacts)
-            
+
             if (response.success) {
               // 更新匹配结果中的工卡号
               if (response.workcard_number) {
@@ -660,36 +796,50 @@ const readyForMatch = matchResults.length > 0 || selectedImportBatchId !== undef
             for (const recordId of selectedBatchIds) {
               const record = matchResults.find((item) => item.defect_record_id === recordId)
               if (!record) continue
-              if (!record.selected_workcard_id) {
-                failureMessages.push(`缺陷 ${record.defect_number} 未保存候选工卡`)
-                continue
-              }
+              // 开卡操作不需要候选工卡，候选工卡只用于导入步骤
               try {
                 // 构建导入参数
                 const params = {
-                  txtACNO: importParams.txtACNO,
-                  txtWO: importParams.txtWO,
-                  txtML: importParams.txtML,
-                  txtCust: importParams.txtCust,
-                  txtACType: importParams.txtACType || 'B737-300',
-                  txtCRN: importParams.txtCRN || '客户要求/CUSTOMER REQUIREMENT',
-                  txtDept: importParams.txtDept || '3_CABIN_TPG',
-                  selDocType: importParams.selDocType || 'NR',
-                  txtCorrosion: importParams.txtCorrosion || 'N',
-                  txtDescChn: record.description_cn || '',
-                  txtDescEng: record.description_en || '',
+                  'txtCust': importParams.txtCust || '',
+                  'txtACNO': importParams.txtACNO || '',
+                  'txtWO': importParams.txtWO || '',
+                  'txtML': importParams.txtML || '',
+                  'txtACType': importParams.txtACType || 'B737-300',
+                  'txtWorkContent': '',
+                  'txtZoneName': record.zone || '',
+                  'txtZoneTen': record.zone_ten || '',
+                  'txtRII': '',
+                  'txtCRN': record.relative_jobcard_number || '客户要求/CUSTOMER REQUIREMENT',
+                  'refNo': record.relative_jobcard_sequence || '',
+                  'txtEnginSn': '',
+                  'txtDescChn': record.description_cn || '',
+                  'txtDescEng': record.description_en || '',
+                  'txtDept': '3_CABIN_TPG',
+                  'selDocType': 'NR',
+                  'csn': importParams.csn || '',
+                  'tsn': importParams.tsn || '',
+                  'txtCorrosion': 'N',
+                  'txtMenuID': '13541',
+                  'txtParentID': '13112',
+                  'txtFleet': importParams.txtFleet || '',
+                  'txtACPartNo': importParams.txtACPartNo || '',
+                  'txtACSerialNo': importParams.txtACSerialNo || '',
+                  'txtTsn': importParams.txtTsn || '',
+                  'txtCsn': importParams.txtCsn || '',
+                  'jcMode': 'C',
+                  'flagEu': '',
+                  'txtFlag': '',
                 }
-                
+
                 const response = await workcardImportApi.importDefect({
                   defect_record_id: record.defect_record_id,
                   params,
                   cookies,
-                  is_test_mode: importParams.is_test_mode !== false
                 })
-                
+
                 setImportLogs(response.logs)
                 setImportArtifacts(response.artifacts)
-                
+
                 if (response.success) {
                   successCount += 1
                   // 更新匹配结果中的工卡号
@@ -734,29 +884,34 @@ const readyForMatch = matchResults.length > 0 || selectedImportBatchId !== undef
   }
 
   const handleImportStepsSingle = async (record: MatchResult) => {
-    if (!record.issued_workcard_number || record.issued_workcard_number === 'NR/000' || !record.selected_workcard_id) {
-      message.warning(`缺陷 ${record.defect_number} 需要已开出工卡号且已保存候选工卡`)
+    // 导入步骤需要已开出工卡号和候选工卡（用于获取工卡指令号）
+    if (!record.issued_workcard_number || record.issued_workcard_number === 'NR/000') {
+      message.warning(`缺陷 ${record.defect_number} 需要已开出工卡号`)
       return
     }
-    
+    if (!record.selected_workcard_id) {
+      message.warning(`缺陷 ${record.defect_number} 需要先保存候选工卡（导入步骤需要候选工卡的工卡指令号）`)
+      return
+    }
+
     try {
       const cookieValues = await importForm.validateFields(['cookies'])
       const importParams = await importParamsForm.validateFields()
       const cookies = composeCookies(cookieValues)
-      
+
       // 找到选中的候选工卡，获取其工卡指令号（workcard_number）
       const selectedCandidate = record.candidates.find(
         (candidate) => candidate.id === record.selected_workcard_id
       )
       const candidateWorkOrder = selectedCandidate?.workcard_number || ''
-      
+
       if (!candidateWorkOrder) {
         message.error(`缺陷 ${record.defect_number}: 未找到候选工卡的工卡指令号`)
         return
       }
-      
+
       setImportingStepsRecordIds((prev) => [...prev, record.defect_record_id])
-      
+
       try {
         const response = await workcardImportApi.importSteps({
           jobcard_number: record.issued_workcard_number || '',
@@ -766,7 +921,7 @@ const readyForMatch = matchResults.length > 0 || selectedImportBatchId !== undef
           work_group: importParams.txtDept || '3_CABIN_TPG',
           cookies,
         })
-        
+
         // 合并日志和产物
         if (response.logs) {
           setImportLogs((prev) => [...prev, ...response.logs])
@@ -774,7 +929,7 @@ const readyForMatch = matchResults.length > 0 || selectedImportBatchId !== undef
         if (response.artifacts) {
           setImportArtifacts((prev) => [...prev, ...response.artifacts])
         }
-        
+
         if (response.success) {
           message.success(`缺陷 ${record.defect_number} 步骤导入成功，共导入 ${response.imported_count || 0} 个步骤`)
         } else {
@@ -797,30 +952,30 @@ const readyForMatch = matchResults.length > 0 || selectedImportBatchId !== undef
       message.warning('请先勾选需要批量导入步骤的缺陷记录')
       return
     }
-    
-    // 检查选中的记录是否都有已开出工卡号和候选工卡
+
+    // 检查选中的记录是否都有已开出工卡号和候选工卡（导入步骤需要候选工卡的工卡指令号）
     const validRecords = matchResults.filter(
-      (item) => 
+      (item) =>
         selectedBatchIds.includes(item.defect_record_id) &&
         item.issued_workcard_number &&
         item.issued_workcard_number !== 'NR/000' &&
-        item.selected_workcard_id
+        item.selected_workcard_id  // 导入步骤需要候选工卡
     )
-    
+
     if (validRecords.length === 0) {
-      message.warning('选中的记录中没有符合条件的记录（需要已开出工卡号且已保存候选工卡）')
+      message.warning('选中的记录中没有符合条件的记录（需要已开出工卡号且已保存候选工卡，导入步骤需要候选工卡的工卡指令号）')
       return
     }
-    
+
     if (validRecords.length < selectedBatchIds.length) {
       message.warning(`选中的 ${selectedBatchIds.length} 条记录中，只有 ${validRecords.length} 条符合条件`)
     }
-    
+
     try {
       const cookieValues = await importForm.validateFields(['cookies'])
       const importParams = await importParamsForm.validateFields()
       const cookies = composeCookies(cookieValues)
-      
+
       // 确认是否批量导入步骤
       Modal.confirm({
         title: '确认批量导入步骤',
@@ -832,7 +987,7 @@ const readyForMatch = matchResults.length > 0 || selectedImportBatchId !== undef
             setBatchImportStepsLoading(true)
             setImportLogs([])
             setImportArtifacts([])
-            
+
             let successCount = 0
             let totalImportedSteps = 0
             const failureMessages: string[] = []
@@ -843,7 +998,7 @@ const readyForMatch = matchResults.length > 0 || selectedImportBatchId !== undef
               imported_count?: number
               failed_count?: number
             }> = []
-            
+
             for (const record of validRecords) {
               try {
                 // 找到选中的候选工卡，获取其工卡指令号（workcard_number）
@@ -851,7 +1006,7 @@ const readyForMatch = matchResults.length > 0 || selectedImportBatchId !== undef
                   (candidate) => candidate.id === record.selected_workcard_id
                 )
                 const candidateWorkOrder = selectedCandidate?.workcard_number || ''
-                
+
                 if (!candidateWorkOrder) {
                   failureMessages.push(`缺陷 ${record.defect_number}: 未找到候选工卡的工卡指令号`)
                   results.push({
@@ -861,7 +1016,7 @@ const readyForMatch = matchResults.length > 0 || selectedImportBatchId !== undef
                   })
                   continue
                 }
-                
+
                 const response = await workcardImportApi.importSteps({
                   jobcard_number: record.issued_workcard_number || '',
                   target_work_order: candidateWorkOrder, // qJcWorkOrder: 候选工卡的工卡指令号
@@ -870,7 +1025,7 @@ const readyForMatch = matchResults.length > 0 || selectedImportBatchId !== undef
                   work_group: importParams.txtDept || '3_CABIN_TPG',
                   cookies,
                 })
-                
+
                 // 合并日志和产物
                 if (response.logs) {
                   setImportLogs((prev) => [...prev, ...response.logs])
@@ -878,7 +1033,7 @@ const readyForMatch = matchResults.length > 0 || selectedImportBatchId !== undef
                 if (response.artifacts) {
                   setImportArtifacts((prev) => [...prev, ...response.artifacts])
                 }
-                
+
                 if (response.success) {
                   successCount += 1
                   totalImportedSteps += response.imported_count || 0
@@ -908,7 +1063,7 @@ const readyForMatch = matchResults.length > 0 || selectedImportBatchId !== undef
                 })
               }
             }
-            
+
             // 显示汇总结果
             if (successCount > 0) {
               message.success(`批量导入步骤完成，成功 ${successCount} 条，共导入 ${totalImportedSteps} 个步骤`)
@@ -916,7 +1071,7 @@ const readyForMatch = matchResults.length > 0 || selectedImportBatchId !== undef
             if (failureMessages.length > 0) {
               message.error(failureMessages.join('；'))
             }
-            
+
             // 显示详细结果Modal
             Modal.info({
               title: '批量导入步骤结果',
@@ -967,6 +1122,105 @@ const readyForMatch = matchResults.length > 0 || selectedImportBatchId !== undef
     }
   }
 
+
+
+  const handleOpenSaveModal = () => {
+    if (matchResults.length === 0) {
+      message.warning('没有可保存的数据')
+      return
+    }
+    // 尝试自动填充飞机号（如果有defectList信息）
+    if (defectListInfo) {
+      metadataForm.setFieldsValue({
+        aircraft_number: defectListInfo.aircraft_number
+      })
+    }
+    setSaveModalVisible(true)
+  }
+
+  const executeSaveBatch = async () => {
+    try {
+      const values = await metadataForm.validateFields()
+
+      const items = matchResults.map((result) => {
+        let selectedCandidate = result.candidates.find(
+          (candidate) => candidate.id === result.selected_workcard_id
+        )
+        // fix: 如果是直接Excel导入的，candidate可能就是虚拟的，确保数据完整性
+        if (!selectedCandidate && result.candidates.length > 0) {
+          selectedCandidate = result.candidates[0]
+        }
+
+        return {
+          defect_record_id: result.defect_record_id > 0 ? result.defect_record_id : null,
+          defect_number: result.defect_number,
+          description_cn: result.description_cn,
+          description_en: result.description_en,
+          // 候选工卡：只使用Excel中的"候选工卡"字段，如果没有数据则留空（null），不使用相关工卡号
+          workcard_number: selectedCandidate?.workcard_number && selectedCandidate.workcard_number.trim() !== '' 
+            ? selectedCandidate.workcard_number 
+            : null,
+          issued_workcard_number: result.issued_workcard_number,
+          selected_workcard_id: selectedCandidate?.id && selectedCandidate.id > 0 ? selectedCandidate.id : null,
+          similarity_score: selectedCandidate?.similarity_score ?? 0,
+          // 按照用户指定的对应关系添加扩展字段
+          reference_workcard_number: result.relative_jobcard_number || null,
+          reference_workcard_item: result.relative_jobcard_sequence || null,
+          area: result.zone || null,
+          zone_number: result.zone_ten || null
+        }
+      })
+
+      setSavingBatch(true)
+      const payload = {
+        metadata: {
+          aircraft_number: values.aircraft_number,
+          workcard_number: values.workcard_number,
+          maintenance_level: values.maintenance_level,
+          aircraft_type: values.aircraft_type,
+          customer: values.customer,
+          defect_list_id: defectListId
+        },
+        items
+      }
+
+      const result = await importBatchApi.create(payload)
+      message.success('已保存到待导入工卡数据表')
+
+      // Refresh the dropdown list and then select the new batch
+      await fetchImportBatches()
+      setSaveModalVisible(false)
+      // Reload as a fresh batch
+      setSelectedImportBatchId(result.id)
+      loadImportBatch(result.id)
+
+    } catch (error: any) {
+      console.error('Save Batch Error:', error)
+      if (error.errorFields) {
+        return // Validation failed
+      }
+      let errorMsg = error.message || '未知错误'
+      if (error.response?.data?.detail) {
+        const detail = error.response.data.detail
+        if (typeof detail === 'string') {
+          errorMsg = detail
+        } else if (Array.isArray(detail)) {
+          // Format Pydantic validation errors
+          errorMsg = detail.map((e: any) => `${e.loc?.join('.')}: ${e.msg}`).join('; ')
+        } else if (typeof detail === 'object') {
+          errorMsg = JSON.stringify(detail)
+        }
+      } else if (typeof error === 'object' && Object.keys(error).length > 0) {
+        // If error is just [object Object] with no message
+        errorMsg = JSON.stringify(error)
+      }
+
+      message.error(`保存失败: ${errorMsg}`)
+    } finally {
+      setSavingBatch(false)
+    }
+  }
+
   const matchResultColumns: ColumnsType<MatchResult> = [
     {
       title: '缺陷编号',
@@ -975,6 +1229,20 @@ const readyForMatch = matchResults.length > 0 || selectedImportBatchId !== undef
       width: 160,
       fixed: 'left',
       render: (text: string) => <Tag color="blue">{text}</Tag>,
+    },
+    {
+      title: '区域',
+      dataIndex: 'zone',
+      key: 'zone',
+      width: 80,
+      render: (text: string) => text || '-'
+    },
+    {
+      title: '区域号',
+      dataIndex: 'zone_ten',
+      key: 'zone_ten',
+      width: 80,
+      render: (text: string) => text || '-'
     },
     {
       title: '工卡描述（中文）',
@@ -990,6 +1258,20 @@ const readyForMatch = matchResults.length > 0 || selectedImportBatchId !== undef
       key: 'description_en',
       width: 300,
       ellipsis: true,
+      render: (text: string) => text || '-'
+    },
+    {
+      title: '相关工卡号',
+      dataIndex: 'relative_jobcard_number',
+      key: 'relative_jobcard_number',
+      width: 150,
+      render: (text: string) => text || '-'
+    },
+    {
+      title: '相关工卡序号',
+      dataIndex: 'relative_jobcard_sequence',
+      key: 'relative_jobcard_sequence',
+      width: 120,
       render: (text: string) => text || '-'
     },
     {
@@ -1091,6 +1373,7 @@ const readyForMatch = matchResults.length > 0 || selectedImportBatchId !== undef
             <Button
               size="small"
               icon={<FileTextOutlined />}
+              // 导入步骤需要已开出工卡号和候选工卡（用于获取工卡指令号）
               disabled={!record.issued_workcard_number || record.issued_workcard_number === 'NR/000' || !record.selected_workcard_id || importingStepsRecordIds.includes(record.defect_record_id)}
               loading={importingStepsRecordIds.includes(record.defect_record_id)}
               onClick={() => handleImportStepsSingle(record)}
@@ -1109,8 +1392,10 @@ const readyForMatch = matchResults.length > 0 || selectedImportBatchId !== undef
       setSelectedBatchIds(selectedRowKeys as number[])
     },
     preserveSelectedRowKeys: true,
+    // 允许选中所有行，即使没有候选工卡也可以选中（用于批量操作）
+    // 候选工卡的验证会在实际执行操作时进行
     getCheckboxProps: (record: MatchResult) => ({
-      disabled: !record.selected_workcard_id
+      disabled: false
     }),
   }
 
@@ -1210,11 +1495,10 @@ const readyForMatch = matchResults.length > 0 || selectedImportBatchId !== undef
               onChange={(value) => {
                 if (value === undefined) {
                   setSelectedImportBatchId(undefined)
-                  setCurrentImportBatch(null)
                   setMatchResults([])
                   setPendingSelections({})
                   setSelectedBatchIds([])
-                  setDefectListInfo(null)
+                  setDefectListInfo(undefined)
                   setWorkcardGroup(null)
                   return
                 }
@@ -1230,14 +1514,87 @@ const readyForMatch = matchResults.length > 0 || selectedImportBatchId !== undef
                 </Option>
               ))}
             </Select>
+            {selectedImportBatchId && (
+              <Popconfirm
+                title="确定要删除这个待导入数据表吗？"
+                description="删除后无法恢复"
+                onConfirm={() => handleDeleteBatch(selectedImportBatchId)}
+                okText="确定"
+                cancelText="取消"
+              >
+                <Button icon={<DeleteOutlined />} danger title="删除选中数据表" />
+              </Popconfirm>
+            )}
+            <Upload accept=".xlsx,.xls" showUploadList={false} beforeUpload={handleExternalImport}>
+              <Button icon={<UploadOutlined />}>导入待开卡数据表</Button>
+            </Upload>
+            <Button
+              type="primary"
+              onClick={handleOpenSaveModal}
+              disabled={matchResults.length === 0}
+            >
+              保存到待导入表
+            </Button>
           </Space>
         </div>
       </Card>
 
+      <Modal
+        title="保存到待导入工卡数据表"
+        open={saveModalVisible}
+        onCancel={() => setSaveModalVisible(false)}
+        onOk={executeSaveBatch}
+        confirmLoading={savingBatch}
+        okText="保存"
+        cancelText="取消"
+        destroyOnClose
+      >
+        <Form form={metadataForm} layout="vertical">
+          <Form.Item
+            label="飞机号"
+            name="aircraft_number"
+            rules={[{ required: true, message: '请输入飞机号' }]}
+          >
+            <Input placeholder="请输入飞机号" />
+          </Form.Item>
+          <Form.Item
+            label="工卡指令号"
+            name="workcard_number"
+            rules={[{ required: true, message: '请输入工卡指令号' }]}
+          >
+            <Input placeholder="请输入工卡指令号" />
+          </Form.Item>
+          <Form.Item
+            label="维修级别"
+            name="maintenance_level"
+            rules={[{ required: true, message: '请输入维修级别' }]}
+          >
+            <Input placeholder="请输入维修级别" />
+          </Form.Item>
+          <Form.Item
+            label="机型"
+            name="aircraft_type"
+            initialValue="B737-300"
+            rules={[{ required: true, message: '请输入机型' }]}
+          >
+            <Input placeholder="请输入机型" />
+          </Form.Item>
+          <Form.Item
+            label="客户"
+            name="customer"
+            initialValue="CQAL"
+            rules={[{ required: true, message: '请输入客户信息' }]}
+          >
+            <Input placeholder="请输入客户信息" />
+          </Form.Item>
+        </Form>
+      </Modal>
+
       <Card title="导入参数配置" style={{ marginBottom: '24px' }}>
         <Form form={importParamsForm} layout="vertical">
+          <Divider orientation="left">基本信息</Divider>
           <Row gutter={16}>
-            <Col span={12}>
+            <Col span={8}>
               <Form.Item
                 label="飞机号 (txtACNO)"
                 name="txtACNO"
@@ -1246,7 +1603,7 @@ const readyForMatch = matchResults.length > 0 || selectedImportBatchId !== undef
                 <Input placeholder="请输入飞机号" />
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col span={8}>
               <Form.Item
                 label="工作指令号 (txtWO)"
                 name="txtWO"
@@ -1255,18 +1612,21 @@ const readyForMatch = matchResults.length > 0 || selectedImportBatchId !== undef
                 <Input placeholder="请输入工作指令号" />
               </Form.Item>
             </Col>
-          </Row>
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label="维修级别 (txtML)"
-                name="txtML"
-                rules={[{ required: true, message: '请输入维修级别' }]}
-              >
-                <Input placeholder="请输入维修级别" />
+            <Col span={8}>
+              <Form.Item label="&nbsp;">
+                <Button
+                  type="primary"
+                  onClick={handleGetACInfo}
+                  loading={acInfoLoading}
+                  icon={<ReloadOutlined />}
+                >
+                  获取飞机信息
+                </Button>
               </Form.Item>
             </Col>
-            <Col span={12}>
+          </Row>
+          <Row gutter={16}>
+            <Col span={6}>
               <Form.Item
                 label="客户 (txtCust)"
                 name="txtCust"
@@ -1275,77 +1635,134 @@ const readyForMatch = matchResults.length > 0 || selectedImportBatchId !== undef
                 <Input placeholder="请输入客户" />
               </Form.Item>
             </Col>
-          </Row>
-          <Row gutter={16}>
-            <Col span={12}>
+            <Col span={6}>
+              <Form.Item
+                label="维修级别 (txtML)"
+                name="txtML"
+                rules={[{ required: true, message: '请输入维修级别' }]}
+              >
+                <Input placeholder="请输入维修级别" />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
               <Form.Item
                 label="机型 (txtACType)"
                 name="txtACType"
                 initialValue="B737-300"
                 rules={[{ required: true, message: '请输入机型' }]}
               >
-                <Input placeholder="请输入机型，默认B737-300" />
+                <Input placeholder="请输入机型" />
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col span={6}>
               <Form.Item
-                label="相关工卡号 (txtCRN)"
-                name="txtCRN"
-                initialValue="客户要求/CUSTOMER REQUIREMENT"
+                label="TSN (格式: TSN:XXXX:XX)"
+                name="tsn"
               >
-                <Input placeholder="请输入相关工卡号" />
+                <Input placeholder="请输入格式化TSN (如 TSN:46564:21)" />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Divider orientation="left">飞机信息 (来自请求 - 原始数值)</Divider>
+          <Row gutter={16}>
+            <Col span={6}>
+              <Form.Item label="Fleet (txtFleet)" name="txtFleet">
+                <Input placeholder="自动获取" disabled />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item label="Part No (txtACPartNo)" name="txtACPartNo">
+                <Input placeholder="自动获取" disabled />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item label="Serial No (txtACSerialNo)" name="txtACSerialNo">
+                <Input placeholder="自动获取" disabled />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item label="CSN (格式: CSN:XXXX)" name="csn">
+                <Input placeholder="自动生成 (CSN:XXXX)" disabled />
               </Form.Item>
             </Col>
           </Row>
           <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label="工艺组 (txtDept)"
-                name="txtDept"
-                initialValue="3_CABIN_TPG"
-                rules={[{ required: true, message: '请输入工艺组' }]}
-              >
-                <Input placeholder="请输入工艺组" />
+            <Col span={6}>
+              <Form.Item label="TSN Raw (txtTsn)" name="txtTsn">
+                <Input placeholder="自动获取 (高精度)" disabled />
               </Form.Item>
             </Col>
-            <Col span={12}>
-              <Form.Item
-                label="工卡类型 (selDocType)"
-                name="selDocType"
-                initialValue="NR"
-                rules={[{ required: true, message: '请选择工卡类型' }]}
-              >
-                <Select>
-                  <Option value="NR">NR</Option>
-                </Select>
+            <Col span={6}>
+              <Form.Item label="CSN Raw (txtCsn)" name="txtCsn">
+                <Input placeholder="自动获取 (纯数字)" disabled />
               </Form.Item>
             </Col>
           </Row>
+
+          <Divider orientation="left">固定参数 (只读)</Divider>
           <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label="是否腐蚀 (txtCorrosion)"
-                name="txtCorrosion"
-                initialValue="N"
-                rules={[{ required: true, message: '请选择是否腐蚀' }]}
-              >
-                <Select>
-                  <Option value="Y">是</Option>
-                  <Option value="N">否</Option>
-                </Select>
+            <Col span={4}>
+              <Form.Item label="工艺组 (txtDept)" name="txtDept" initialValue="3_CABIN_TPG">
+                <Input disabled />
               </Form.Item>
             </Col>
-            <Col span={12}>
-              <Form.Item
-                label="测试模式"
-                name="is_test_mode"
-                valuePropName="checked"
-                initialValue={true}
-              >
-                <Switch checkedChildren="开启" unCheckedChildren="关闭" />
+            <Col span={4}>
+              <Form.Item label="工卡类型 (selDocType)" name="selDocType" initialValue="NR">
+                <Input disabled />
+              </Form.Item>
+            </Col>
+            <Col span={4}>
+              <Form.Item label="是否腐蚀 (txtCorrosion)" name="txtCorrosion" initialValue="N">
+                <Input disabled />
+              </Form.Item>
+            </Col>
+            <Col span={4}>
+              <Form.Item label="MenuID" name="txtMenuID" initialValue="13541">
+                <Input disabled />
+              </Form.Item>
+            </Col>
+            <Col span={4}>
+              <Form.Item label="ParentID" name="txtParentID" initialValue="13112">
+                <Input disabled />
+              </Form.Item>
+            </Col>
+            <Col span={4}>
+              <Form.Item label="Mode" name="jcMode" initialValue="C">
+                <Input disabled />
               </Form.Item>
             </Col>
           </Row>
+
+          <Divider orientation="left">留空参数 (只读)</Divider>
+          <Row gutter={16}>
+            <Col span={4}>
+              <Form.Item label="WorkContent" name="txtWorkContent" initialValue="">
+                <Input disabled placeholder="留空" />
+              </Form.Item>
+            </Col>
+            <Col span={4}>
+              <Form.Item label="RII" name="txtRII" initialValue="">
+                <Input disabled placeholder="留空" />
+              </Form.Item>
+            </Col>
+            <Col span={4}>
+              <Form.Item label="EnginSn" name="txtEnginSn" initialValue="">
+                <Input disabled placeholder="留空" />
+              </Form.Item>
+            </Col>
+            <Col span={4}>
+              <Form.Item label="Flag" name="txtFlag" initialValue="">
+                <Input disabled placeholder="留空" />
+              </Form.Item>
+            </Col>
+            <Col span={4}>
+              <Form.Item label="FlagEu" name="flagEu" initialValue="">
+                <Input disabled placeholder="留空" />
+              </Form.Item>
+            </Col>
+          </Row>
+
           <Form.Item>
             <Button type="primary" onClick={() => {
               importParamsForm.validateFields().then(() => {
@@ -1399,8 +1816,8 @@ const readyForMatch = matchResults.length > 0 || selectedImportBatchId !== undef
               name="cookies"
               tooltip="内网直连模式下，如果系统需要认证Cookie，请在此输入完整的Cookie字符串。如果看到两个JSESSIONID（如：JSESSIONID=xxx; JSESSIONID=yyy），这是正常的，请完整复制所有Cookie值。"
             >
-              <Input.TextArea 
-                placeholder="请输入Cookie字符串（可选），例如：JSESSIONID=ABC123; JSESSIONID=XYZ789; other_cookie=value" 
+              <Input.TextArea
+                placeholder="请输入Cookie字符串（可选），例如：JSESSIONID=ABC123; JSESSIONID=XYZ789; other_cookie=value"
                 rows={3}
               />
             </Form.Item>

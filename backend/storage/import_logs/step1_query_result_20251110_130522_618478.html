@@ -1,0 +1,1405 @@
+
+
+
+
+
+
+
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"><script>var ___cp_cvpn_prefix_portal = ""; var ___cp_cvpn_prefix_web_apps = ""; </script><script src="/Portal/FNB.js"></script>
+
+<script src="/Portal/CPUTfunctions.js"></script><HTML>
+<HEAD>
+<META http-equiv="Content-Type" content="text/html; charset=GBK">
+<link rel="stylesheet" href="/Web/trace/common/css.css,CVPNCType=css,CVPNHost=10.240.2.131:9080,CVPNProtocol=http,CVPNOrg=abs,CVPNExtension=.css" type="text/css">
+<link rel="stylesheet" type="text/css" href="/Web/trace/common/easyui/themes/default/easyui.css,CVPNCType=css,CVPNHost=10.240.2.131:9080,CVPNProtocol=http,CVPNOrg=abs,CVPNExtension=.css">
+<link rel="stylesheet" type="text/css" href="/Web/trace/common/easyui/themes/icon.css,CVPNCType=css,CVPNHost=10.240.2.131:9080,CVPNProtocol=http,CVPNOrg=abs,CVPNExtension=.css">
+<script type="text/javascript" src="/Web/trace/common/selectDateTime1.js,CVPNCType=javascript,CVPNHost=10.240.2.131:9080,CVPNProtocol=http,CVPNOrg=abs,CVPNExtension=.js"></script>
+<script type="text/javascript" src="/Web/trace/common/js/jquery-1.4.2.min.js,CVPNCType=javascript,CVPNHost=10.240.2.131:9080,CVPNProtocol=http,CVPNOrg=abs,CVPNExtension=.js"></script>
+<script type="text/javascript" src="/Web/trace/common/easyui/jquery.easyui.min.js,CVPNCType=javascript,CVPNHost=10.240.2.131:9080,CVPNProtocol=http,CVPNOrg=abs,CVPNExtension=.js"></script>
+<script type="text/javascript" src="/Web/trace/common/multipleSelect.js,CVPNCType=javascript,CVPNHost=10.240.2.131:9080,CVPNProtocol=http,CVPNOrg=abs,CVPNExtension=.js"></script>
+<META name="GENERATOR" content="IBM WebSphere Studio">
+<TITLE>指令工卡管理</TITLE>
+</HEAD>
+<BODY>
+
+<form name="form" method="post" action="/Web/trace/fgm/workOrder/,CVPNHost=10.240.2.131:9080,CVPNProtocol=http,CVPNOrg=abs" onsubmit="return doSubmit()">
+<input type="hidden" name="wgp" value=""/>
+<input type="hidden" name="printer" value="\\lx-ps01\Prt2N15M非例卡(机上客舱2车间)"/>
+<input type="hidden" name="txtMenuID" value="22800"/>
+
+<table width="100%" border="0" align="center">
+	<tr align="right">
+		<td>
+			帮助:
+			<a href="/Web/trace/images/FAQ.pdf,CVPNHost=10.240.2.131:9080,CVPNProtocol=http,CVPNOrg=abs,CVPNExtension=.pdf" target="_blank">TRACE系统FAQ</a>
+			&nbsp;
+			<a href="/Web/trace/images/eSignHelp.pdf,CVPNHost=10.240.2.131:9080,CVPNProtocol=http,CVPNOrg=abs,CVPNExtension=.pdf" target="_blank">非例行工卡电子流程运作指引</a>
+		</td>
+	</tr>
+</table>
+
+<table width="100%" border="0" align="center" cellpadding="0" cellspacing="0">
+	<tr> 
+		<td width="36"><img src="/Web/trace/images/tableTitle1.gif,CVPNHost=10.240.2.131:9080,CVPNProtocol=http,CVPNOrg=abs,CVPNExtension=.gif" width="36" height="27"></td>
+		<td width="80" background="/Web/trace/images/tableTitle2.gif,CVPNHost=10.240.2.131:9080,CVPNProtocol=http,CVPNOrg=abs,CVPNExtension=.gif"><strong>查询条件</strong></td>
+		<td width="28"><img src="/Web/trace/images/tableTitle3.gif,CVPNHost=10.240.2.131:9080,CVPNProtocol=http,CVPNOrg=abs,CVPNExtension=.gif" width="28" height="27"></td>
+		<td background="/Web/trace/images/main_bt_4.gif,CVPNHost=10.240.2.131:9080,CVPNProtocol=http,CVPNOrg=abs,CVPNExtension=.gif">&nbsp;<label color="red"></label></td>
+		<td width="5"><img src="/Web/trace/images/main_bt_5.gif,CVPNHost=10.240.2.131:9080,CVPNProtocol=http,CVPNOrg=abs,CVPNExtension=.gif" width="5" height="27"></td>
+	</tr>
+</table>
+<table width="100%" border="0" align="center" cellpadding="2" cellspacing="1" bgcolor="#3366FF">
+	<tr bgcolor="#FFFFFF">
+		<td width="90px">飞机号：</td>
+		<td width="90px">
+			<input type="text" name="txtFullReg" id="txtFullReg"  value="B-6378" onchange="clearValue(this)" onblur=getWorkorder(this) style="width:100%"/>
+		</td>
+		<td width="90px">工作指令：</td>
+		<td width="110px">
+			<input type="text" name="qWorkorder" id="qWorkorder" value="120000249879" style="width:100%"/>
+		</td>
+		<td width="90px">定检级别：</td>
+		<td width="100px">
+			<input type="text" name="txtFlight_Check_No" id="txtFlight_Check_No" value="C7" class="textType" style="width:100%" readonly="readonly"/>
+		</td>
+		<td width="90px">IPC适用号：</td>
+		<td width="100px">
+			<input type="text" name="txtIPC_Num" id="txtIPC_Num" value="" style="width:100%" />
+		</td>
+		<td width="60px">MPD号：</td>
+		<td width="80px">
+			<input type="hidden" name="txtVisit_Desc" id="txtVisit_Desc" value="C7" class="textType" style="width:100%" readonly="readonly"/>
+			<input type="text" name="txtMpd" id="txtMpd" value="" style="width:100%" />
+		</td>
+	</tr>
+	<tr bgcolor="#FFFFFF"> 
+		<td>工卡类型：</td>
+		<td>
+			<select name="txtType" style="width:50%">
+				<option value=""></option>
+				<option value="AD">AD</option>
+				<option value="AP">AP</option>
+				<option value="EO">EO</option>
+				<option value="NR">NR</option>
+				<option value="RO">RO</option>
+				<option value="-NR">-NR</option>
+				<option value="JCC">JCC</option>
+			</select>
+		</td>
+		<td>工卡序号：</td>
+		<td><input type="text" name="txtSeq" value="" onclick="this.select()" style="width:100%"/></td>
+		<td>工卡号：&nbsp;</td>
+		<td><input name="txtJobcard" type="text" value="" style="width:100%"/></td>
+		<td>工卡描述：</td>
+		<td>
+			<input type="text" name="txtJcDesc" value="" style="width:100%"/>
+		</td>
+		<td>QC终检：</td>
+		<td>
+			<select name="txtQcFinal" style="width:100%">
+				<option value="" ></option>
+				<option value="Y">Y</option>
+				<option value="N">N</option>
+			</select>
+		</td>
+	</tr>
+	<tr bgcolor="#FFFFFF" > 
+		<td>工卡状态：</td>
+		<td>
+			<select name="txtJcStatus" style="width:50%">
+				<option value=""></option>
+				<option value="N">N</option>
+				<option value="Y">Y</option>
+				<option value="X">X</option>
+				<option value="M">M</option>
+				<option value="D">D</option>
+				<option value="S">S</option>
+			</select>
+		</td>
+		<td>方案状态：</td>
+		<td>
+			<select name="txtSlnStatus" style="width:50%">
+				<option value=""></option>
+				<option value="Y">Y</option>
+				<option value="N">N</option>
+				<option value="T">T</option>
+			</select>
+		</td>
+		<td>重要：</td>
+		<td>
+			<select name="txtImport" style="width:50%">
+				<option value=""></option>
+				<option value="Y">Y</option>
+				<option value="N">N</option>
+			</select>
+		</td>
+		<td>工卡站协助：</td>
+		<td>
+			<select name="txtBoothAss" style="width:50%">
+				<option value=""></option>
+				<option value="Y">Y</option>
+				<option value="N">N</option>
+			</select>
+		</td>
+		<td>打印状态：</td>
+		<td>
+			<select name="txtSlnPrinted" style="width:50%">
+				<option value=""></option>
+				<option value="Y">Y</option>
+				<option value="N">N</option>
+			</select>
+		</td>
+	</tr>
+	<tr bgcolor="#FFFFFF">
+		<td>前一工作组：</td>
+		<td>
+			<select name="preWorkGrp" style="width:100%">
+				<option value=""></option>
+				<option value="--">--</option>
+				<!--option value="NULL" %="NULL".equals(preWorkGrp) ? "selected=\"selected\"" : "" %>>--</option-->
+			
+				<option value="HM_TPG">机电工艺组</option>
+			
+				<option value="CABIN_TPG">客舱车间工艺组</option>
+			
+				<option value="STR_TPG">结构车间工艺组</option>
+			
+				<option value="A_CHK_TPG">航三A检工艺组</option>
+			
+				<option value="ENG_SUP">工程支援</option>
+			
+				<option value="PP">生产计划</option>
+			
+				<option value="ENG_STR">工程结构</option>
+			
+				<option value="AV">AV</option>
+			
+				<option value="QC">检验</option>
+			
+				<option value="BOOTH">工卡站</option>
+			
+				<option value="ENG_AV">工程电子</option>
+			
+				<option value="ENG_ENG">工程发动机</option>
+			
+				<option value="ENG_SD">工程软件组</option>
+			
+				<option value="LM1 ME">空客窄体机电</option>
+			
+				<option value="LM2 ME">波音窄体机电</option>
+			
+				<option value="LM3 EMB ME">航三国产民机维护机电</option>
+			
+				<option value="LM3 CABIN">航三客舱</option>
+			
+				<option value="HM3_ENG">大修三发动机</option>
+			
+				<option value="PMA">PMA</option>
+			
+				<option value="DMDOR">DMDOR</option>
+			
+				<option value="MOCC PPC1">MOCC动态</option>
+			
+				<option value="MOCC PPC2">MOCC静态</option>
+			
+				<option value="LM2 AV">波音窄体电子</option>
+			
+				<option value="LM1 AV">空客窄体电子</option>
+			
+				<option value="LM3 EMB AV">航三国产民机维护电子</option>
+			
+				<option value="LM3 FAST ME">航三外航机电</option>
+			
+				<option value="3_CABIN_TPG">三部客舱工艺</option>
+			
+				<option value="3_STR_TPG">CRC复合材料</option>
+			
+				<option value="PAT_TPG">综合维修工艺</option>
+			
+				<option value="LM5">航一跟机</option>
+			
+				<option value="LM6 ME">航三A检机电</option>
+			
+				<option value="PVG ME">上海外站机电</option>
+			
+				<option value="PVG AV">上海外站电子</option>
+			
+				<option value="LM6 AV">航三A检电子</option>
+			
+				<option value="NDT">NDT</option>
+			
+				<option value="MOCC BOOTH">MOCC工卡站</option>
+			
+				<option value="ENG_FTM">工程FTM</option>
+			
+				<option value="CQ_ENG_SUP">CQ MOCC工程</option>
+			
+				<option value="CQ_LM_G1">CQ维修一组</option>
+			
+				<option value="CQ_LM_G2">CQ维修二组</option>
+			
+				<option value="CQ_LM_G3">CQ维修三组</option>
+			
+				<option value="CQ_LM_G4">CQ维修四班</option>
+			
+				<option value="CQ_LM_CABIN">CQ航线客舱</option>
+			
+				<option value="CQ_MOCC_PP">CQ计划</option>
+			
+				<option value="CQ_LM_G5">CQ维修五组</option>
+			
+				<option value="ENG_CABIN">工程客舱</option>
+			
+				<option value="LM4 ME">航三联邦机电</option>
+			
+				<option value="LM4 AV">航三联邦电子</option>
+			
+				<option value="LM8 ME">空客宽体机电</option>
+			
+				<option value="LM8 AV">空客宽体电子</option>
+			
+				<option value="DMPF">改装自制件</option>
+			
+				<option value="APF">飞机零部件加工</option>
+			
+				<option value="AUS MEL">墨尔本</option>
+			
+				<option value="AUS SYD">悉尼</option>
+			
+				<option value="ANZ AKL">奥克兰</option>
+			
+				<option value="CQ_GSE">CQ特种车队</option>
+			
+				<option value="LM7 AV">波音宽体电子</option>
+			
+				<option value="LM7 ME">波音宽体机电</option>
+			
+				<option value="NAC">CRC工程</option>
+			
+				<option value="HM4_STR_TPG">HM4技术处结构组</option>
+			
+				<option value="HM4_SYS_TPG">HM4系统工艺组</option>
+			
+				<option value="ARJ_CNV">ARJ客改货项目组</option>
+			
+			</select>
+		</td>
+		<td>当前工作组：</td>
+		<td>
+			<select name="curWorkGrp" style="width:100%">
+				<option value=""></option>
+				<option value="--">--</option>
+				<option value="filter1" >--非工卡站</option>
+				<option value="filter2" >--非工卡站及三大组</option>
+				<!--option value="NULL" %="NULL".equals(curWorkGrp) ? "selected=\"selected\"" : "" %>>--</option-->
+			
+				<option value="HM_TPG">机电工艺组</option>
+			
+				<option value="CABIN_TPG">客舱车间工艺组</option>
+			
+				<option value="STR_TPG">结构车间工艺组</option>
+			
+				<option value="A_CHK_TPG">航三A检工艺组</option>
+			
+				<option value="ENG_SUP">工程支援</option>
+			
+				<option value="PP">生产计划</option>
+			
+				<option value="ENG_STR">工程结构</option>
+			
+				<option value="AV">AV</option>
+			
+				<option value="QC">检验</option>
+			
+				<option value="BOOTH">工卡站</option>
+			
+				<option value="ENG_AV">工程电子</option>
+			
+				<option value="ENG_ENG">工程发动机</option>
+			
+				<option value="ENG_SD">工程软件组</option>
+			
+				<option value="LM1 ME">空客窄体机电</option>
+			
+				<option value="LM2 ME">波音窄体机电</option>
+			
+				<option value="LM3 EMB ME">航三国产民机维护机电</option>
+			
+				<option value="LM3 CABIN">航三客舱</option>
+			
+				<option value="HM3_ENG">大修三发动机</option>
+			
+				<option value="PMA">PMA</option>
+			
+				<option value="DMDOR">DMDOR</option>
+			
+				<option value="MOCC PPC1">MOCC动态</option>
+			
+				<option value="MOCC PPC2">MOCC静态</option>
+			
+				<option value="LM2 AV">波音窄体电子</option>
+			
+				<option value="LM1 AV">空客窄体电子</option>
+			
+				<option value="LM3 EMB AV">航三国产民机维护电子</option>
+			
+				<option value="LM3 FAST ME">航三外航机电</option>
+			
+				<option value="3_CABIN_TPG">三部客舱工艺</option>
+			
+				<option value="3_STR_TPG">CRC复合材料</option>
+			
+				<option value="PAT_TPG">综合维修工艺</option>
+			
+				<option value="LM5">航一跟机</option>
+			
+				<option value="LM6 ME">航三A检机电</option>
+			
+				<option value="PVG ME">上海外站机电</option>
+			
+				<option value="PVG AV">上海外站电子</option>
+			
+				<option value="LM6 AV">航三A检电子</option>
+			
+				<option value="NDT">NDT</option>
+			
+				<option value="MOCC BOOTH">MOCC工卡站</option>
+			
+				<option value="ENG_FTM">工程FTM</option>
+			
+				<option value="CQ_ENG_SUP">CQ MOCC工程</option>
+			
+				<option value="CQ_LM_G1">CQ维修一组</option>
+			
+				<option value="CQ_LM_G2">CQ维修二组</option>
+			
+				<option value="CQ_LM_G3">CQ维修三组</option>
+			
+				<option value="CQ_LM_G4">CQ维修四班</option>
+			
+				<option value="CQ_LM_CABIN">CQ航线客舱</option>
+			
+				<option value="CQ_MOCC_PP">CQ计划</option>
+			
+				<option value="CQ_LM_G5">CQ维修五组</option>
+			
+				<option value="ENG_CABIN">工程客舱</option>
+			
+				<option value="LM4 ME">航三联邦机电</option>
+			
+				<option value="LM4 AV">航三联邦电子</option>
+			
+				<option value="LM8 ME">空客宽体机电</option>
+			
+				<option value="LM8 AV">空客宽体电子</option>
+			
+				<option value="DMPF">改装自制件</option>
+			
+				<option value="APF">飞机零部件加工</option>
+			
+				<option value="AUS MEL">墨尔本</option>
+			
+				<option value="AUS SYD">悉尼</option>
+			
+				<option value="ANZ AKL">奥克兰</option>
+			
+				<option value="CQ_GSE">CQ特种车队</option>
+			
+				<option value="LM7 AV">波音宽体电子</option>
+			
+				<option value="LM7 ME">波音宽体机电</option>
+			
+				<option value="NAC">CRC工程</option>
+			
+				<option value="HM4_STR_TPG">HM4技术处结构组</option>
+			
+				<option value="HM4_SYS_TPG">HM4系统工艺组</option>
+			
+				<option value="ARJ_CNV">ARJ客改货项目组</option>
+			
+			</select>
+		</td> 
+		<td>方案编写组：</td>
+		<td>
+			<select name="schemeGrp" style="width:100%">
+				<option value=""></option>
+				<option value="--">--</option>
+				<!--option value="NULL" %="NULL".equals(schemeGrp) ? "selected=\"selected\"" : "" %>>--</option-->
+			
+				<option value="HM_TPG">机电工艺组</option>
+			
+				<option value="CABIN_TPG">客舱车间工艺组</option>
+			
+				<option value="STR_TPG">结构车间工艺组</option>
+			
+				<option value="A_CHK_TPG">航三A检工艺组</option>
+			
+				<option value="ENG_SUP">工程支援</option>
+			
+				<option value="PP">生产计划</option>
+			
+				<option value="ENG_STR">工程结构</option>
+			
+				<option value="AV">AV</option>
+			
+				<option value="QC">检验</option>
+			
+				<option value="BOOTH">工卡站</option>
+			
+				<option value="ENG_AV">工程电子</option>
+			
+				<option value="ENG_ENG">工程发动机</option>
+			
+				<option value="ENG_SD">工程软件组</option>
+			
+				<option value="LM1 ME">空客窄体机电</option>
+			
+				<option value="LM2 ME">波音窄体机电</option>
+			
+				<option value="LM3 EMB ME">航三国产民机维护机电</option>
+			
+				<option value="LM3 CABIN">航三客舱</option>
+			
+				<option value="HM3_ENG">大修三发动机</option>
+			
+				<option value="PMA">PMA</option>
+			
+				<option value="DMDOR">DMDOR</option>
+			
+				<option value="MOCC PPC1">MOCC动态</option>
+			
+				<option value="MOCC PPC2">MOCC静态</option>
+			
+				<option value="LM2 AV">波音窄体电子</option>
+			
+				<option value="LM1 AV">空客窄体电子</option>
+			
+				<option value="LM3 EMB AV">航三国产民机维护电子</option>
+			
+				<option value="LM3 FAST ME">航三外航机电</option>
+			
+				<option value="3_CABIN_TPG">三部客舱工艺</option>
+			
+				<option value="3_STR_TPG">CRC复合材料</option>
+			
+				<option value="PAT_TPG">综合维修工艺</option>
+			
+				<option value="LM5">航一跟机</option>
+			
+				<option value="LM6 ME">航三A检机电</option>
+			
+				<option value="PVG ME">上海外站机电</option>
+			
+				<option value="PVG AV">上海外站电子</option>
+			
+				<option value="LM6 AV">航三A检电子</option>
+			
+				<option value="NDT">NDT</option>
+			
+				<option value="MOCC BOOTH">MOCC工卡站</option>
+			
+				<option value="ENG_FTM">工程FTM</option>
+			
+				<option value="CQ_ENG_SUP">CQ MOCC工程</option>
+			
+				<option value="CQ_LM_G1">CQ维修一组</option>
+			
+				<option value="CQ_LM_G2">CQ维修二组</option>
+			
+				<option value="CQ_LM_G3">CQ维修三组</option>
+			
+				<option value="CQ_LM_G4">CQ维修四班</option>
+			
+				<option value="CQ_LM_CABIN">CQ航线客舱</option>
+			
+				<option value="CQ_MOCC_PP">CQ计划</option>
+			
+				<option value="CQ_LM_G5">CQ维修五组</option>
+			
+				<option value="ENG_CABIN">工程客舱</option>
+			
+				<option value="LM4 ME">航三联邦机电</option>
+			
+				<option value="LM4 AV">航三联邦电子</option>
+			
+				<option value="LM8 ME">空客宽体机电</option>
+			
+				<option value="LM8 AV">空客宽体电子</option>
+			
+				<option value="DMPF">改装自制件</option>
+			
+				<option value="APF">飞机零部件加工</option>
+			
+				<option value="AUS MEL">墨尔本</option>
+			
+				<option value="AUS SYD">悉尼</option>
+			
+				<option value="ANZ AKL">奥克兰</option>
+			
+				<option value="CQ_GSE">CQ特种车队</option>
+			
+				<option value="LM7 AV">波音宽体电子</option>
+			
+				<option value="LM7 ME">波音宽体机电</option>
+			
+				<option value="NAC">CRC工程</option>
+			
+				<option value="HM4_STR_TPG">HM4技术处结构组</option>
+			
+				<option value="HM4_SYS_TPG">HM4系统工艺组</option>
+			
+				<option value="ARJ_CNV">ARJ客改货项目组</option>
+			
+			</select>
+		</td>
+		<td>编写者：</td>
+		<td>
+			<input type="text" name="txtUpdatedBy" id="txtUpdatedBy" value="" style="width:100%" />
+		</td>
+		<td>含危险品：</td>
+		<td>
+			<select id="txtDangerousCargoId" name="txtDangerousCargo">
+				<option value="">ALL</option>
+				<option value="N">N</option>
+				<option value="Y">Y</option>
+			</select>
+		</td>
+	</tr>
+	<tr bgcolor="#FFFFFF">
+		<td>阶段：</td>
+		<td colspan="2">
+			<select name="txtSchedPhase" style="width:100%">
+				<option value=""></option>
+				<option value="--">--</option>
+				<!--option value="NULL" %="NULL".equals(txtSchedPhase) ? "selected=\"selected\"" : ""%>>--</option-->
+			
+				<option value="阶段1-进机位前的清洁、检查、测试">阶段1-进机位前的清洁、检查、测试</option>
+			
+				<option value="阶段2-打开、拆卸">阶段2-打开、拆卸</option>
+			
+				<option value="阶段2-清洁">阶段2-清洁</option>
+			
+				<option value="阶段2-检查">阶段2-检查</option>
+			
+				<option value="阶段2-修理">阶段2-修理</option>
+			
+				<option value="阶段2-复杂改装">阶段2-复杂改装</option>
+			
+				<option value="阶段2-勤务">阶段2-勤务</option>
+			
+				<option value="阶段2-恢复">阶段2-恢复</option>
+			
+				<option value="阶段3-顶飞机的检查">阶段3-顶飞机的检查</option>
+			
+				<option value="阶段4-通电测试">阶段4-通电测试</option>
+			
+				<option value="阶段5-通电、通液压测试（通用）">阶段5-通电、通液压测试（通用）</option>
+			
+				<option value="阶段5-须气源车的测试">阶段5-须气源车的测试</option>
+			
+				<option value="阶段5-须液压车的测试">阶段5-须液压车的测试</option>
+			
+				<option value="阶段5-须顶飞机的测试">阶段5-须顶飞机的测试</option>
+			
+				<option value="阶段6-离机位检查、测试、恢复">阶段6-离机位检查、测试、恢复</option>
+			
+				<option value="阶段7-试车及排故">阶段7-试车及排故</option>
+			
+				<option value="阶段8-按需的试飞、终检">阶段8-按需的试飞、终检</option>
+			
+			</select>
+		</td>
+		<td>区域：</td>
+		<td colspan="2">
+			<select name="txtSchedZone" style="width:100%">
+				<option value=""></option>
+			
+				<option value="电子舱(主)">电子舱(主)</option>
+			
+				<option value="前电子舱">前电子舱</option>
+			
+				<option value="后电子舱">后电子舱</option>
+			
+				<option value="主电子舱">主电子舱</option>
+			
+				<option value="侧电子舱">侧电子舱</option>
+			
+				<option value="货舱(主)">货舱(主)</option>
+			
+				<option value="前货舱">前货舱</option>
+			
+				<option value="后货舱">后货舱</option>
+			
+				<option value="散货舱">散货舱</option>
+			
+				<option value="机下(主)">机下(主)</option>
+			
+				<option value="空调舱">空调舱</option>
+			
+				<option value="龙骨梁">龙骨梁</option>
+			
+				<option value="下部机身">下部机身</option>
+			
+				<option value="机上(主)">机上(主)</option>
+			
+				<option value="驾驶舱">驾驶舱</option>
+			
+				<option value="客舱">客舱</option>
+			
+				<option value="上部机身">上部机身</option>
+			
+				<option value="上部客舱">上部客舱</option>
+			
+				<option value="主货舱">主货舱</option>
+			
+				<option value="尾部(主)">尾部(主)</option>
+			
+				<option value="APU及舱">APU及舱</option>
+			
+				<option value="尾舱">尾舱</option>
+			
+				<option value="水平安定面">水平安定面</option>
+			
+				<option value="垂直安定面">垂直安定面</option>
+			
+				<option value="配平油箱">配平油箱</option>
+			
+				<option value="发动机及吊架(主)">发动机及吊架(主)</option>
+			
+				<option value="左发">左发</option>
+			
+				<option value="右发">右发</option>
+			
+				<option value="左吊架/吊舱">左吊架/吊舱</option>
+			
+				<option value="右吊架/吊舱">右吊架/吊舱</option>
+			
+				<option value="1#发动机">1#发动机</option>
+			
+				<option value="2#发动机">2#发动机</option>
+			
+				<option value="3#发动机">3#发动机</option>
+			
+				<option value="4#发动机">4#发动机</option>
+			
+				<option value="1#吊架/吊舱">1#吊架/吊舱</option>
+			
+				<option value="2#吊架/吊舱">2#吊架/吊舱</option>
+			
+				<option value="3#吊架/吊舱">3#吊架/吊舱</option>
+			
+				<option value="4#吊架/吊舱">4#吊架/吊舱</option>
+			
+				<option value="大翼(主)">大翼(主)</option>
+			
+				<option value="左大翼(主)">左大翼(主)</option>
+			
+				<option value="左大翼前缘">左大翼前缘</option>
+			
+				<option value="左大翼油箱">左大翼油箱</option>
+			
+				<option value="左大翼后缘">左大翼后缘</option>
+			
+				<option value="右大翼(主)">右大翼(主)</option>
+			
+				<option value="右大翼前缘">右大翼前缘</option>
+			
+				<option value="右大翼油箱">右大翼油箱</option>
+			
+				<option value="右大翼后缘">右大翼后缘</option>
+			
+				<option value="中央翼">中央翼</option>
+			
+				<option value="中央翼盒">中央翼盒</option>
+			
+				<option value="中央油箱">中央油箱</option>
+			
+				<option value="大翼/机身整流罩(主)">大翼/机身整流罩(主)</option>
+			
+				<option value="起落架(主)">起落架(主)</option>
+			
+				<option value="前起落架">前起落架</option>
+			
+				<option value="前轮舱">前轮舱</option>
+			
+				<option value="左主起落架">左主起落架</option>
+			
+				<option value="左主轮舱">左主轮舱</option>
+			
+				<option value="右主起落架">右主起落架</option>
+			
+				<option value="右主轮舱">右主轮舱</option>
+			
+				<option value="左机身起落架">左机身起落架</option>
+			
+				<option value="左机身起落架轮舱">左机身起落架轮舱</option>
+			
+				<option value="右机身起落架">右机身起落架</option>
+			
+				<option value="右机身起落架轮舱">右机身起落架轮舱</option>
+			
+				<option value="左大翼起落架">左大翼起落架</option>
+			
+				<option value="左大翼起落架轮舱">左大翼起落架轮舱</option>
+			
+				<option value="右大翼起落架">右大翼起落架</option>
+			
+				<option value="右大翼起落架轮舱">右大翼起落架轮舱</option>
+			
+				<option value="门(主)">门(主)</option>
+			
+				<option value="客舱门">客舱门</option>
+			
+				<option value="应急出口">应急出口</option>
+			
+				<option value="驾驶舱门">驾驶舱门</option>
+			
+				<option value="主舱门">主舱门</option>
+			
+				<option value="前货舱门">前货舱门</option>
+			
+				<option value="后货舱门">后货舱门</option>
+			
+				<option value="散货舱门">散货舱门</option>
+			
+				<option value="SHOP(主)">SHOP(主)</option>
+			
+				<option value="座椅">座椅</option>
+			
+				<option value="天行侧">天行侧</option>
+			
+				<option value="厨卫">厨卫</option>
+			
+				<option value="内饰">内饰</option>
+			
+			</select>
+		</td> 
+		<td>工种：</td>
+		<td>
+			<input type="text" name="txtLaborCode" onfocus="multipleSelect(this,140,240,'--,--,COMP,CRC复合材料,MCH,CRC机加工,NAC,CRC金工,CRCPT,CRC喷漆,SPEC TR,CRC特种处理,CRCZP,CRC装配,PMC-3D,PMC-3D打印,PMC-CNC,PMC-CNC下料,PMC-CRC焊接,PMC-CRC焊接,PMC-SM,PMC-钣金加工,PMC-TAG,PMC-标牌制作,PMC-SEW,PMC-缝纫,PMC-COMP,PMC-复合材料,PMC-MCH,PMC-机加工,PMC-PT,PMC-喷漆,PMC-SPE,PMC-特种处理,PMC-EXA,PMC-外协,PMC-BLI,PMC-吸塑,PMC-INM,PMC-注塑,PMC-ASSE,PMC-装配,WIP,WIP,AKL,奥克兰,FAC,厂房设施,AVIO,电子,ENG,发动机,BSI,发动机孔探,ENGINEER,工程师,ENGINEER-AVIO,工艺工程师-电子,ENGINEER-AIRP,工艺工程师-机电,ENGINEER-TRIM,工艺工程师-机上,ENGINEER-STR,工艺工程师-结构,LM-AVIO,航线电子,LM-AIRP,航线机电,AIRP,机电,AIRP-WING,机电-大翼,AIRP-ENG,机电-发动机,AIRP-UPR,机电-机上,AIRP-LOW,机电-机下,AIRP-GEAR,机电-起落架,AIRP-TAIL,机电-尾部,TRIM,机上,PP,计划,INSP,检验,S/M,金工,CABIN_PNT,客舱漆工,PC,控制,MEL,墨尔本,DST,配送,PNT,漆工,CLN,清洁,HM3_S/M,三部金工,HM3_CABIN,三部客舱,NDT,无损探伤,SYD,悉尼,SYS,系统',true)" 
+					readonly="readonly" style="width: 100%"/>
+		</td>
+		<td>收发方式：</td>
+		<td>
+			<select name="txtTransferMode" style="width:50%">
+				<option value=""></option>
+				<option value="I">发</option>
+				<option value="R">收</option>
+			</select>
+		</td>
+	</tr>
+	<tr bgcolor="#FFFFFF">
+		<td>ME未上传：</td>
+		<td>
+			<select name="txtme_unUpload" style="width:100%">
+				<option value=""></option>
+				<option value="Y">Y</option>
+				<option value="N">N</option>
+			</select>
+		</td>
+		<td>检验级别：</td>
+		<td>
+			<select name="txtRii" style="width:100%">
+				<option value="">ALL</option>
+				<option value="NULL"></option>
+				<option value="Y">Y</option>
+				<option value="N">N</option>
+				<option value="A">A</option>
+				<option value="B">B</option>
+				<option value="C">C</option>
+			</select>
+		</td>
+		<td>航材状态：</td>
+		<td>
+			<select name="txtMatStatus" style="width:100%">
+				<option value="">ALL</option>
+				<option value="NULL">不需</option>
+				<option value="Y">有件</option>
+				<option value="N">缺件</option>
+			</select>
+		</td>
+		<td>快速检索：</td>
+		<td>
+			<select name="txtFilterTrace" style="width:100%">
+				<option value=""></option>
+				<option value="neverTrace">从未交接的非例卡</option>
+				<option value="modifyUnTrace">修订后未交接的非例卡</option>
+				<option value="arrangedUnTrace">已安排工作的未交接非例卡</option>
+				<option value="noPlanUnTrace">无方案也未交接的非例卡</option>
+			</select>
+		</td>
+		<td>串件：</td>
+		<td>
+			<select id="txtJcRobId" name="txtJcRob">
+				<option value="">ALL</option>
+				<option value="N">非串件</option>
+				<option value="Y">串件</option>
+			</select>
+		</td>
+	</tr>
+	<tr bgcolor="#FFFFFF">
+	<td>预计收回日期：</td>
+		<td>
+			<input type="text" name="txtPrDateStart" onfocus="selectDate(this)" value="" style="width:35%">
+			至
+			<input type="text" name="txtPrDateEnd" onfocus="selectDate(this)" value="" style="width:35%">
+		</td>
+		<td>接卡工种：</td>
+		<td>
+			<select name="txtRTrade" style="width:100%">
+			
+				<option value=""></option>
+			
+				<option value="--">--</option>
+			
+				<option value="COMP">CRC复合材料</option>
+			
+				<option value="MCH">CRC机加工</option>
+			
+				<option value="NAC">CRC金工</option>
+			
+				<option value="CRCPT">CRC喷漆</option>
+			
+				<option value="SPEC TR">CRC特种处理</option>
+			
+				<option value="CRCZP">CRC装配</option>
+			
+				<option value="PMC-3D">PMC-3D打印</option>
+			
+				<option value="PMC-CNC">PMC-CNC下料</option>
+			
+				<option value="PMC-CRC焊接">PMC-CRC焊接</option>
+			
+				<option value="PMC-SM">PMC-钣金加工</option>
+			
+				<option value="PMC-TAG">PMC-标牌制作</option>
+			
+				<option value="PMC-SEW">PMC-缝纫</option>
+			
+				<option value="PMC-COMP">PMC-复合材料</option>
+			
+				<option value="PMC-MCH">PMC-机加工</option>
+			
+				<option value="PMC-PT">PMC-喷漆</option>
+			
+				<option value="PMC-SPE">PMC-特种处理</option>
+			
+				<option value="PMC-EXA">PMC-外协</option>
+			
+				<option value="PMC-BLI">PMC-吸塑</option>
+			
+				<option value="PMC-INM">PMC-注塑</option>
+			
+				<option value="PMC-ASSE">PMC-装配</option>
+			
+				<option value="WIP">WIP</option>
+			
+				<option value="AKL">奥克兰</option>
+			
+				<option value="FAC">厂房设施</option>
+			
+				<option value="AVIO">电子</option>
+			
+				<option value="ENG">发动机</option>
+			
+				<option value="BSI">发动机孔探</option>
+			
+				<option value="ENGINEER">工程师</option>
+			
+				<option value="ENGINEER-AVIO">工艺工程师-电子</option>
+			
+				<option value="ENGINEER-AIRP">工艺工程师-机电</option>
+			
+				<option value="ENGINEER-TRIM">工艺工程师-机上</option>
+			
+				<option value="ENGINEER-STR">工艺工程师-结构</option>
+			
+				<option value="LM-AVIO">航线电子</option>
+			
+				<option value="LM-AIRP">航线机电</option>
+			
+				<option value="AIRP">机电</option>
+			
+				<option value="AIRP-WING">机电-大翼</option>
+			
+				<option value="AIRP-ENG">机电-发动机</option>
+			
+				<option value="AIRP-UPR">机电-机上</option>
+			
+				<option value="AIRP-LOW">机电-机下</option>
+			
+				<option value="AIRP-GEAR">机电-起落架</option>
+			
+				<option value="AIRP-TAIL">机电-尾部</option>
+			
+				<option value="TRIM">机上</option>
+			
+				<option value="PP">计划</option>
+			
+				<option value="INSP">检验</option>
+			
+				<option value="S/M">金工</option>
+			
+				<option value="CABIN_PNT">客舱漆工</option>
+			
+				<option value="PC">控制</option>
+			
+				<option value="MEL">墨尔本</option>
+			
+				<option value="DST">配送</option>
+			
+				<option value="PNT">漆工</option>
+			
+				<option value="CLN">清洁</option>
+			
+				<option value="HM3_S/M">三部金工</option>
+			
+				<option value="HM3_CABIN">三部客舱</option>
+			
+				<option value="NDT">无损探伤</option>
+			
+				<option value="SYD">悉尼</option>
+			
+				<option value="SYS">系统</option>
+			
+			</select>
+		</td>
+		<td>交接人：</td>
+		<td>
+			<input type="text" name="txtHoldBy" id="txtHoldBy" value="" style="width:100%" />
+		</td>
+		<td>交接时间：</td>
+		<td colspan="3">
+			<input type="text" name="txtJcTransferDateStart" onfocus="selectDate(this)" value="" style="width:35%">至<input type="text" name="txtJcTransferDateEnd" onfocus="selectDate(this)" value="" style="width:35%">
+		</td>
+	</tr>
+	<tr bgcolor="#FFFFFF">
+		<td>工卡指令号：</td>
+		<td>
+			<input type="text" name="txtJcWorkorder" id="txtJcWorkorder" value="" style="width:100%" />
+		</td>
+		<td>方案要求期限：</td>
+		<td colspan="3">
+			<input type="text" name="txtSlnReqDateStart" onfocus="selectDate(this)" value="" style="width:35%">至<input type="text" name="txtSlnReqDateEnd" onfocus="selectDate(this)" value="" style="width:35%">
+		</td>
+		<td>是否新增工卡：</td>
+		<td>
+			<select id="txtFlagMpd" name="txtFlagMpd">
+				<option value="">ALL</option>
+				<option value="Y">Y</option>
+				<option value="N">N</option>
+			</select>
+		</td>
+		<td>特殊项目：</td>
+		<td>
+			<select id="txtFlagActive" name="txtFlagActive">
+				<option value="">ALL</option>
+				<option value="Y">Y</option>
+				<option value="N">N</option>
+			</select>
+		</td>
+	</tr>
+	<tr bgcolor="#FFFFFF">
+		<td>外表修理：</td>
+		<td>
+			<select id="txtExternalId" name="txtExternal" style="width:50%">
+				<option value="">ALL</option>
+				<option value="N">N</option>
+				<option value="Y">Y</option>
+			</select>
+		</td>
+		<td>外表损伤</td>
+		<td>
+			<select name="txtExteriorDamag" style="width:100%">
+				<option></option>
+				<option value="Y">Y</option>
+				<option value="N">N</option>
+			</select>
+		</td>
+		<td>重要修理/改装：</td>
+		<td>
+			<select id="txtMajorMdoId" name="txtMajorMdo" style="width:100%">
+				<option value="">ALL</option>
+				<option value="N">N</option>
+				<option value="Y">Y</option>
+			</select>
+		</td>
+		<td>超规范：</td>
+		<td>
+			<select id="txtOutOfManualId" name="txtOutOfManual">
+				<option value="">ALL</option>
+				<option value="N" >N</option>
+				<option value="Y" >Y</option>
+			</select>
+		</td> 
+		<td>结构修理：</td>
+		<td>
+			<select id="txtStrRepairId" name="txtStrRepair" style="width:100%">
+				<option value="">ALL</option>
+				<option value="N">N</option>
+				<option value="Y">Y</option>
+			</select>
+		</td>
+		</tr>
+		<tr bgcolor="#FFFFFF">
+		<td>重要结构件：</td>
+		<td>
+			<select id="txtPseId" name="txtPse" style="width:50%">
+				<option value="">ALL</option>
+				<option value="N">N</option>
+				<option value="Y">Y</option>
+			</select>
+		</td>
+		<td>FCS：</td>
+		<td>
+			<select id="txtFcsId" name="txtFcs" style="width:100%">
+				<option value="">ALL</option>
+				<option value="N">N</option>
+				<option value="Y">Y</option>
+			</select>
+		</td>
+		<td>结构修理起因：</td>
+		<td>
+			<select id="txtCauseStrrId" name="txtCauseStrr" style="width:100%">
+				<option value="">ALL</option>
+				<option value="损伤">损伤</option>
+				<option value="改装">改装</option>
+				<option value="NA">NA</option>
+			</select>
+		</td>
+		<td width="110px">涉及可更换结构件：</td>
+		<td>
+			<select id="txtRplStrPartId" name="txtRplStrPart" style="width:100%">
+				<option value="">ALL</option>
+				<option value="N">N</option>
+				<option value="Y">Y</option>
+			</select>
+		</td>
+		<td>QC章：</td>
+		<td>
+			<select name="txtQcStamp">
+				<option value="" ></option>
+				<option value="Y" >Y</option>
+				<option value="N" >N</option>
+			</select>
+			
+		</td>
+	</tr>
+	<tr id="GamEngTr" bgcolor="#FFFFFF" height="25px" style="display: none;">
+		<td>发动机件号：</td>
+		<td><span id="EngPnInfo"></span></td>
+		<td>发动机序号：</td>
+		<td><span id="EngSnInfo"></span></td>
+		<td>工作内容：</td>
+		<td><span id="EngSoDescInfo"></span></td>
+		<td>发动机客户：</td>
+		<td><span id="EngCutomerInfo"></span></td>
+		<td colspan="2"></td>
+	</tr>
+	<tr bgcolor="#FFFFFF">
+		<td>签封面工种：</td>
+		<td>
+			<select name="txtNmfTrade" style="width:50%">
+			
+				<option value=""></option>
+			
+				<option value="--">--</option>
+			
+				<option value="COMP">CRC复合材料</option>
+			
+				<option value="MCH">CRC机加工</option>
+			
+				<option value="NAC">CRC金工</option>
+			
+				<option value="CRCPT">CRC喷漆</option>
+			
+				<option value="SPEC TR">CRC特种处理</option>
+			
+				<option value="CRCZP">CRC装配</option>
+			
+				<option value="PMC-3D">PMC-3D打印</option>
+			
+				<option value="PMC-CNC">PMC-CNC下料</option>
+			
+				<option value="PMC-CRC焊接">PMC-CRC焊接</option>
+			
+				<option value="PMC-SM">PMC-钣金加工</option>
+			
+				<option value="PMC-TAG">PMC-标牌制作</option>
+			
+				<option value="PMC-SEW">PMC-缝纫</option>
+			
+				<option value="PMC-COMP">PMC-复合材料</option>
+			
+				<option value="PMC-MCH">PMC-机加工</option>
+			
+				<option value="PMC-PT">PMC-喷漆</option>
+			
+				<option value="PMC-SPE">PMC-特种处理</option>
+			
+				<option value="PMC-EXA">PMC-外协</option>
+			
+				<option value="PMC-BLI">PMC-吸塑</option>
+			
+				<option value="PMC-INM">PMC-注塑</option>
+			
+				<option value="PMC-ASSE">PMC-装配</option>
+			
+				<option value="WIP">WIP</option>
+			
+				<option value="AKL">奥克兰</option>
+			
+				<option value="FAC">厂房设施</option>
+			
+				<option value="AVIO">电子</option>
+			
+				<option value="ENG">发动机</option>
+			
+				<option value="BSI">发动机孔探</option>
+			
+				<option value="ENGINEER">工程师</option>
+			
+				<option value="ENGINEER-AVIO">工艺工程师-电子</option>
+			
+				<option value="ENGINEER-AIRP">工艺工程师-机电</option>
+			
+				<option value="ENGINEER-TRIM">工艺工程师-机上</option>
+			
+				<option value="ENGINEER-STR">工艺工程师-结构</option>
+			
+				<option value="LM-AVIO">航线电子</option>
+			
+				<option value="LM-AIRP">航线机电</option>
+			
+				<option value="AIRP">机电</option>
+			
+				<option value="AIRP-WING">机电-大翼</option>
+			
+				<option value="AIRP-ENG">机电-发动机</option>
+			
+				<option value="AIRP-UPR">机电-机上</option>
+			
+				<option value="AIRP-LOW">机电-机下</option>
+			
+				<option value="AIRP-GEAR">机电-起落架</option>
+			
+				<option value="AIRP-TAIL">机电-尾部</option>
+			
+				<option value="TRIM">机上</option>
+			
+				<option value="PP">计划</option>
+			
+				<option value="INSP">检验</option>
+			
+				<option value="S/M">金工</option>
+			
+				<option value="CABIN_PNT">客舱漆工</option>
+			
+				<option value="PC">控制</option>
+			
+				<option value="MEL">墨尔本</option>
+			
+				<option value="DST">配送</option>
+			
+				<option value="PNT">漆工</option>
+			
+				<option value="CLN">清洁</option>
+			
+				<option value="HM3_S/M">三部金工</option>
+			
+				<option value="HM3_CABIN">三部客舱</option>
+			
+				<option value="NDT">无损探伤</option>
+			
+				<option value="SYD">悉尼</option>
+			
+				<option value="SYS">系统</option>
+			
+			</select>
+		</td>
+		<td>禁止签署：</td>
+		<td>
+			<select name="txtForbidEsign" style="width:100%">
+				<option value=""></option>
+				<option value="Y" >Y</option>
+			</select>
+		</td>
+		<td>签封面：</td>
+		<td>
+			<select name="txtFedexAmtStamp" style="width:100%">
+				<option value=""></option>
+				<option value="Y" >Y</option>
+				<option value="N" >N</option>
+			</select>
+		</td>
+		<td>收费原因：</td>
+		<td>
+			<input type="text" name="txtFeeRemark" id="txtFeeRemark"  style="width:100%" />
+		</td>
+		<td>收费：</td>
+		<td>
+			<select name="txtFlagFee" style="width:100%">
+				<option value=""></option>
+				<option value="Y">Y</option>
+				<option value="N">N</option>
+			</select>
+		</td>
+	</tr>
+	<tr bgcolor="#FFFFFF">
+		<td>开卡人：</td>
+		<td>
+			<input type="text" name="txtInspector" id="txtInspector" style="width:100%" />
+		</td>
+		<td colspan="8"></td>
+	</tr>
+	<!-- 三步客舱工艺 -->
+	
+</table>
+<table width="100%" border="0" align="center" cellpadding="2" cellspacing="1" height="40">
+	<tr bgcolor="#FFFFFF">
+		<td align="center">
+			<!--input type="button" name="btnSel" id="btnSelId" value="查  询" onclick="return onSubmit()"-->
+			<input type="submit" name="btnSel" id="btnSelId" value="查  询">
+		</td>
+	</tr>
+</table>
+</form>
+<div id=\"choose_detail\"></div>
+<script language=javascript>
+
+//根据机尾号获取指令
+function getWorkorder(obj)
+{
+	var fullReg = $(obj);				// 飞机号
+	var workOrder = $("#qWorkorder");	// 指令号
+	
+	if ($.trim(fullReg.val()).length<4)
+	{
+		return false;
+	}
+	
+	$.getJSON("ajax/getWorkorderInfo.jsp?txtFullReg="+encodeURI(encodeURI(fullReg.val()))+"&jsoncallback=?", function(data)
+	{
+		// 有值显示指令号列表
+		if(data.length>0)
+		{
+			showWOMessage(data);
+		}
+		// 没值清空相关信息
+		else
+		{
+			clearValue(obj);
+			//setValue("","","","",fullReg.val());
+		}
+	});
+}
+
+//清理旧的查询信息
+function clearValue(obj)
+{
+	var fullReg = $(obj);				// 飞机号
+	$("#txtFullReg").attr("value",fullReg.val());
+	$("#qWorkorder").attr("value","");
+	$("#txtActual_TailNo").attr("value","");
+	$("#txtVisit_Desc").attr("value","");
+	$("#txtFlight_Check_No").attr("value","");
+	$("#EngPnInfo").html("");
+	$("#EngSnInfo").html("");
+	$("#EngCutomerInfo").html("");
+	$("#EngSoDescInfo").html("");
+}
+
+function setValue(workorder,actual_no,visit_desc,flight_check_no,tail_no,engPn,engSn,engCustomer,engSoDesc)
+{
+	$("#txtFullReg").attr("value",tail_no);
+	$("#qWorkorder").attr("value",workorder);
+	$("#txtActual_TailNo").attr("value",actual_no);
+	$("#txtVisit_Desc").attr("value",visit_desc);
+	$("#txtFlight_Check_No").attr("value",flight_check_no);
+	
+	$("#EngPnInfo").html(engPn);
+	$("#EngSnInfo").html(engSn);
+	$("#EngCutomerInfo").html(engCustomer);
+	$("#EngSoDescInfo").html(engSoDesc);
+	
+	$('.uniq_win').window('close');							//关闭工作指令号提示框
+}
+//弹出选择多个指令的对话框
+function showWOMessage(data)
+{
+	var addTable='<div class=\"uniq_win\"><br><table align=\"center\" valign=\"middle\"><tr><td><b>'+"机尾号"+
+				 '</b>&nbsp;&nbsp;</td><td><b>'+"工作指令号"+'</b>&nbsp;&nbsp;</td><td><b>'+"定检级别"+'</b></td></tr>';
+	var addTr = "";
+	
+	var tailNo = "";
+	$.each(data, function(i, n)
+	{
+		tailNo = n.reg;
+		addTr += '<tr><td colspan=\"3\"><a href=\"#\" onclick=\"setValue('+n.wo+',\''+n.act+'\',\''+n.des+'\',\''+n.ml+'\',\''+n.reg+'\',\''+n.engPn+'\',\''+n.engSn+'\',\''+n.engCustomer+'\',\''+n.engSoDesc+'\')\">'+n.reg+'&nbsp;&nbsp;&nbsp;'+n.wo+
+				 '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'+n.ml+'</a></td></tr>';
+		
+	});
+	
+	addTable = addTable + addTr +'</table><br></div>';
+	
+	if("GAM-ENG"==tailNo){
+		var addTableEng = '<div class=\"uniq_win\"><br><table align=\"center\" valign=\"middle\"><tr><td width="16%"><b>'+"机尾号"+
+		 '</b></td><td width="26%"><b>'+"工作指令号"+'</b></td><td width="17%"><b>'+"定检级别"+'</b></td><td width="20%">&nbsp;&nbsp;<b>'+"发动机序号"+'</b></td><td>&nbsp;&nbsp;<b>'+"工作内容"+'</b></td></tr>';
+		var addTrEng = "";
+		 $.each(data, function(i, n)
+		{
+			addTrEng += '<tr><td colspan=\"7\"><a href=\"#\" onclick=\"setValue('+n.wo+',\''+n.act+'\',\''+n.des+'\',\''+n.ml+'\',\''+n.reg+'\',\''+n.engPn+'\',\''+n.engSn+'\',\''+n.engCustomer+'\',\''+n.engSoDesc+'\')\">'+n.reg+'&nbsp;&nbsp;&nbsp;&nbsp;'+n.wo+
+					 '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'+n.ml+'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="width:15%;text-decoration: none;cursor: pointer;">'+n.engSn+'</span>&nbsp;&nbsp;&nbsp;'+n.engSoDesc+'</a></td></tr>';
+			
+		});
+		addTableEng = addTableEng + addTrEng +'</table><br></div>';
+		$("#GamEngTr").css("display","");
+		showWin(addTableEng,"请选择工作指令号",550);
+	}else{
+		$("#GamEngTr").css("display","none");
+		showWin(addTable,"请选择工作指令号",300);
+	}
+}
+// 弹出窗体
+function showWin(obj,title,winWidth)
+{
+	$(obj).window
+	({
+		width:winWidth,					//窗口宽度
+		top:($(window).height()/2)*0.5,	//高居中
+		left:($(window).width()/2)*0.5,	//宽居中
+		collapsible:false,				//不显示折叠按钮
+		minimizable:false,				//不显示最小化按钮
+		maximizable:false,				//不显示最大化按钮
+		resizable:true,					//窗口可否调整尺寸
+		title:title,					//窗口标题
+		modal:true						//模态窗口即背后页面不可操作
+	});
+}
+function doSubmit()
+{
+	var workOrder = $("#qWorkorder");
+	var re = new RegExp("^[0-9]+$");
+	if($.trim(workOrder.val())=="")
+	{
+		alert("工作指令 不能为空!");
+		workOrder.focus();
+		return false;
+	}
+	if(!re.test($.trim(workOrder.val())))
+	{
+		alert("工作指令 请输入数字!");
+		workOrder.select();
+		return false;
+	}
+	__CP_SET_URL_ATT__(document.form,'action', "checkData.jsp?from=manage");
+	//document.form.submit();
+	//document.form.action = "";
+	
+	$("#btnSelId").attr("disabled","disabled");
+	return true;
+}
+</script>
+</BODY>
+</HTML>
+

@@ -23,3 +23,11 @@ node_modules\
 *.db-wal
 *.db-shm
 
+<<<<<<< HEAD
+=======
+
+
+
+
+
+>>>>>>> 402c441e3fd253d1f69a17a4dd0efd6233d24c8b

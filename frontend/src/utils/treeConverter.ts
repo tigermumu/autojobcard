@@ -24,12 +24,19 @@ export function flatToTree(data: IndexData[]): TreeNode[] {
   const result: TreeNode[] = []
 
   // 按层级顺序处理数据
-  const sortedData = data.sort((a, b) => 
-    a.main_area.localeCompare(b.main_area) ||
-    a.main_component.localeCompare(b.main_component) ||
-    a.first_level_subcomponent.localeCompare(b.first_level_subcomponent) ||
-    a.second_level_subcomponent.localeCompare(b.second_level_subcomponent)
-  )
+  const sortedData = data.sort((a, b) => {
+    // Helper function to safely compare strings (handle null/undefined)
+    const safeCompare = (a: string | null | undefined, b: string | null | undefined): number => {
+      const aStr = (a || '').toString()
+      const bStr = (b || '').toString()
+      return aStr.localeCompare(bStr)
+    }
+    
+    return safeCompare(a.main_area, b.main_area) ||
+           safeCompare(a.main_component, b.main_component) ||
+           safeCompare(a.first_level_subcomponent, b.first_level_subcomponent) ||
+           safeCompare(a.second_level_subcomponent, b.second_level_subcomponent)
+  })
 
   for (const item of sortedData) {
     // 主区域

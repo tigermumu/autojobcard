@@ -4,17 +4,17 @@ from logging.config import fileConfig
 import os
 import sys
 
-# 添加项目根目录到Python路径
+# Add project root to Python path
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from app.core.database import Base
-from app.models import *  # 导入所有模型
+from app.models import *  # Import all models
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
 
-# 优先使用环境变量中的 DATABASE_URL，如果没有则使用配置文件
+# Prefer DATABASE_URL from environment variables, otherwise use config file
 database_url = os.getenv("DATABASE_URL")
 if database_url:
     config.set_main_option("sqlalchemy.url", database_url)
@@ -73,7 +73,9 @@ def run_migrations_online() -> None:
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata
+            connection=connection,
+            target_metadata=target_metadata,
+            render_as_batch=True  # Enable batch mode for SQLite support
         )
 
         with context.begin_transaction():

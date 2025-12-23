@@ -197,6 +197,66 @@ export const defectApi = {
   deleteDefectRecord: async (defect_record_id: number): Promise<any> => {
     return apiClient.delete(`/defects/records/${defect_record_id}`)
   },
+
+  // 删除缺陷清单（及其关联数据）
+  deleteDefectList: async (defect_list_id: number): Promise<any> => {
+    return apiClient.delete(`/defects/lists/${defect_list_id}`)
+  },
+
+  // 标记匹配错误：删除该缺陷记录的所有候选工卡，使其进入未匹配状态
+  markMatchingError: async (defect_record_id: number): Promise<any> => {
+    return apiClient.post(`/matching/defect/${defect_record_id}/mark-matching-error`)
+  },
+
+  // 获取处理状态
+  getProcessingStatus: async (defect_list_id: number): Promise<any> => {
+    return apiClient.get(`/defects/lists/${defect_list_id}/processing-status`)
+  },
+
+  // 导出清洗后的数据
+  exportCleanedData: async (defect_list_id: number): Promise<void> => {
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'
+    const response = await fetch(`${API_BASE_URL}/defects/lists/${defect_list_id}/export-cleaned`, {
+      method: 'GET',
+    })
+    if (!response.ok) {
+      throw new Error('导出失败')
+    }
+    const blob = await response.blob()
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `清洗后的缺陷数据_${defect_list_id}.xlsx`
+    document.body.appendChild(a)
+    a.click()
+    window.URL.revokeObjectURL(url)
+    document.body.removeChild(a)
+  },
+
+  // 导出匹配结果
+  exportMatchedData: async (defect_list_id: number, configuration_id?: number): Promise<void> => {
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'
+    const params = new URLSearchParams()
+    if (configuration_id) {
+      params.append('configuration_id', configuration_id.toString())
+    }
+    const url = `${API_BASE_URL}/defects/lists/${defect_list_id}/export-matched${params.toString() ? '?' + params.toString() : ''}`
+    const response = await fetch(url, {
+      method: 'GET',
+    })
+    if (!response.ok) {
+      throw new Error('导出失败')
+    }
+    const blob = await response.blob()
+    const url2 = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url2
+    a.download = `匹配结果_${defect_list_id}.xlsx`
+    document.body.appendChild(a)
+    a.click()
+    window.URL.revokeObjectURL(url2)
+    document.body.removeChild(a)
+  },
 }
 
 

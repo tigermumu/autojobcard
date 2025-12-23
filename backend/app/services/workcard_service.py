@@ -12,6 +12,7 @@ import os
 import asyncio
 import json
 import logging
+from io import BytesIO
 
 class WorkCardService:
     def __init__(self, db: Session):
@@ -365,6 +366,191 @@ class WorkCardService:
         self.db.commit()
         self.db.refresh(workcard_type)
         return workcard_type
+
+    def export_workcards_to_excel(
+        self,
+        aircraft_number: Optional[str] = None,
+        aircraft_type: Optional[str] = None,
+        msn: Optional[str] = None,
+        amm_ipc_eff: Optional[str] = None,
+        configuration_id: Optional[int] = None
+    ):
+        """导出指定分组下的工卡数据到Excel"""
+        try:
+            # 获取该组下的所有工卡
+            workcards = self.get_workcards_by_group(
+                aircraft_number=aircraft_number,
+                aircraft_type=aircraft_type,
+                msn=msn,
+                amm_ipc_eff=amm_ipc_eff,
+                configuration_id=configuration_id
+            )
+            
+            if not workcards:
+                raise ValueError("该分组下没有工卡数据")
+            
+            # 准备Excel数据
+            excel_data = []
+            for item in workcards:
+                excel_data.append({
+                    '工卡指令号': item.workcard_number or '',
+                    '标题': item.title or '',
+                    '描述': item.description or '',
+                    '系统': item.system or '',
+                    '部件': item.component or '',
+                    '位置': item.location or '',
+                    '操作': item.action or '',
+                    '飞机号': item.aircraft_number or '',
+                    '机型': item.aircraft_type or '',
+                    'MSN': item.msn or '',
+                    'AMM/IPC EFF': item.amm_ipc_eff or '',
+                    '主区域': item.main_area or '',
+                    '主部件': item.main_component or '',
+                    '一级子部件': item.first_level_subcomponent or '',
+                    '二级子部件': item.second_level_subcomponent or '',
+                    '方位': item.orientation or '',
+                    '缺陷主体': item.defect_subject or '',
+                    '缺陷描述': item.defect_description or '',
+                    '位置索引': item.location_index or '',
+                    '数量': item.quantity or '',
+                    '是否已清洗': '是' if item.is_cleaned else '否',
+                    '清洗置信度': item.cleaning_confidence or 0,
+                    '清洗备注': item.cleaning_notes or '',
+                })
+            
+            # 创建DataFrame
+            df = pd.DataFrame(excel_data)
+            
+            # 创建Excel文件到内存
+            output = BytesIO()
+            with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                df.to_excel(writer, index=False, sheet_name='工卡数据')
+            
+            output.seek(0)
+            return output
+            
+        except Exception as e:
+            raise Exception(f"导出Excel失败: {str(e)}")
+
+    def import_workcards_from_excel(
+        self,
+        file_path: str,
+        aircraft_number: Optional[str] = None,
+        aircraft_type: Optional[str] = None,
+        msn: Optional[str] = None,
+        amm_ipc_eff: Optional[str] = None,
+        configuration_id: Optional[int] = None,
+        replace: bool = False
+    ) -> Dict[str, Any]:
+        """从Excel导入工卡数据到指定分组"""
+        try:
+            # 读取Excel文件
+            df = pd.read_excel(file_path, sheet_name=0)
+            
+            # 如果replace为True，先删除该分组下的所有工卡
+            if replace:
+                existing_workcards = self.get_workcards_by_group(
+                    aircraft_number=aircraft_number,
+                    aircraft_type=aircraft_type,
+                    msn=msn,
+                    amm_ipc_eff=amm_ipc_eff,
+                    configuration_id=configuration_id
+                )
+                for workcard in existing_workcards:
+                    self.db.delete(workcard)
+                self.db.commit()
+            
+            # 字段名称映射（中文到英文）
+            field_name_map = {
+                '工卡指令号': 'workcard_number',
+                '标题': 'title',
+                '描述': 'description',
+                '系统': 'system',
+                '部件': 'component',
+                '位置': 'location',
+                '操作': 'action',
+                '飞机号': 'aircraft_number',
+                '机型': 'aircraft_type',
+                'MSN': 'msn',
+                'AMM/IPC EFF': 'amm_ipc_eff',
+                '主区域': 'main_area',
+                '主部件': 'main_component',
+                '一级子部件': 'first_level_subcomponent',
+                '二级子部件': 'second_level_subcomponent',
+                '方位': 'orientation',
+                '缺陷主体': 'defect_subject',
+                '缺陷描述': 'defect_description',
+                '位置索引': 'location_index',
+                '数量': 'quantity',
+            }
+            
+            imported_count = 0
+            error_count = 0
+            errors = []
+            
+            for index, row in df.iterrows():
+                try:
+                    # 构建工卡数据
+                    workcard_data = {
+                        'workcard_number': '',
+                        'title': '',
+                        'system': '',
+                        'component': '',
+                        'configuration_id': configuration_id or 1,  # 默认构型ID
+                        'workcard_type_id': 1,  # 默认工卡类型
+                    }
+                    
+                    # 映射字段
+                    for col_name in df.columns:
+                        col_name_str = str(col_name).strip()
+                        if col_name_str in field_name_map:
+                            field_key = field_name_map[col_name_str]
+                            value = row[col_name]
+                            if pd.notna(value):
+                                workcard_data[field_key] = str(value).strip()
+                    
+                    # 如果没有从Excel中读取到识别字段，使用传入的参数
+                    if not workcard_data.get('aircraft_number') and aircraft_number:
+                        workcard_data['aircraft_number'] = aircraft_number
+                    if not workcard_data.get('aircraft_type') and aircraft_type:
+                        workcard_data['aircraft_type'] = aircraft_type
+                    if not workcard_data.get('msn') and msn:
+                        workcard_data['msn'] = msn
+                    if not workcard_data.get('amm_ipc_eff') and amm_ipc_eff:
+                        workcard_data['amm_ipc_eff'] = amm_ipc_eff
+                    
+                    # 验证必填字段
+                    if not workcard_data.get('workcard_number'):
+                        raise ValueError("工卡指令号不能为空")
+                    if not workcard_data.get('title'):
+                        raise ValueError("标题不能为空")
+                    if not workcard_data.get('system'):
+                        raise ValueError("系统不能为空")
+                    if not workcard_data.get('component'):
+                        raise ValueError("部件不能为空")
+                    
+                    # 创建工卡
+                    workcard = WorkCard(**workcard_data)
+                    self.db.add(workcard)
+                    imported_count += 1
+                    
+                except Exception as e:
+                    error_count += 1
+                    errors.append(f"行 {index + 2}: {str(e)}")  # +2因为Excel行号从1开始，且第1行是表头
+            
+            # 提交事务
+            self.db.commit()
+            
+            return {
+                "message": "导入完成",
+                "imported_count": imported_count,
+                "error_count": error_count,
+                "errors": errors
+            }
+            
+        except Exception as e:
+            self.db.rollback()
+            raise Exception(f"导入Excel失败: {str(e)}")
 
     def clean_workcard_data(
         self, 
@@ -730,122 +916,108 @@ class WorkCardService:
             "quantity": independent_fields.get('quantity', [])
         }, ensure_ascii=False, indent=2)
         
-        # 构建一次性匹配提示词，包含层级递进匹配规则（优化版）
+        # 构建优化后的提示词（基于简化版提示词方案）
         prompt = f"""
+你是一个航空维修工卡分析专家。请根据提供的索引数据表，将英文工卡描述分类为结构化的层级数据。
+
+【核心原则 - 最重要】
+
+⚠️ 绝对禁止：不应该在结构化的时候把不存在的词和词义也不匹配的词体现在分类中。
+
+✅ 分类规则：
+1. 词一样：分类结果中的词必须与工卡描述中的词完全一致
+2. 词义相似：如果词不完全一样，但词义相似，可以使用（如BACKREST和SEAT BACK）
+3. 禁止引入不存在的词：绝对不能把工卡描述中不存在的词体现在分类结果中
+
+【常见错误示例】
+
+❌ 错误：工卡描述"GALLEY DOOR M718 MIDDLE HINGE BROKEN"
+     分类：一级子部件: DOOR FRAME（错误！工卡描述中没有"FRAME"）
+✅ 正确：一级子部件: HINGE（存在）
+
+❌ 错误：工卡描述"CABIN RH #1 DOOR FWD FRAME LINING LOWER VIEW PORT BROKEN"
+     分类：一级子部件: DOOR FRAME（错误！工卡描述中没有"FRAME"）
+✅ 正确：一级子部件: LINING（存在），二级子部件: VIEWPORT（VIEW PORT词义相同）
+
+【索引表结构】
+
 {hierarchy_text}
 
 【独立对照字段参考】（JSON格式）：
 {independent_fields_json}
 
-【匹配任务】
-请根据上述构型索引数据的层级结构，对以下工卡描述进行层级递进匹配和分解。
+【分类步骤】
 
-工卡描述：
+1. 识别主区域：根据工卡描述中的区域标识词，在索引表中查找匹配的主区域（词一样或词义相似）
+2. 识别主部件：在已匹配主区域下的主部件列表中查找匹配的主部件（词一样或词义相似）
+3. 识别一级子部件：在已匹配主部件下的一级子部件列表中查找匹配的一级子部件（词一样或词义相似）
+4. 识别二级子部件：在已匹配一级子部件下的二级子部件列表中查找匹配的二级子部件（词一样或词义相似）
+5. 识别独立对照字段：从独立对照字段中匹配方位、缺陷主体、缺陷描述、位置、数量
+
+【特殊处理】
+
+1. 位置信息（M718、#1、23D等）→ 放在"location"字段，不作为部件分类
+2. 型号信息（M718、M234等）→ 放在"location"字段，不作为部件分类
+3. 方向词（UPPER、LOWER、MIDDLE等）：
+   - 如果是部件名称的一部分（如UPPER ARMREST）→ 可以作为子部件
+   - 如果只是位置描述 → 放在"location"字段
+
+【词义相似示例】
+
+- BACKREST ↔ SEAT BACK
+- VIEW PORT ↔ VIEWPORT
+- E/C ↔ ECONOMY CLASS
+- F/C ↔ FIRST CLASS
+- ARMREST COVER ↔ COVER（在ARMREST下）
+- 驾驶舱 = Cockpit = 驾驶室
+- 客舱 = Cabin = 客舱区域
+- 座椅 = Seat = 座位
+
+【工卡描述】
+
 {description}
 
-【层级递进匹配规则（必须严格遵守）】
+【输出格式】
 
-**匹配原则：**
-1. 层级递进：必须按照 主区域 → 主部件 → 一级子部件 → 二级子部件 的顺序进行匹配
-2. 语义匹配：支持语义理解匹配，不要求完全一致。例如："驾驶舱"可以匹配"驾驶舱"、"Cockpit"、"驾驶室"等
-3. 同义词识别：支持中英文同义词匹配，例如：
-   - 驾驶舱 = Cockpit = 驾驶室 = 驾驶舱区域
-   - 客舱 = Cabin = 客舱区域
-   - 座椅 = Seat = 座位
-   - 安全带 = Safety Belt = Seat Belt = 安全扣带
-4. 部分匹配：如果描述中包含索引数据中的关键词，可以进行部分匹配
-5. 层级约束：必须严格遵循层级关系，不能跨层级匹配
-
-**匹配步骤：**
-
-第一步：从主区域列表中匹配主区域
-- 支持中英文同义词识别和语义匹配
-- 如果匹配成功，进入第二步
-- 如果匹配失败，所有字段返回空字符串
-- 示例：描述中有"驾驶舱"、"Cockpit"、"驾驶室"等，应匹配到"驾驶舱"
-
-第二步：在已匹配的主区域下的主部件列表中匹配主部件
-- 只从该主区域对应的主部件列表中选择（参考"主区域与主部件对应关系"）
-- 不能选择其他主区域下的主部件
-- 支持语义匹配和同义词识别
-- 如果匹配失败，主部件及以下字段返回空字符串
-
-第三步：在已匹配的主部件下的一级子部件列表中匹配一级子部件
-- 只从该主区域->主部件对应的一级子部件列表中选择
-- 不能选择其他主部件下的一级子部件
-- 支持语义匹配和同义词识别
-- 如果匹配失败，一级子部件及以下字段返回空字符串
-
-第四步：在已匹配的一级子部件下的二级子部件列表中匹配二级子部件
-- 只从该主区域->主部件->一级子部件对应的二级子部件列表中选择
-- 不能选择其他一级子部件下的二级子部件
-- 支持语义匹配和同义词识别
-- 如果匹配失败，二级子部件返回空字符串
-
-第五步：从独立对照字段中匹配（方位、缺陷主体、缺陷描述、位置、数量）
-- 从提供的独立对照字段列表中选择匹配的值
-- 支持语义匹配和同义词识别
-- 如果没有匹配，返回空字符串
-
-【匹配示例】
-
-示例1：
-工卡描述：驾驶舱第三观察员座椅安全带TSO模糊
-清洗结果：
-{{
-    "main_area": "驾驶舱",
-    "main_component": "第三观察员座椅",
-    "first_level_subcomponent": "安全带",
-    "second_level_subcomponent": "",
-    "orientation": "",
-    "defect_subject": "TSO",
-    "defect_description": "模糊",
-    "location": "",
-    "quantity": ""
-}}
-
-示例2：
-工卡描述：Cockpit overhead panel light dim
-清洗结果：
-{{
-    "main_area": "驾驶舱",
-    "main_component": "顶板",
-    "first_level_subcomponent": "灯光",
-    "second_level_subcomponent": "",
-    "orientation": "",
-    "defect_subject": "",
-    "defect_description": "dim",
-    "location": "",
-    "quantity": ""
-}}
-
-【输出要求】
 请返回JSON格式的结果，严格按照以下格式：
 {{
-    "main_area": "匹配的主区域名称（必须从主区域列表中选择，支持同义词匹配）或空字符串",
-    "main_component": "匹配的主部件名称（必须从该主区域下的主部件列表中选择）或空字符串",
-    "first_level_subcomponent": "匹配的一级子部件名称（必须从该主区域->主部件下的一级子部件列表中选择）或空字符串",
-    "second_level_subcomponent": "匹配的二级子部件名称（必须从该主区域->主部件->一级子部件下的二级子部件列表中选择）或空字符串",
-    "orientation": "匹配的方位值（从独立对照字段中选择）或空字符串",
-    "defect_subject": "匹配的缺陷主体值（从独立对照字段中选择）或空字符串",
-    "defect_description": "匹配的缺陷描述值（从独立对照字段中选择）或空字符串",
-    "location": "匹配的位置值（从独立对照字段中选择）或空字符串",
-    "quantity": "匹配的数量值（从独立对照字段中选择）或空字符串"
+    "main_area": "主区域值（必须从索引表主区域中选择，词一样或词义相似）或空字符串",
+    "main_component": "主部件值（必须从该主区域下的主部件列表中选择）或空字符串",
+    "first_level_subcomponent": "一级子部件值（必须从该主区域->主部件下的一级子部件列表中选择）或空字符串",
+    "second_level_subcomponent": "二级子部件值（必须从该主区域->主部件->一级子部件下的二级子部件列表中选择）或空字符串",
+    "orientation": "方位值（从独立对照字段中选择）或空字符串",
+    "defect_subject": "缺陷主体值（从独立对照字段中选择）或空字符串",
+    "defect_description": "缺陷描述值（从独立对照字段中选择）或空字符串",
+    "location": "位置值（位置信息、型号信息、方向词等）或空字符串",
+    "quantity": "数量值（从独立对照字段中选择）或空字符串"
 }}
 
-【重要提示】
-1. 只返回JSON格式，不要添加任何其他说明文字、注释或markdown标记
-2. 确保返回的JSON格式正确，可以被直接解析
-3. 必须严格遵循层级递进关系，不能跨层级匹配
-4. 支持语义匹配和同义词识别，不要求完全一致
-5. 如果某个层级匹配失败，该层级及以下所有层级字段都返回空字符串
+【质量检查】
+
+返回结果前检查：
+1. ✅ 分类结果中的每个词是否都在工卡描述中存在或词义相似？
+2. ✅ 是否引入了工卡描述中不存在的词？
+3. ✅ 层级关系是否符合索引表的结构？
+4. ✅ 位置信息是否正确分离到"location"字段？
+
+【重要提醒】
+
+1. 严格遵守"词一样或词义相似"原则
+2. 禁止引入不存在的词
+3. 位置信息和型号信息必须正确分离
+4. 层级关系必须符合索引表结构
+5. 只返回JSON格式，不要添加任何其他说明文字、注释或markdown标记
 """
         
         logger.info("正在调用大模型API进行清洗...")
         logger.info(f"提示词总长度: {len(prompt)} 字符")
         
-        # 定义系统提示词
-        system_prompt = "你是一个专业的航空维修数据分析和清洗助手。你必须严格遵守层级递进匹配规则（主区域→主部件→一级子部件→二级子部件），不能跨层级匹配。同时，你需要支持语义匹配和中英文同义词识别，不要求完全一致。例如：'驾驶舱'可以匹配'Cockpit'、'驾驶室'等。"
+        # 定义系统提示词（基于简化版提示词方案）
+        system_prompt = """你是一个航空维修工卡分析专家。请严格遵守以下核心原则：
+1. 词一样：分类结果中的词必须与工卡描述中的词完全一致
+2. 词义相似：如果词不完全一样，但词义相似，可以使用（如BACKREST和SEAT BACK）
+3. 绝对禁止引入不存在的词：绝对不能把工卡描述中不存在的词体现在分类结果中
+4. 必须严格遵循层级递进关系（主区域→主部件→一级子部件→二级子部件），不能跨层级匹配"""
         
         logger.info(f"系统提示词长度: {len(system_prompt)} 字符")
         
@@ -854,12 +1026,12 @@ class WorkCardService:
         estimated_input_tokens = total_length
         logger.info(f"估算输入token数: ~{estimated_input_tokens}")
         
-        # Gemini 2.0 Flash 上下文窗口通常是 32K tokens
-        # 如果提示词占用太多，需要大幅增加max_output_tokens或优化提示词
-        GEMINI_CONTEXT_WINDOW = 32000  # Gemini 2.0 Flash 的上下文窗口
-        available_output_tokens = GEMINI_CONTEXT_WINDOW - estimated_input_tokens
+        # LLM 上下文窗口设置（根据使用的大模型调整）
+        # Qwen-plus: 通常32K tokens
+        LLM_CONTEXT_WINDOW = 32000  # LLM 的上下文窗口
+        available_output_tokens = LLM_CONTEXT_WINDOW - estimated_input_tokens
         
-        logger.info(f"Gemini上下文窗口: {GEMINI_CONTEXT_WINDOW} tokens")
+        logger.info(f"LLM上下文窗口: {LLM_CONTEXT_WINDOW} tokens")
         logger.info(f"估算可用输出token空间: ~{available_output_tokens} tokens")
         
         # 根据提示词长度动态调整max_tokens

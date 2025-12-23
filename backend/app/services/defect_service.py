@@ -288,6 +288,69 @@ class DefectService:
             logger.error(f"删除缺陷记录失败: {str(e)}", exc_info=True)
             raise
 
+    def delete_defect_list(self, defect_list_id: int) -> bool:
+        """删除缺陷清单及其关联数据（缺陷记录/清洗数据/匹配结果/候选工卡/导入批次）"""
+        from app.models.matching import MatchingResult, CandidateWorkCard
+        from app.models.import_batch import ImportBatch, ImportBatchItem
+        import logging
+
+        logger = logging.getLogger(__name__)
+
+        defect_list = self.get_defect_list_by_id(defect_list_id)
+        if not defect_list:
+            return False
+
+        try:
+            record_rows = self.db.query(DefectRecord.id).filter(
+                DefectRecord.defect_list_id == defect_list_id
+            ).all()
+            record_ids = [r[0] for r in record_rows]
+
+            # 删除与缺陷记录相关的数据
+            if record_ids:
+                self.db.query(MatchingResult).filter(
+                    MatchingResult.defect_record_id.in_(record_ids)
+                ).delete(synchronize_session=False)
+
+                self.db.query(CandidateWorkCard).filter(
+                    CandidateWorkCard.defect_record_id.in_(record_ids)
+                ).delete(synchronize_session=False)
+
+                self.db.query(DefectCleanedData).filter(
+                    DefectCleanedData.defect_record_id.in_(record_ids)
+                ).delete(synchronize_session=False)
+
+                # 先删导入批次明细（如果存在引用 defect_record_id）
+                self.db.query(ImportBatchItem).filter(
+                    ImportBatchItem.defect_record_id.in_(record_ids)
+                ).delete(synchronize_session=False)
+
+                self.db.query(DefectRecord).filter(
+                    DefectRecord.id.in_(record_ids)
+                ).delete(synchronize_session=False)
+
+            # 删除与缺陷清单相关的导入批次（以及其 items）
+            batch_rows = self.db.query(ImportBatch.id).filter(
+                ImportBatch.defect_list_id == defect_list_id
+            ).all()
+            batch_ids = [b[0] for b in batch_rows]
+            if batch_ids:
+                self.db.query(ImportBatchItem).filter(
+                    ImportBatchItem.batch_id.in_(batch_ids)
+                ).delete(synchronize_session=False)
+                self.db.query(ImportBatch).filter(
+                    ImportBatch.id.in_(batch_ids)
+                ).delete(synchronize_session=False)
+
+            # 删除缺陷清单本身
+            self.db.delete(defect_list)
+            self.db.commit()
+            return True
+        except Exception as e:
+            self.db.rollback()
+            logger.error(f"删除缺陷清单失败: {str(e)}", exc_info=True)
+            raise
+
     def select_workcard_for_defect(self, defect_record_id: int, workcard_id: int) -> bool:
         """为缺陷记录选择工卡"""
         defect_record = self.db.query(DefectRecord).filter(DefectRecord.id == defect_record_id).first()
@@ -383,12 +446,34 @@ class DefectService:
                 "cleaned_data": []
             }
         
+        # 支持断点续传：如果指定了 resume=True，只处理未清洗的记录
+        # 检查是否有未清洗的记录
+        unprocessed_records = [r for r in defect_records if not getattr(r, 'is_cleaned', False)]
+        
         # 如果指定了限制数量，只处理前N条（用于测试）
         if limit:
-            defect_records = defect_records[:limit]
-            logger.info(f"测试模式：只清洗前 {limit} 条数据")
+            if unprocessed_records:
+                defect_records = unprocessed_records[:limit]
+                logger.info(f"测试模式：只清洗前 {limit} 条未清洗数据")
+            else:
+                defect_records = defect_records[:limit]
+                logger.info(f"测试模式：只清洗前 {limit} 条数据（所有记录都已清洗）")
+        else:
+            # 默认只处理未清洗的记录（断点续传）
+            if unprocessed_records:
+                defect_records = unprocessed_records
+                logger.info(f"断点续传模式：发现 {len(unprocessed_records)} 条未清洗记录，{len(defect_records) - len(unprocessed_records)} 条已清洗")
+            else:
+                logger.info(f"所有记录都已清洗，将重新清洗所有记录")
         
         total_count = len(defect_records)
+        total_all_count = len(self.get_defect_records(defect_list_id))
+        
+        # 更新缺陷清单状态
+        defect_list.cleaning_status = "processing"
+        defect_list.processing_stage = "cleaning"
+        defect_list.last_processed_at = datetime.now()
+        self.db.commit()
         
         # 获取索引数据
         from app.services.index_data_service import IndexDataService
@@ -429,196 +514,217 @@ class DefectService:
         logger.info(f"独立对照字段: {independent_fields}")
         
         # 使用异步批量清洗，带进度回调
-        cleaned_results = asyncio.run(
-            self._batch_clean_defect_records_with_progress(
-                defect_records,
-                index_data,
-                independent_fields,
-                workcard_service,
-                progress_callback
-            )
-        )
-        
+        # 分批处理，每批处理完后保存状态
+        batch_size = 50  # 每批处理50条
         cleaned_data = []
         cleaned_count = 0
         
-        if progress_callback:
-            progress_callback(total_count, total_count, "正在保存清洗结果...")
-        
-        # 更新缺陷记录并收集结果
-        for record, cleaned_result in zip(defect_records, cleaned_results):
-            try:
-                if cleaned_result and isinstance(cleaned_result, dict):
-                    # 首先提取原始描述（清洗前的工卡描述），用于保存到raw_data
-                    # 使用与清洗时相同的提取逻辑
-                    original_description = record.description or record.title or ""
-                    
-                    # 如果还没有找到描述，尝试从 raw_data 中提取
-                    if not original_description and record.raw_data:
-                        raw_data_temp = {}
-                        try:
-                            if isinstance(record.raw_data, dict):
-                                raw_data_temp = record.raw_data
-                            elif isinstance(record.raw_data, str):
-                                import json
-                                raw_data_temp = json.loads(record.raw_data)
-                        except Exception:
+        for batch_start in range(0, total_count, batch_size):
+            batch_end = min(batch_start + batch_size, total_count)
+            batch_records = defect_records[batch_start:batch_end]
+            
+            logger.info(f"处理清洗批次 {batch_start + 1}-{batch_end}/{total_count}")
+            
+            # 处理当前批次
+            cleaned_results = asyncio.run(
+                self._batch_clean_defect_records_with_progress(
+                    batch_records,
+                    index_data,
+                    independent_fields,
+                    workcard_service,
+                    progress_callback
+                )
+            )
+            
+            if progress_callback:
+                progress_callback(batch_end, total_count, f"正在保存批次 {batch_start + 1}-{batch_end} 的清洗结果...")
+            
+            # 更新缺陷记录并收集结果
+            for record, cleaned_result in zip(batch_records, cleaned_results):
+                try:
+                    if cleaned_result and isinstance(cleaned_result, dict):
+                        # 提取原始描述（清洗前的工卡描述），分别提取中文和英文描述
+                        # 优先从 raw_data 中提取，确保中文和英文描述分开处理
+                        description_cn = ""
+                        description_en = ""
+                        
+                        if record.raw_data:
                             raw_data_temp = {}
-                        
-                        # 方法1: 尝试常见的描述字段名
-                        if not original_description and isinstance(raw_data_temp, dict):
-                            original_description = (
-                                raw_data_temp.get('description') or 
-                                raw_data_temp.get('Description') or
-                                raw_data_temp.get('DESCRIPTION') or
-                                raw_data_temp.get('描述') or 
-                                raw_data_temp.get('工卡描述') or 
-                                raw_data_temp.get('故障描述') or 
-                                raw_data_temp.get('缺陷描述') or
-                                raw_data_temp.get('title') or
-                                raw_data_temp.get('Title') or
-                                raw_data_temp.get('TITLE') or
-                                raw_data_temp.get('标题') or
-                                ""
-                            )
+                            try:
+                                if isinstance(record.raw_data, dict):
+                                    raw_data_temp = record.raw_data
+                                elif isinstance(record.raw_data, str):
+                                    import json
+                                    raw_data_temp = json.loads(record.raw_data)
+                            except Exception:
+                                raw_data_temp = {}
                             
-                            # 方法2: 如果方法1没找到，尝试从所有值中查找包含"描述"关键字的字段
-                            if not original_description:
-                                for key, value in raw_data_temp.items():
-                                    if value and isinstance(value, str):
-                                        try:
-                                            key_lower = str(key).lower()
-                                            value_lower = value.lower()
-                                            if any(keyword in key_lower or keyword in value_lower[:50] for keyword in ['描述', 'description', 'desc', '故障', '缺陷', '问题', '内容']):
-                                                if len(value.strip()) > 10:
-                                                    original_description = value
-                                                    break
-                                        except Exception:
-                                            continue
-                            
-                            # 方法3: 如果还没找到，尝试找最长的非空文本字段
-                            if not original_description:
-                                longest_text = ""
-                                for key, value in raw_data_temp.items():
-                                    if value and isinstance(value, str) and value.strip():
-                                        try:
-                                            key_str = str(key).lower()
-                                            value_str = value.strip()
-                                            if len(value_str) > len(longest_text) and len(value_str) > 20:
-                                                if not value_str.replace('.', '').replace('-', '').isdigit():
-                                                    if not any(skip_word in key_str for skip_word in ['编号', 'number', 'id', '日期', 'date', '时间', 'time']):
-                                                        longest_text = value_str
-                                        except Exception:
-                                            continue
+                            # 提取中文描述
+                            if isinstance(raw_data_temp, dict):
+                                description_cn = (
+                                    raw_data_temp.get('description_cn') or
+                                    raw_data_temp.get('工卡描述（中文）') or
+                                    raw_data_temp.get('工卡描述(中文)') or
+                                    raw_data_temp.get('描述') or
+                                    raw_data_temp.get('工卡描述') or
+                                    ""
+                                )
+                                if description_cn and isinstance(description_cn, str):
+                                    description_cn = description_cn.strip()
                                 
-                                if longest_text:
-                                    original_description = longest_text
+                                # 提取英文描述
+                                description_en = (
+                                    raw_data_temp.get('description_en') or
+                                    raw_data_temp.get('descriptionEng') or
+                                    raw_data_temp.get('工卡描述（英文）') or
+                                    raw_data_temp.get('工卡描述(英文)') or
+                                    raw_data_temp.get('英文描述') or
+                                    raw_data_temp.get('description') or
+                                    raw_data_temp.get('Description') or
+                                    ""
+                                )
+                                if description_en and isinstance(description_en, str):
+                                    description_en = description_en.strip()
                         
-                        # 如果找到的是字符串，确保去除空白
-                        if original_description and isinstance(original_description, str):
-                            original_description = original_description.strip()
-                            if len(original_description) < 5:
-                                original_description = ""
-                    
-                    # 确保 original_description 始终有值（即使为空字符串）
-                    if not original_description:
-                        original_description = ""
-                    
-                    # 更新缺陷记录的原始数据，添加清洗后的索引字段
-                    raw_data = record.raw_data or {}
-                    if isinstance(raw_data, str):
-                        try:
-                            import json
-                            raw_data = json.loads(raw_data)
-                        except Exception:
-                            raw_data = {}
-                    description_en = self._extract_english_description(raw_data)
-                    raw_data.update({
-                        'main_area': cleaned_result.get('main_area', ''),
-                        'main_component': cleaned_result.get('main_component', ''),
-                        'first_level_subcomponent': cleaned_result.get('first_level_subcomponent', ''),
-                        'second_level_subcomponent': cleaned_result.get('second_level_subcomponent', ''),
-                        'orientation': cleaned_result.get('orientation', ''),
-                        'defect_subject': cleaned_result.get('defect_subject', ''),
-                        'defect_description': cleaned_result.get('defect_description', ''),
-                        'location': cleaned_result.get('location', ''),
-                        'quantity': cleaned_result.get('quantity', ''),
-                        'description_cn': original_description,
-                        'description_en': description_en,
-                        'cleaned_at': datetime.now().isoformat()
-                    })
-                    record.raw_data = raw_data
-                    
-                    # 保存或更新清洗后的数据到专门的表 DefectCleanedData
-                    cleaned_data_record = self.db.query(DefectCleanedData).filter(
-                        DefectCleanedData.defect_record_id == record.id
-                    ).first()
-                    
-                    if cleaned_data_record:
-                        # 更新现有记录
-                        cleaned_data_record.main_area = cleaned_result.get('main_area', '')
-                        cleaned_data_record.main_component = cleaned_result.get('main_component', '')
-                        cleaned_data_record.first_level_subcomponent = cleaned_result.get('first_level_subcomponent', '')
-                        cleaned_data_record.second_level_subcomponent = cleaned_result.get('second_level_subcomponent', '')
-                        cleaned_data_record.orientation = cleaned_result.get('orientation', '')
-                        cleaned_data_record.defect_subject = cleaned_result.get('defect_subject', '')
-                        cleaned_data_record.defect_description = cleaned_result.get('defect_description', '')
-                        cleaned_data_record.location = cleaned_result.get('location', '')
-                        cleaned_data_record.quantity = cleaned_result.get('quantity', '')
-                        cleaned_data_record.description_cn = original_description
-                        cleaned_data_record.is_cleaned = True
-                        cleaned_data_record.cleaned_at = datetime.now()
-                        logger.info(f"更新缺陷记录 {record.id} 的清洗数据到 DefectCleanedData 表")
+                        # 确保如果原始数据中中文描述为空，则保持为空，不要用其他字段填充
+                        # 不再从 record.description 或 record.title 获取，因为这些可能包含英文描述
+                        if not description_cn:
+                            description_cn = ""
+                        
+                        # 如果原始数据中英文描述为空，则保持为空
+                        if not description_en:
+                            description_en = ""
+                        
+                        # 更新缺陷记录的原始数据，添加清洗后的索引字段
+                        raw_data = record.raw_data or {}
+                        if isinstance(raw_data, str):
+                            try:
+                                import json
+                                raw_data = json.loads(raw_data)
+                            except Exception:
+                                raw_data = {}
+                        
+                        # 如果还没有提取到英文描述，尝试从 raw_data 中提取
+                        if not description_en:
+                            description_en = self._extract_english_description(raw_data)
+                        raw_data.update({
+                            'main_area': cleaned_result.get('main_area', ''),
+                            'main_component': cleaned_result.get('main_component', ''),
+                            'first_level_subcomponent': cleaned_result.get('first_level_subcomponent', ''),
+                            'second_level_subcomponent': cleaned_result.get('second_level_subcomponent', ''),
+                            'orientation': cleaned_result.get('orientation', ''),
+                            'defect_subject': cleaned_result.get('defect_subject', ''),
+                            'defect_description': cleaned_result.get('defect_description', ''),
+                            'location': cleaned_result.get('location', ''),
+                            'quantity': cleaned_result.get('quantity', ''),
+                            'description_cn': description_cn,  # 保持原始中文描述，如果为空则保持为空
+                            'description_en': description_en,  # 保持原始英文描述，如果为空则保持为空
+                            'cleaned_at': datetime.now().isoformat()
+                        })
+                        record.raw_data = raw_data
+                        
+                        # 保存或更新清洗后的数据到专门的表 DefectCleanedData
+                        cleaned_data_record = self.db.query(DefectCleanedData).filter(
+                            DefectCleanedData.defect_record_id == record.id
+                        ).first()
+                        
+                        if cleaned_data_record:
+                            # 更新现有记录
+                            cleaned_data_record.main_area = cleaned_result.get('main_area', '')
+                            cleaned_data_record.main_component = cleaned_result.get('main_component', '')
+                            cleaned_data_record.first_level_subcomponent = cleaned_result.get('first_level_subcomponent', '')
+                            cleaned_data_record.second_level_subcomponent = cleaned_result.get('second_level_subcomponent', '')
+                            cleaned_data_record.orientation = cleaned_result.get('orientation', '')
+                            cleaned_data_record.defect_subject = cleaned_result.get('defect_subject', '')
+                            cleaned_data_record.defect_description = cleaned_result.get('defect_description', '')
+                            cleaned_data_record.location = cleaned_result.get('location', '')
+                            cleaned_data_record.quantity = cleaned_result.get('quantity', '')
+                            cleaned_data_record.description_cn = description_cn  # 保持原始中文描述，如果为空则保持为空
+                            cleaned_data_record.is_cleaned = True
+                            cleaned_data_record.cleaned_at = datetime.now()
+                            logger.info(f"更新缺陷记录 {record.id} 的清洗数据到 DefectCleanedData 表")
+                        else:
+                            # 创建新记录
+                            cleaned_data_record = DefectCleanedData(
+                                defect_record_id=record.id,
+                                main_area=cleaned_result.get('main_area', ''),
+                                main_component=cleaned_result.get('main_component', ''),
+                                first_level_subcomponent=cleaned_result.get('first_level_subcomponent', ''),
+                                second_level_subcomponent=cleaned_result.get('second_level_subcomponent', ''),
+                                orientation=cleaned_result.get('orientation', ''),
+                                defect_subject=cleaned_result.get('defect_subject', ''),
+                                defect_description=cleaned_result.get('defect_description', ''),
+                                location=cleaned_result.get('location', ''),
+                                quantity=cleaned_result.get('quantity', ''),
+                                description_cn=description_cn,  # 保持原始中文描述，如果为空则保持为空
+                                is_cleaned=True
+                            )
+                            self.db.add(cleaned_data_record)
+                            logger.info(f"创建缺陷记录 {record.id} 的清洗数据到 DefectCleanedData 表")
+                        
+                        # 更新缺陷记录的处理状态
+                        record.is_cleaned = True
+                        record.cleaned_at = datetime.now()
+                        
+                        # 更新基础字段（如果清洗结果中有更好的值）
+                        if cleaned_result.get('main_area'):
+                            # 可以将 main_area 映射到 system
+                            if not record.system or record.system.strip() == '':
+                                record.system = cleaned_result.get('main_area', record.system)
+                        if cleaned_result.get('main_component'):
+                            if not record.component or record.component.strip() == '':
+                                record.component = cleaned_result.get('main_component', record.component)
+                        if cleaned_result.get('location'):
+                            record.location = cleaned_result.get('location', record.location)
+                        
+                        cleaned_data.append({
+                            "id": record.id,
+                            "defect_number": record.defect_number,
+                            "description_cn": description_cn,  # 保持原始中文描述，如果为空则保持为空
+                            "description_en": description_en,
+                            "system": record.system,
+                            "component": record.component,
+                            "location": record.location,
+                            **cleaned_result
+                        })
+                        cleaned_count += 1
                     else:
-                        # 创建新记录
-                        cleaned_data_record = DefectCleanedData(
-                            defect_record_id=record.id,
-                            main_area=cleaned_result.get('main_area', ''),
-                            main_component=cleaned_result.get('main_component', ''),
-                            first_level_subcomponent=cleaned_result.get('first_level_subcomponent', ''),
-                            second_level_subcomponent=cleaned_result.get('second_level_subcomponent', ''),
-                            orientation=cleaned_result.get('orientation', ''),
-                            defect_subject=cleaned_result.get('defect_subject', ''),
-                            defect_description=cleaned_result.get('defect_description', ''),
-                            location=cleaned_result.get('location', ''),
-                            quantity=cleaned_result.get('quantity', ''),
-                            description_cn=original_description,
-                            is_cleaned=True
-                        )
-                        self.db.add(cleaned_data_record)
-                        logger.info(f"创建缺陷记录 {record.id} 的清洗数据到 DefectCleanedData 表")
+                        logger.warning(f"缺陷记录 {record.id} 清洗结果为空")
                     
-                    # 更新基础字段（如果清洗结果中有更好的值）
-                    if cleaned_result.get('main_area'):
-                        # 可以将 main_area 映射到 system
-                        if not record.system or record.system.strip() == '':
-                            record.system = cleaned_result.get('main_area', record.system)
-                    if cleaned_result.get('main_component'):
-                        if not record.component or record.component.strip() == '':
-                            record.component = cleaned_result.get('main_component', record.component)
-                    if cleaned_result.get('location'):
-                        record.location = cleaned_result.get('location', record.location)
-                    
-                    cleaned_data.append({
-                        "id": record.id,
-                        "defect_number": record.defect_number,
-                        "description_cn": original_description,
-                        "description_en": description_en,
-                        "system": record.system,
-                        "component": record.component,
-                        "location": record.location,
-                        **cleaned_result
-                    })
-                    cleaned_count += 1
-                else:
-                    logger.warning(f"缺陷记录 {record.id} 清洗结果为空")
-                    
+                except Exception as e:
+                    logger.error(f"更新缺陷记录 {record.id} 失败: {str(e)}")
+                    continue
+            
+            # 每批处理完后立即提交，保存进度
+            try:
+                self.db.commit()
+                logger.info(f"批次 {batch_start + 1}-{batch_end} 清洗完成，已保存到数据库")
+                
+                # 更新缺陷清单的清洗进度
+                cleaning_progress = (batch_end / total_all_count) * 100 if total_all_count > 0 else 100
+                defect_list.cleaning_progress = min(cleaning_progress, 100.0)
+                defect_list.last_processed_at = datetime.now()
+                self.db.commit()
             except Exception as e:
-                logger.error(f"更新缺陷记录 {record.id} 失败: {str(e)}")
-                continue
+                self.db.rollback()
+                logger.error(f"保存批次 {batch_start + 1}-{batch_end} 清洗结果失败: {str(e)}")
         
-        # 提交数据库更改
+        # 所有批次处理完成，更新最终状态
         try:
+            # 检查是否所有记录都已清洗
+            all_records = self.get_defect_records(defect_list_id)
+            all_cleaned = all([getattr(r, 'is_cleaned', False) for r in all_records])
+            
+            if all_cleaned:
+                defect_list.cleaning_status = "completed"
+                defect_list.cleaning_progress = 100.0
+                defect_list.processing_stage = "matching"  # 清洗完成，进入匹配阶段
+                logger.info(f"所有缺陷记录已清洗完成")
+            else:
+                defect_list.cleaning_status = "processing"  # 部分完成，保持处理中状态
+                logger.info(f"部分缺陷记录已清洗，还有未清洗的记录")
+            
+            defect_list.last_processed_at = datetime.now()
             self.db.commit()
             logger.info(f"成功清洗并保存 {cleaned_count} 条缺陷数据到数据库")
             # 验证保存是否成功：随机检查一条记录
@@ -740,12 +846,12 @@ class DefectService:
         for record, cleaned_result in zip(defect_records, cleaned_results):
             try:
                 if cleaned_result and isinstance(cleaned_result, dict):
-                    # 首先提取原始描述（清洗前的工卡描述），用于保存到raw_data
-                    # 使用与清洗时相同的提取逻辑
-                    original_description = record.description or record.title or ""
+                    # 提取原始描述（清洗前的工卡描述），分别提取中文和英文描述
+                    # 优先从 raw_data 中提取，确保中文和英文描述分开处理
+                    description_cn = ""
+                    description_en = ""
                     
-                    # 如果还没有找到描述，尝试从 raw_data 中提取
-                    if not original_description and record.raw_data:
+                    if record.raw_data:
                         raw_data_temp = {}
                         try:
                             if isinstance(record.raw_data, dict):
@@ -756,68 +862,54 @@ class DefectService:
                         except Exception:
                             raw_data_temp = {}
                         
-                        # 方法1: 尝试常见的描述字段名
-                        if not original_description and isinstance(raw_data_temp, dict):
-                            original_description = (
-                                raw_data_temp.get('description') or 
-                                raw_data_temp.get('Description') or
-                                raw_data_temp.get('DESCRIPTION') or
-                                raw_data_temp.get('描述') or 
-                                raw_data_temp.get('工卡描述') or 
-                                raw_data_temp.get('故障描述') or 
-                                raw_data_temp.get('缺陷描述') or
-                                raw_data_temp.get('title') or
-                                raw_data_temp.get('Title') or
-                                raw_data_temp.get('TITLE') or
-                                raw_data_temp.get('标题') or
+                        # 提取中文描述
+                        if isinstance(raw_data_temp, dict):
+                            description_cn = (
+                                raw_data_temp.get('description_cn') or
+                                raw_data_temp.get('工卡描述（中文）') or
+                                raw_data_temp.get('工卡描述(中文)') or
+                                raw_data_temp.get('描述') or
+                                raw_data_temp.get('工卡描述') or
                                 ""
                             )
+                            if description_cn and isinstance(description_cn, str):
+                                description_cn = description_cn.strip()
                             
-                            # 方法2: 如果方法1没找到，尝试从所有值中查找包含"描述"关键字的字段
-                            if not original_description:
-                                for key, value in raw_data_temp.items():
-                                    if value and isinstance(value, str):
-                                        try:
-                                            key_lower = str(key).lower()
-                                            value_lower = value.lower()
-                                            if any(keyword in key_lower or keyword in value_lower[:50] for keyword in ['描述', 'description', 'desc', '故障', '缺陷', '问题', '内容']):
-                                                if len(value.strip()) > 10:
-                                                    original_description = value
-                                                    break
-                                        except Exception:
-                                            continue
-                            
-                            # 方法3: 如果还没找到，尝试找最长的非空文本字段
-                            if not original_description:
-                                longest_text = ""
-                                for key, value in raw_data_temp.items():
-                                    if value and isinstance(value, str) and value.strip():
-                                        try:
-                                            key_str = str(key).lower()
-                                            value_str = value.strip()
-                                            if len(value_str) > len(longest_text) and len(value_str) > 20:
-                                                if not value_str.replace('.', '').replace('-', '').isdigit():
-                                                    if not any(skip_word in key_str for skip_word in ['编号', 'number', 'id', '日期', 'date', '时间', 'time']):
-                                                        longest_text = value_str
-                                        except Exception:
-                                            continue
-                                
-                                if longest_text:
-                                    original_description = longest_text
-                        
-                        # 如果找到的是字符串，确保去除空白
-                        if original_description and isinstance(original_description, str):
-                            original_description = original_description.strip()
-                            if len(original_description) < 5:
-                                original_description = ""
+                            # 提取英文描述
+                            description_en = (
+                                raw_data_temp.get('description_en') or
+                                raw_data_temp.get('descriptionEng') or
+                                raw_data_temp.get('工卡描述（英文）') or
+                                raw_data_temp.get('工卡描述(英文)') or
+                                raw_data_temp.get('英文描述') or
+                                raw_data_temp.get('description') or
+                                raw_data_temp.get('Description') or
+                                ""
+                            )
+                            if description_en and isinstance(description_en, str):
+                                description_en = description_en.strip()
                     
-                    # 确保 original_description 始终有值（即使为空字符串）
-                    if not original_description:
-                        original_description = ""
+                    # 确保如果原始数据中中文描述为空，则保持为空，不要用其他字段填充
+                    # 不再从 record.description 或 record.title 获取，因为这些可能包含英文描述
+                    if not description_cn:
+                        description_cn = ""
+                    
+                    # 如果原始数据中英文描述为空，则保持为空
+                    if not description_en:
+                        description_en = ""
                     
                     # 更新缺陷记录的原始数据，添加清洗后的索引字段
                     raw_data = record.raw_data or {}
-                    description_en = cleaned_result.get('description_en') or ''
+                    if isinstance(raw_data, str):
+                        try:
+                            import json
+                            raw_data = json.loads(raw_data)
+                        except Exception:
+                            raw_data = {}
+                    
+                    # 如果还没有提取到英文描述，尝试从 raw_data 中提取
+                    if not description_en:
+                        description_en = self._extract_english_description(raw_data)
                     raw_data.update({
                         'main_area': cleaned_result.get('main_area', ''),
                         'main_component': cleaned_result.get('main_component', ''),
@@ -828,8 +920,8 @@ class DefectService:
                         'defect_description': cleaned_result.get('defect_description', ''),
                         'location': cleaned_result.get('location', ''),
                         'quantity': cleaned_result.get('quantity', ''),
-                        'description_cn': original_description,
-                        'description_en': description_en,
+                        'description_cn': description_cn,  # 保持原始中文描述，如果为空则保持为空
+                        'description_en': description_en,  # 保持原始英文描述，如果为空则保持为空
                         'cleaned_at': datetime.now().isoformat()
                     })
                     record.raw_data = raw_data
@@ -850,7 +942,7 @@ class DefectService:
                         cleaned_data_record.defect_description = cleaned_result.get('defect_description', '')
                         cleaned_data_record.location = cleaned_result.get('location', '')
                         cleaned_data_record.quantity = cleaned_result.get('quantity', '')
-                        cleaned_data_record.description_cn = original_description
+                        cleaned_data_record.description_cn = description_cn  # 保持原始中文描述，如果为空则保持为空
                         cleaned_data_record.is_cleaned = True
                         cleaned_data_record.cleaned_at = datetime.now()
                         logger.info(f"更新缺陷记录 {record.id} 的清洗数据到 DefectCleanedData 表")
@@ -867,7 +959,7 @@ class DefectService:
                             defect_description=cleaned_result.get('defect_description', ''),
                             location=cleaned_result.get('location', ''),
                             quantity=cleaned_result.get('quantity', ''),
-                            description_cn=original_description,
+                            description_cn=description_cn,  # 保持原始中文描述，如果为空则保持为空
                             is_cleaned=True
                         )
                         self.db.add(cleaned_data_record)
@@ -887,7 +979,7 @@ class DefectService:
                     cleaned_data.append({
                         "id": record.id,
                         "defect_number": record.defect_number,
-                        "description_cn": original_description,  # 工卡描述（中文）- 统一使用此字段
+                        "description_cn": description_cn,  # 保持原始中文描述，如果为空则保持为空  # 工卡描述（中文）- 统一使用此字段
                         "system": record.system,
                         "component": record.component,
                         "location": record.location,
@@ -1030,20 +1122,25 @@ class DefectService:
                 if description:
                     logger.info(f"从 raw_data 中提取到描述，缺陷编号: {record.defect_number}，描述长度: {len(description)}，描述预览: {description[:100]}...")
                 
-                description_cn = description if isinstance(description, str) else ""
+                # 只从 raw_data 中提取中文描述，不要用 description 填充
+                description_cn = ""
                 if raw_data:
                     maybe_cn = (
                         raw_data.get('description_cn')
                         or raw_data.get('工卡描述（中文）')
-                        or raw_data.get('缺陷描述')
-                        or raw_data.get('描述')
+                        or raw_data.get('工卡描述(中文)')
                         or ""
                     )
                     if isinstance(maybe_cn, str) and maybe_cn.strip():
                         description_cn = maybe_cn.strip()
+                
+                # 如果原始数据中中文描述为空，则保持为空，不要用 description 填充
+                if not description_cn:
+                    description_cn = ""
+                
+                # 如果 description 为空，尝试用 description_cn 填充（用于清洗）
                 if not description and description_cn:
                     description = description_cn
-                description_cn = description_cn.strip() if isinstance(description_cn, str) else ""
 
                 description_en = self._extract_english_description(raw_data)
                 
@@ -1083,9 +1180,10 @@ class DefectService:
                 logger.info(f"清洗缺陷记录 {idx + 1}/{len(defect_records)}，缺陷编号: {record.defect_number}，描述: {description[:100]}...")
                 logger.info(f"准备调用大模型进行清洗，索引数据条数: {len(index_data)}")
                 
+                # 使用 description 进行清洗（如果 description_cn 为空，则使用 description，但不保存到 description_cn）
                 cleaned_result = await workcard_service._clean_with_hierarchical_matching(
-                    description_cn or description or "",
-                    description_cn or description or "",
+                    description or "",
+                    description or "",
                     description_en,
                     index_data,
                     independent_fields
@@ -1108,7 +1206,7 @@ class DefectService:
                 complete_cleaned_result = {
                     **default_index_fields,
                     **cleaned_result,
-                    "description_cn": description_cn or description or "",
+                    "description_cn": description_cn,  # 保持原始中文描述，如果为空则保持为空
                     "description_en": description_en,
                 }
                 results.append(complete_cleaned_result)
@@ -1226,19 +1324,25 @@ class DefectService:
                     if len(description) < 5:
                         description = ""
 
-                description_cn = description if isinstance(description, str) else ""
+                # 只从 raw_data 中提取中文描述，不要用 description 填充
+                description_cn = ""
                 if raw_data:
                     maybe_cn = (
-                        raw_data.get('工卡描述（中文）')
-                        or raw_data.get('缺陷描述')
-                        or raw_data.get('描述')
+                        raw_data.get('description_cn')
+                        or raw_data.get('工卡描述（中文）')
+                        or raw_data.get('工卡描述(中文)')
                         or ""
                     )
                     if isinstance(maybe_cn, str) and maybe_cn.strip():
                         description_cn = maybe_cn.strip()
+                
+                # 如果原始数据中中文描述为空，则保持为空，不要用 description 填充
+                if not description_cn:
+                    description_cn = ""
+                
+                # 如果 description 为空，尝试用 description_cn 填充（用于清洗）
                 if not description and description_cn:
                     description = description_cn
-                description_cn = description_cn.strip() if isinstance(description_cn, str) else ""
 
                 description_en = self._extract_english_description(raw_data) if raw_data else ""
 
@@ -1279,10 +1383,10 @@ class DefectService:
                 logger.info(f"清洗缺陷记录 {idx + 1}/{total_count}，缺陷编号: {record.defect_number}，描述: {description[:100]}...")
                 logger.info(f"准备调用大模型进行清洗，索引数据条数: {len(index_data)}")
                 
-                final_description_cn = description_cn or description or ""
+                # 使用 description 进行清洗（如果 description_cn 为空，则使用 description，但不保存到 description_cn）
                 cleaned_result = await workcard_service._clean_with_hierarchical_matching(
-                    final_description_cn,
-                    final_description_cn,
+                    description or "",
+                    description or "",
                     description_en,
                     index_data,
                     independent_fields
@@ -1307,7 +1411,7 @@ class DefectService:
                     **cleaned_result,
                     "defect_record_id": record.id,
                     "defect_number": record.defect_number,
-                    "description_cn": final_description_cn,
+                    "description_cn": description_cn,  # 保持原始中文描述，如果为空则保持为空
                     "description_en": description_en,
                 }
                 results.append(complete_cleaned_result)

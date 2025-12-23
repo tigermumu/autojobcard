@@ -56,6 +56,18 @@ def get_import_batch(
     return batch
 
 
+@router.delete("/{batch_id}")
+def delete_import_batch(
+    batch_id: int,
+    db: Session = Depends(get_db)
+):
+    service = ImportBatchService(db)
+    success = service.delete_batch(batch_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="待导入批次未找到")
+    return {"message": "删除成功"}
+
+
 
 
 

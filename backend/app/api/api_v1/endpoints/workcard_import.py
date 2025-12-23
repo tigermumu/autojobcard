@@ -132,7 +132,6 @@ class ImportDefectRequest(BaseModel):
     defect_record_id: int = Field(..., description="缺陷记录ID")
     params: Dict[str, Any] = Field(..., description="导入参数字典")
     cookies: Optional[str] = Field(None, description="Cookie字符串")
-    is_test_mode: bool = Field(True, description="是否为测试模式")
 
 
 class ImportDefectResponse(BaseModel):
@@ -296,13 +295,12 @@ def import_defect_to_nrc(
     logger = logging.getLogger(__name__)
     
     try:
-        logger.info(f"开始导入缺陷，缺陷记录ID: {request.defect_record_id}, 测试模式: {request.is_test_mode}")
+        logger.info(f"开始导入缺陷，缺陷记录ID: {request.defect_record_id}")
         logger.debug(f"导入参数: {request.params}")
         
         success, message, workcard_number, logs, artifacts = service.import_defect_to_nrc(
             params=request.params,
             cookies=request.cookies,
-            is_test_mode=request.is_test_mode,
         )
         
         logger.info(f"服务方法执行完成，成功: {success}, 消息: {message}, 工卡号: {workcard_number}")
@@ -388,7 +386,7 @@ def import_defect_to_nrc(
         error_traceback = traceback.format_exc()
         logger.error(f"导入缺陷时发生未捕获的异常: {error_detail}", exc_info=True)
         logger.error(f"完整错误堆栈:\n{error_traceback}")
-        logger.error(f"请求参数: defect_record_id={request.defect_record_id}, is_test_mode={request.is_test_mode}")
+        logger.error(f"请求参数: defect_record_id={request.defect_record_id}")
         raise HTTPException(status_code=500, detail=f"导入缺陷失败: {error_detail}") from exc
 
 
@@ -532,7 +530,6 @@ def import_steps(
 class ImportEnglishDefectRequest(BaseModel):
     params: Dict[str, Any] = Field(..., description="导入参数字典")
     cookies: Optional[str] = Field(None, description="Cookie字符串")
-    is_test_mode: bool = Field(True, description="是否为测试模式")
 
 
 @router.post("/import-english-defect", response_model=ImportDefectResponse)
@@ -546,13 +543,12 @@ def import_english_defect_to_nrc(
     logger = logging.getLogger(__name__)
     
     try:
-        logger.info(f"开始导入英文工卡，测试模式: {request.is_test_mode}")
+        logger.info(f"开始导入英文工卡")
         logger.debug(f"导入参数: {request.params}")
         
         success, message, workcard_number, logs, artifacts = service.import_english_defect_to_nrc(
             params=request.params,
             cookies=request.cookies,
-            is_test_mode=request.is_test_mode,
         )
         
         logger.info(f"服务方法执行完成，成功: {success}, 消息: {message}, 工卡号: {workcard_number}")
@@ -583,3 +579,41 @@ def import_english_defect_to_nrc(
         error_detail = str(exc)
         logger.error(f"导入英文工卡时发生未捕获的异常: {error_detail}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"导入失败: {error_detail}") from exc
+
+
+class ACInfoRequest(BaseModel):
+    tail_no: str = Field(..., description="飞机号")
+    work_order: str = Field(..., description="工单号")
+    cookies: Optional[str] = Field(None, description="Cookies")
+
+
+class ACInfoResponse(BaseModel):
+    success: bool
+    data: Dict[str, Any] = Field(default_factory=dict)
+    message: str
+
+
+@router.post("/ac-info", response_model=ACInfoResponse)
+def get_ac_info(
+    request: ACInfoRequest,
+    service: WorkCardImportService = Depends(get_service),
+):
+    """获取飞机信息"""
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    try:
+        data = service.get_aircraft_info(
+            tail_no=request.tail_no,
+            work_order=request.work_order,
+            cookies=request.cookies,
+        )
+        
+        if data:
+            return ACInfoResponse(success=True, data=data, message="获取成功")
+        else:
+            return ACInfoResponse(success=False, data={}, message="未找到匹配的工单信息")
+            
+    except Exception as exc:
+        logger.error(f"获取飞机信息失败: {exc}", exc_info=True)
+        return ACInfoResponse(success=False, data={}, message=f"获取失败: {str(exc)}")

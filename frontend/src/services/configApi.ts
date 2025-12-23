@@ -75,6 +75,59 @@ export const configApi = {
       file
     )
   },
+
+  // 导出独立索引字段（field_mapping）到Excel
+  exportFieldMappingToExcel: async (configurationId: number): Promise<void> => {
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'
+    const url = `${API_BASE_URL}/configurations/${configurationId}/field-mapping/export`
+    const response = await fetch(url)
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: response.statusText }))
+      throw new Error(errorData.detail || `HTTP error! status: ${response.status}`)
+    }
+    
+    // Get filename from Content-Disposition header
+    const contentDisposition = response.headers.get('Content-Disposition')
+    let filename = `独立索引字段_${configurationId}.xlsx`
+    if (contentDisposition) {
+      // Try RFC 5987 format first (filename*=UTF-8''...)
+      const rfc5987Match = contentDisposition.match(/filename\*=UTF-8''(.+)/i)
+      if (rfc5987Match && rfc5987Match[1]) {
+        filename = decodeURIComponent(rfc5987Match[1])
+      } else {
+        // Fallback to standard format
+        const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/)
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1].replace(/['"]/g, '')
+          try {
+            filename = decodeURIComponent(filename)
+          } catch (e) {
+            // If decoding fails, use as-is
+          }
+        }
+      }
+    }
+    
+    // Download file
+    const blob = await response.blob()
+    const downloadUrl = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = downloadUrl
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(downloadUrl)
+  },
+
+  // 从Excel导入独立索引字段（field_mapping）
+  importFieldMappingFromExcel: async (configurationId: number, file: File): Promise<any> => {
+    return apiClient.upload(
+      `/configurations/${configurationId}/field-mapping/import`,
+      file
+    )
+  },
 }
 
 

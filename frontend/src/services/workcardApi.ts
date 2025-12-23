@@ -191,6 +191,88 @@ export const workcardApi = {
       params as any
     )
   },
+
+  // 导出工卡分组数据到Excel
+  exportGroupToExcel: async (params: {
+    aircraft_number?: string
+    aircraft_type?: string
+    msn?: string
+    amm_ipc_eff?: string
+    configuration_id?: number
+  }): Promise<void> => {
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'
+    const queryParams = new URLSearchParams()
+    if (params.aircraft_number) queryParams.append('aircraft_number', params.aircraft_number)
+    if (params.aircraft_type) queryParams.append('aircraft_type', params.aircraft_type)
+    if (params.msn) queryParams.append('msn', params.msn)
+    if (params.amm_ipc_eff) queryParams.append('amm_ipc_eff', params.amm_ipc_eff)
+    if (params.configuration_id) queryParams.append('configuration_id', String(params.configuration_id))
+    
+    const url = `${API_BASE_URL}/workcards/by-group/export?${queryParams.toString()}`
+    const response = await fetch(url)
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: response.statusText }))
+      throw new Error(errorData.detail || `HTTP error! status: ${response.status}`)
+    }
+    
+    // Get filename from Content-Disposition header
+    const contentDisposition = response.headers.get('Content-Disposition')
+    let filename = `工卡数据表.xlsx`
+    if (contentDisposition) {
+      const rfc5987Match = contentDisposition.match(/filename\*=UTF-8''(.+)/i)
+      if (rfc5987Match && rfc5987Match[1]) {
+        filename = decodeURIComponent(rfc5987Match[1])
+      } else {
+        const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/)
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1].replace(/['"]/g, '')
+          try {
+            filename = decodeURIComponent(filename)
+          } catch (e) {
+            // If decoding fails, use as-is
+          }
+        }
+      }
+    }
+    
+    // Download file
+    const blob = await response.blob()
+    const downloadUrl = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = downloadUrl
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(downloadUrl)
+  },
+
+  // 从Excel导入工卡数据到分组
+  importGroupFromExcel: async (
+    file: File,
+    params: {
+      aircraft_number?: string
+      aircraft_type?: string
+      msn?: string
+      amm_ipc_eff?: string
+      configuration_id?: number
+      replace?: boolean
+    }
+  ): Promise<any> => {
+    const queryParams = new URLSearchParams()
+    if (params.aircraft_number) queryParams.append('aircraft_number', params.aircraft_number)
+    if (params.aircraft_type) queryParams.append('aircraft_type', params.aircraft_type)
+    if (params.msn) queryParams.append('msn', params.msn)
+    if (params.amm_ipc_eff) queryParams.append('amm_ipc_eff', params.amm_ipc_eff)
+    if (params.configuration_id) queryParams.append('configuration_id', String(params.configuration_id))
+    if (params.replace !== undefined) queryParams.append('replace', String(params.replace))
+    
+    return apiClient.upload(
+      `/workcards/by-group/import?${queryParams.toString()}`,
+      file
+    )
+  },
 }
 
 

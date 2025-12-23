@@ -1,6 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional
+from datetime import datetime
+from urllib.parse import quote
 from app.core.database import get_db
 from app.schemas.workcard import (
     WorkCardResponse, WorkCardCreate, WorkCardUpdate,
@@ -9,6 +12,8 @@ from app.schemas.workcard import (
     WorkCardGroup
 )
 from app.services.workcard_service import WorkCardService
+import tempfile
+import os
 
 router = APIRouter()
 
@@ -199,3 +204,101 @@ def save_cleaned_workcards(
         errors=result["errors"],
         message=result["message"]
     )
+
+@router.get("/by-group/export")
+def export_workcards_excel(
+    aircraft_number: Optional[str] = Query(None),
+    aircraft_type: Optional[str] = Query(None),
+    msn: Optional[str] = Query(None),
+    amm_ipc_eff: Optional[str] = Query(None),
+    configuration_id: Optional[int] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """导出指定分组下的工卡数据到Excel"""
+    try:
+        service = WorkCardService(db)
+        excel_file = service.export_workcards_to_excel(
+            aircraft_number=aircraft_number,
+            aircraft_type=aircraft_type,
+            msn=msn,
+            amm_ipc_eff=amm_ipc_eff,
+            configuration_id=configuration_id
+        )
+        
+        # 生成文件名
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        group_name = f"{aircraft_number or ''}_{aircraft_type or ''}_{msn or ''}".strip('_')
+        if not group_name:
+            group_name = f"配置{configuration_id or ''}"
+        filename = f"工卡数据表_{group_name}_{timestamp}.xlsx"
+        
+        # 使用URL编码处理中文文件名
+        encoded_filename = quote(filename, safe='')
+        
+        return StreamingResponse(
+            excel_file,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f"attachment; filename*=UTF-8''{encoded_filename}"}
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/by-group/import")
+def import_workcards_excel(
+    aircraft_number: Optional[str] = Query(None),
+    aircraft_type: Optional[str] = Query(None),
+    msn: Optional[str] = Query(None),
+    amm_ipc_eff: Optional[str] = Query(None),
+    configuration_id: Optional[int] = Query(None),
+    replace: bool = Query(False, description="是否替换现有数据（True=替换，False=追加）"),
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    """从Excel导入工卡数据到指定分组"""
+    tmp_file_path = None
+    try:
+        service = WorkCardService(db)
+        
+        # 验证文件类型
+        if not file.filename:
+            raise HTTPException(status_code=400, detail="文件名不能为空")
+        
+        file_ext = os.path.splitext(file.filename)[1].lower()
+        if file_ext not in ['.xlsx', '.xls']:
+            raise HTTPException(status_code=400, detail="只支持 .xlsx 或 .xls 格式的文件")
+        
+        # 保存上传的文件
+        with tempfile.NamedTemporaryFile(delete=False, suffix=file_ext) as tmp_file:
+            content = file.file.read()
+            if not content:
+                raise HTTPException(status_code=400, detail="文件内容为空")
+            tmp_file.write(content)
+            tmp_file.flush()
+            tmp_file_path = tmp_file.name
+        
+        # 执行导入
+        result = service.import_workcards_from_excel(
+            file_path=tmp_file_path,
+            aircraft_number=aircraft_number,
+            aircraft_type=aircraft_type,
+            msn=msn,
+            amm_ipc_eff=amm_ipc_eff,
+            configuration_id=configuration_id,
+            replace=replace
+        )
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"导入过程中发生错误: {str(e)}")
+    finally:
+        # 确保清理临时文件
+        if tmp_file_path and os.path.exists(tmp_file_path):
+            try:
+                os.unlink(tmp_file_path)
+            except Exception:
+                pass  # 忽略清理文件的错误

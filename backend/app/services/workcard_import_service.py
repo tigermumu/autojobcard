@@ -814,7 +814,6 @@ class WorkCardImportService:
         self,
         params: Dict[str, Any],
         cookies: Optional[str] = None,
-        is_test_mode: bool = True,
     ) -> Tuple[bool, str, Optional[str], List[LogEntry], List[Artifact]]:
         """
         导入缺陷到NRC系统（非例行工卡）
@@ -833,7 +832,6 @@ class WorkCardImportService:
                 - txtDescChn: 缺陷中文描述
                 - txtDescEng: 缺陷英文描述
             cookies: Cookie字符串
-            is_test_mode: 是否为测试模式（测试模式下会在描述前加"测试"/"TEST"前缀）
         
         Returns:
             Tuple[success: bool, message: str, workcard_number: Optional[str], logs: List[LogEntry], artifacts: List[Artifact]]
@@ -851,42 +849,37 @@ class WorkCardImportService:
         desc_chn = params.get('txtDescChn', '')
         desc_eng = params.get('txtDescEng', '')
         
-        # 测试模式下添加前缀
-        if is_test_mode:
-            desc_chn = f"测试{desc_chn}" if desc_chn else "测试"
-            desc_eng = f"TEST{desc_eng}" if desc_eng else "TEST"
-        
         # 构建POST数据（需要GBK编码）
         post_data = {
-            'txtCust': params.get('txtCust', ''),
-            'txtACNO': params.get('txtACNO', ''),
-            'txtWO': params.get('txtWO', ''),
-            'txtML': params.get('txtML', ''),
-            'txtACType': params.get('txtACType', 'B737-300'),
-            'txtWorkContent': params.get('txtWorkContent', ''),
-            'txtZoneName': params.get('txtZoneName', ''),
-            'txtZoneTen': params.get('txtZoneTen', ''),
-            'txtRII': params.get('txtRII', ''),
-            'txtCRN': params.get('txtCRN', '客户要求/CUSTOMER REQUIREMENT'),
-            'refNo': params.get('refNo', ''),
-            'txtEnginSn': params.get('txtEnginSn', ''),
-            'txtDescChn': desc_chn,
-            'txtDescEng': desc_eng,
-            'txtDept': params.get('txtDept', '3_CABIN_TPG'),
-            'selDocType': params.get('selDocType', 'NR'),
-            'csn': params.get('csn', ''),
-            'tsn': params.get('tsn', ''),
-            'txtCorrosion': params.get('txtCorrosion', 'N'),
-            'txtMenuID': params.get('txtMenuID', '13541'),
-            'txtParentID': params.get('txtParentID', '13112'),
-            'txtFleet': params.get('txtFleet', ''),
-            'txtACPartNo': params.get('txtACPartNo', ''),
-            'txtACSerialNo': params.get('txtACSerialNo', ''),
-            'txtTsn': params.get('txtTsn', ''),
-            'txtCsn': params.get('txtCsn', ''),
-            'jcMode': params.get('jcMode', 'C'),
-            'flagEu': params.get('flagEu', ''),
-            'txtFlag': params.get('txtFlag', ''),
+            'txtCust': params.get('txtCust', ''), # 输入变量-来自前端界面
+            'txtACNO': params.get('txtACNO', ''), # 输入变量-来自前端界面
+            'txtWO': params.get('txtWO', ''), # 输入变量-来自前端界面
+            'txtML': params.get('txtML', ''), # 输入变量-来自前端界面
+            'txtACType': params.get('txtACType', 'B737-300'), # 输入变量-来自前端界面
+            'txtWorkContent': params.get('txtWorkContent', ''), # 留空
+            'txtZoneName': params.get('txtZoneName', ''), # 输入变量-来自上传表格
+            'txtZoneTen': params.get('txtZoneTen', ''),  # 输入变量-来自上传表格
+            'txtRII': params.get('txtRII', ''), # 留空
+            'txtCRN': params.get('txtCRN', '客户要求/CUSTOMER REQUIREMENT'), # 输入变量-来自上传表格
+            'refNo': params.get('refNo', ''), # 输入变量-来自上传表格
+            'txtEnginSn': params.get('txtEnginSn', ''),  # 留空
+            'txtDescChn': desc_chn,  # 输入变量-来自上传表格
+            'txtDescEng': desc_eng,  # 输入变量-来自上传表格
+            'txtDept': params.get('txtDept', '3_CABIN_TPG'), # 固定值 3_CABIN_TPG
+            'selDocType': params.get('selDocType', 'NR'), # 固定值 NR
+            'csn': params.get('csn', ''), # 输入变量-来自请求
+            'tsn': params.get('tsn', ''), # 输入变量-来自前端界面
+            'txtCorrosion': params.get('txtCorrosion', 'N'), # 固定值 N
+            'txtMenuID': params.get('txtMenuID', '13541'), # 固定值 13541
+            'txtParentID': params.get('txtParentID', '13112'), # 固定值 13112
+            'txtFleet': params.get('txtFleet', ''), # 输入变量-来自请求
+            'txtACPartNo': params.get('txtACPartNo', ''), # 输入变量-来自请求
+            'txtACSerialNo': params.get('txtACSerialNo', ''), # 输入变量-来自请求
+            'txtTsn': params.get('txtTsn', ''), # 输入变量-来自请求
+            'txtCsn': params.get('txtCsn', ''), # 输入变量-来自请求
+            'jcMode': params.get('jcMode', 'C'), # 固定值 C
+            'flagEu': params.get('flagEu', ''), # 留空
+            'txtFlag': params.get('txtFlag', ''), # 留空
         }
         
         # 构建请求头
@@ -915,6 +908,14 @@ class WorkCardImportService:
             # 将数据编码为GBK格式的URL编码字符串
             # 注意：requests会自动处理URL编码，但我们需要确保使用GBK编码
             self.logger.info(f"开始准备导入请求，参数数量: {len(post_data)}")
+            
+            # 详细请求日志
+            self.logger.info("=" * 50)
+            self.logger.info(f"发送导入请求到: {url}")
+            self.logger.info(f"请求方法: POST")
+            self.logger.info(f"请求Headers: {headers}")
+            self.logger.info(f"请求Payload (原始): {json.dumps(post_data, ensure_ascii=False)}")
+            self.logger.info("=" * 50)
             self.logger.debug(f"POST数据: {post_data}")
             
             encoded_data = urlencode(post_data, encoding='gbk')
@@ -1790,7 +1791,6 @@ class WorkCardImportService:
         self,
         params: Dict[str, Any],
         cookies: Optional[str] = None,
-        is_test_mode: bool = True,
     ) -> Tuple[bool, str, Optional[str], List[LogEntry], List[Artifact]]:
         """
         导入英文工卡到NRC系统
@@ -1806,10 +1806,6 @@ class WorkCardImportService:
         
         # 准备表单数据
         desc_eng = params.get('txtDescEng', '')
-        
-        # 测试模式下添加前缀
-        if is_test_mode:
-            desc_eng = f"TEST {desc_eng}" if desc_eng else "TEST"
         
         # 构建POST数据（需要GBK编码）
         # 根据用户提供的参数列表构建
@@ -1856,6 +1852,14 @@ class WorkCardImportService:
         try:
             # 将数据编码为GBK格式的URL编码字符串
             self.logger.info(f"开始准备导入英文工卡请求，参数数量: {len(post_data)}")
+            
+            # 详细请求日志
+            self.logger.info("=" * 50)
+            self.logger.info(f"发送英文工卡导入请求到: {url}")
+            self.logger.info(f"请求方法: POST")
+            self.logger.info(f"请求Headers: {headers}")
+            self.logger.info(f"请求Payload (原始): {json.dumps(post_data, ensure_ascii=False)}")
+            self.logger.info("=" * 50)
             self.logger.debug(f"POST数据: {post_data}")
             
             # 注意：requests会自动处理URL编码，但我们需要确保使用GBK编码
@@ -1884,13 +1888,32 @@ class WorkCardImportService:
                 else:
                     parts.append(f"{k}={quote(str(v), safe='', encoding='gbk')}")
             
+            
             encoded_data = '&'.join(parts)
             
-            self.logger.debug(f"URL编码后的数据长度: {len(encoded_data)} 字符")
+            # ========== 详细的请求日志 ==========
+            self.logger.info("=" * 100)
+            self.logger.info("准备发送外网请求 - 完整请求信息:")
+            self.logger.info("=" * 100)
+            self.logger.info(f"目标URL: {url}")
+            self.logger.info("-" * 100)
+            self.logger.info("请求头 (Headers):")
+            for key, value in headers.items():
+                self.logger.info(f"  {key}: {value}")
+            self.logger.info("-" * 100)
+            self.logger.info("POST参数 (原始数据):")
+            for key, value in post_data.items():
+                self.logger.info(f"  {key} = {value}")
+            self.logger.info("-" * 100)
+            self.logger.info(f"URL编码后的完整Body数据:")
+            self.logger.info(f"  {encoded_data}")
+            self.logger.info("-" * 100)
+            self.logger.info(f"数据长度: {len(encoded_data)} 字符")
+            self.logger.info("=" * 100)
             
             self._log(logs, "import_english_defect", f"开始导入英文工卡，飞机号: {post_data['txtACNO']}, 工单号: {post_data['txtWO']}")
             
-            self.logger.info(f"发送POST请求到: {url}")
+            self.logger.info(f"发送POST请求...")
             
             # 添加请求间隔
             time.sleep(2)
@@ -1953,3 +1976,99 @@ class WorkCardImportService:
             self.logger.exception(error_msg)
             self._log(logs, "import_english_defect", error_msg, detail=traceback.format_exc())
             return False, error_msg, None, logs, artifacts
+
+    def get_aircraft_info(
+        self,
+        tail_no: str,
+        work_order: str,
+        cookies: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        获取飞机信息
+        请求 URL: http://10.240.2.131:9080/trace/nrc/getACInfo.jsp
+        """
+        session = self._create_session(cookies)
+        timestamp = int(datetime.now().timestamp() * 1000)
+        callback_name = f"jsonp{timestamp}"
+        
+        url = f"{settings.WORKCARD_IMPORT_BASE_URL}/trace/nrc/getACInfo.jsp"
+        params = {
+            "txtFlag": "",
+            "txtACNO": tail_no,
+            "txtWO": work_order,
+            "jsoncallback": callback_name
+        }
+        
+        headers = {
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+            "Accept-Encoding": "gzip, deflate",
+            "Accept-Language": "zh-CN,zh;q=0.9",
+            "Connection": "keep-alive",
+            "Upgrade-Insecure-Requests": "1",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+        }
+        
+        # 如果提供了cookies，也添加到headers中 (以防 session cookie处理有问题)
+        if cookies:
+            headers["Cookie"] = cookies
+
+        self.logger.info(f"开始获取飞机信息: tail_no={tail_no}, work_order={work_order}")
+        
+        # 详细请求日志
+        self.logger.info("=" * 50)
+        self.logger.info(f"发送信息查询请求到: {url}")
+        self.logger.info(f"请求方法: GET")
+        self.logger.info(f"请求Params: {json.dumps(params, ensure_ascii=False)}")
+        self.logger.info(f"请求Headers: {headers}")
+        self.logger.info("=" * 50)
+        
+        try:
+            response = session.get(
+                url, 
+                params=params, 
+                headers=headers,
+                verify=settings.WORKCARD_IMPORT_VERIFY_SSL,
+                timeout=30
+            )
+            response.raise_for_status()
+            
+            # response format: jsonp1765867017981([...])
+            content = response.text.strip()
+            self.logger.debug(f"收到响应: {content[:200]}...")
+
+            # 检查是否被重定向到登录页
+            if "j_acegi_security_check" in content or "loginCode" in content or "验证码" in content:
+                self.logger.error("检测到登录页面，认证失败")
+                raise ValueError("Cookie无效或已过期，请在导入界面更新Cookie")
+
+            # extract json part
+            start = content.find('(')
+            end = content.rfind(')')
+            if start != -1 and end != -1:
+                json_str = content[start+1:end]
+                try:
+                    data = json.loads(json_str)
+                except json.JSONDecodeError as e:
+                    self.logger.error(f"解析JSONP失败: {e}, 内容: {json_str}")
+                    raise ValueError(f"解析JSONP失败，且响应不包含登录页面特征。内容预览: {content[:100]}...")
+                
+                # find matching work order
+                if isinstance(data, list):
+                    for item in data:
+                        # 比较 wo 是否匹配 (注意字符串比较)
+                        # 比较 wo 是否匹配 (注意字符串比较)
+                        if str(item.get('wo')) == str(work_order):
+                            self.logger.info("找到匹配的工单信息")
+                            self.logger.info(f"返回数据详情: {json.dumps(item, ensure_ascii=False)}")
+                            return item
+                    
+                    self.logger.warning(f"未找到匹配工单号 {work_order} 的信息")
+                    return {}
+                return {} # Not a list?
+            else:
+                self.logger.error(f"JSONP格式错误: {content}")
+                raise ValueError(f"Invalid JSONP format: {content}")
+                
+        except Exception as exc:
+            self.logger.exception(f"获取飞机信息失败: {exc}")
+            raise

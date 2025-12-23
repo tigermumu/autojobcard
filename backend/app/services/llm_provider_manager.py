@@ -2,13 +2,11 @@ from enum import Enum
 from typing import Dict, List
 
 from app.core.config import settings
-from app.services.gemini_service import get_gemini_service
 from app.services.qwen_service import get_qwen_service
 
 
 class LLMModel(str, Enum):
     QWEN = "Qwen"
-    GEMINI = "Gemini"
 
 
 _MODEL_METADATA: Dict[LLMModel, Dict[str, str]] = {
@@ -16,11 +14,6 @@ _MODEL_METADATA: Dict[LLMModel, Dict[str, str]] = {
         "label": "Qwen",
         "description": "阿里云通义千问模型，适用于中文语境下的专业处理",
         "provider": "Alibaba Cloud"
-    },
-    LLMModel.GEMINI: {
-        "label": "Gemini",
-        "description": "Google Gemini 2.5 Flash，擅长多语言和快速响应",
-        "provider": "Google"
     }
 }
 
@@ -64,8 +57,6 @@ def list_available_models() -> List[Dict[str, str]]:
 def get_service_for_model(model: LLMModel):
     if model == LLMModel.QWEN:
         return get_qwen_service()
-    if model == LLMModel.GEMINI:
-        return get_gemini_service()
     raise ValueError(f"不支持的大模型类型: {model}")
 
 

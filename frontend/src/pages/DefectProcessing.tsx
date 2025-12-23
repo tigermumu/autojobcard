@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { 
-  Card, 
-  Button, 
-  Space, 
-  Table, 
+import {
+  Card,
+  Button,
+  Space,
+  Table,
   message,
   Typography,
   Input,
@@ -31,8 +31,10 @@ import {
   SearchOutlined,
   LeftOutlined,
   RightOutlined,
-  SaveOutlined
+  SaveOutlined,
+  DownloadOutlined
 } from '@ant-design/icons'
+import * as XLSX from 'xlsx'
 import { useNavigate } from 'react-router-dom'
 import { defectApi, DefectList, DefectRecord, CandidateWorkCard } from '../services/defectApi'
 import { configApi, Configuration } from '../services/configApi'
@@ -51,6 +53,7 @@ interface MatchResult {
   description_en?: string
   candidates: CandidateWorkCard[]
   selected_workcard_id?: number
+  is_matched?: boolean  // 是否有相似度>=90的候选工卡
 }
 
 const DefectProcessing: React.FC = () => {
@@ -130,10 +133,14 @@ const DefectProcessing: React.FC = () => {
   const normalizeMatchResult = (item: any): MatchResult => {
     const descriptionCn = toSafeString(item?.description_cn ?? item?.title ?? '')
     const descriptionEn = toSafeString(item?.description_en ?? item?.title_en ?? '')
+    const candidates = item?.candidates || []
+    const isMatched = candidates.length > 0 && candidates.some((c: CandidateWorkCard) => c.similarity_score >= 90)
     return {
       ...item,
       description_cn: descriptionCn,
-      description_en: descriptionEn
+      description_en: descriptionEn,
+      candidates: candidates,
+      is_matched: isMatched
     }
   }
 
@@ -141,6 +148,14 @@ const DefectProcessing: React.FC = () => {
     loadConfigurations()
     loadDefectLists()
     loadWorkcardGroups()
+    
+    // 检查URL参数，如果有defectListId，恢复该清单的状态
+    const urlParams = new URLSearchParams(window.location.search)
+    const defectListIdParam = urlParams.get('defectListId')
+    if (defectListIdParam) {
+      const defectListId = parseInt(defectListIdParam)
+      restoreProcessingState(defectListId)
+    }
   }, [])
 
   // 清理轮询定时器
@@ -190,6 +205,42 @@ const DefectProcessing: React.FC = () => {
     }
   }
 
+  const restoreProcessingState = async (defectListId: number) => {
+    try {
+      // 加载缺陷清单
+      const defectList = await defectApi.getList(defectListId)
+      setCurrentDefectList(defectList)
+      
+      // 加载处理状态
+      const status = await defectApi.getProcessingStatus(defectListId)
+      
+      // 根据状态恢复步骤
+      if (status.processing_stage === 'completed') {
+        setCurrentStep(4)
+        // 加载匹配结果
+        await loadMatchResults()
+      } else if (status.processing_stage === 'matching') {
+        setCurrentStep(3)
+        // 如果已清洗，加载清洗后的数据
+        if (status.cleaned_count > 0) {
+          await loadDefectRecords(defectListId)
+          // 尝试加载清洗后的数据（需要从API获取）
+        }
+      } else if (status.processing_stage === 'cleaning') {
+        setCurrentStep(2)
+        await loadDefectRecords(defectListId)
+      } else {
+        setCurrentStep(1)
+        await loadDefectRecords(defectListId)
+      }
+      
+      message.info(`已恢复缺陷清单 "${defectList.title}" 的处理状态`)
+    } catch (error: any) {
+      console.error('恢复处理状态失败:', error)
+      message.warning('恢复处理状态失败: ' + (error.message || error))
+    }
+  }
+
   const loadWorkcardGroups = async () => {
     try {
       const data = await workcardApi.getGroups(true)
@@ -215,14 +266,14 @@ const DefectProcessing: React.FC = () => {
   const handleUpload = async (file: File) => {
     try {
       setUploading(true)
-      
+
       // 从文件名提取基本信息
       const fileName = file.name.replace(/\.[^/.]+$/, '') // 去除扩展名
-      
+
       // 尝试从文件名提取飞机号（例如：B-1234_缺陷清单.xlsx）
       const aircraftMatch = fileName.match(/B-[A-Z0-9]+/i)
       const aircraft_number = aircraftMatch ? aircraftMatch[0].toUpperCase() : 'B-XXXX'
-      
+
       // 自动创建缺陷清单
       const newList = await defectApi.createList({
         aircraft_number: aircraft_number,
@@ -230,11 +281,11 @@ const DefectProcessing: React.FC = () => {
         description: undefined,
         configuration_id: configurations.length > 0 ? configurations[0].id : 1 // 使用第一个构型作为默认值
       })
-      
+
       message.success('缺陷清单创建成功')
       setCurrentDefectList(newList)
       await loadDefectLists()
-      
+
       // 上传缺陷数据
       const result = await defectApi.uploadDefectData(newList.id, file)
       if (result.imported_count > 0) {
@@ -299,19 +350,19 @@ const DefectProcessing: React.FC = () => {
               total: progressEvent.total_count || 0,
               message: progressEvent.message || '清洗完成'
             })
-            
+
             const testMode = limit ? `（测试模式：仅清洗 ${limit} 条）` : ''
             message.success(`成功清洗 ${progressEvent.cleaned_count}/${progressEvent.total_count} 条缺陷数据${testMode}`)
-            
+
             console.log('清洗后的数据:', progressEvent.cleaned_data)
             const normalizedCleaned = (progressEvent.cleaned_data || []).map(normalizeCleanedRecord)
             setCleanedData(normalizedCleaned)
-            
+
             // 确保当前步骤至少是2，以便显示清洗后的数据表格
             if (currentStep < 2) {
               setCurrentStep(2)
             }
-            
+
             setCleaning(false)
           } else if (progressEvent.type === 'error') {
             message.error('清洗失败: ' + (progressEvent.message || '未知错误'))
@@ -365,7 +416,7 @@ const DefectProcessing: React.FC = () => {
           configuration_id: selectedWorkcardGroup.configuration_id
         }
       })
-      
+
       if (result.success && result.task_id) {
         // 异步任务，开始轮询进度
         message.info('匹配任务已启动')
@@ -403,25 +454,25 @@ const DefectProcessing: React.FC = () => {
       clearInterval(pollingIntervalRef.current)
       pollingIntervalRef.current = null
     }
-    
+
     // 重置完成消息标志
     hasShownCompletionMessageRef.current = false
-    
+
     // 立即查询一次
     pollProgress(taskId)
-    
+
     // 每1秒轮询一次
     const interval = setInterval(() => {
       pollProgress(taskId)
     }, 1000)
-    
+
     pollingIntervalRef.current = interval
   }
 
   const pollProgress = async (taskId: string) => {
     try {
       const progress = await defectApi.getMatchingProgress(taskId)
-      
+
       if (progress.status === 'not_found') {
         message.warning('匹配任务不存在或已过期')
         if (pollingIntervalRef.current) {
@@ -431,7 +482,7 @@ const DefectProcessing: React.FC = () => {
         setMatching(false)
         return
       }
-      
+
       setMatchingProgress({
         taskId: progress.task_id,
         status: progress.status === 'processing' ? 'processing' : progress.status === 'completed' ? 'completed' : 'failed',
@@ -445,7 +496,7 @@ const DefectProcessing: React.FC = () => {
         failedCount: progress.statistics?.failed || 0,
         candidatesFound: progress.statistics?.candidates_found || 0
       })
-      
+
       // 如果完成或失败，停止轮询
       if (progress.status === 'completed' || progress.status === 'failed') {
         // 先停止轮询
@@ -454,11 +505,11 @@ const DefectProcessing: React.FC = () => {
           pollingIntervalRef.current = null
         }
         setMatching(false)
-        
+
         // 确保消息只显示一次
         if (!hasShownCompletionMessageRef.current) {
           hasShownCompletionMessageRef.current = true
-          
+
           if (progress.status === 'completed') {
             message.success(`匹配完成！共处理 ${progress.total} 条记录，匹配成功 ${progress.statistics?.matched || 0} 条`)
             // 加载匹配结果
@@ -475,19 +526,24 @@ const DefectProcessing: React.FC = () => {
 
   const loadMatchResults = async () => {
     if (!currentDefectList) return
-    
+
     try {
       // 从数据库加载匹配结果
       const savedResults = await defectApi.getSavedResults(currentDefectList.id)
       if (savedResults.success && savedResults.results) {
-        const normalizedResults = savedResults.results.map((r: any) => ({
-          defect_record_id: r.defect_record_id,
-          defect_number: r.defect_number,
-          description_cn: r.description_cn,
-          description_en: r.description_en,
-          candidates: r.candidates || [],
-          selected_workcard_id: r.selected_workcard_id
-        }))
+        const normalizedResults = savedResults.results.map((r: any) => {
+          const candidates = r.candidates || []
+          const isMatched = candidates.length > 0 && candidates.some((c: CandidateWorkCard) => c.similarity_score >= 90)
+          return {
+            defect_record_id: r.defect_record_id,
+            defect_number: r.defect_number,
+            description_cn: r.description_cn,
+            description_en: r.description_en,
+            candidates: candidates,
+            selected_workcard_id: r.selected_workcard_id,
+            is_matched: isMatched
+          }
+        })
         setMatchResults(normalizedResults)
         setCurrentStep(4)
       }
@@ -524,7 +580,7 @@ const DefectProcessing: React.FC = () => {
 
     try {
       setLoading(true)
-      
+
       // 遍历所有匹配结果
       for (const result of matchResults) {
         // 如果已经有选中的工卡，跳过
@@ -540,7 +596,7 @@ const DefectProcessing: React.FC = () => {
         }
 
         // 找到评分最高的候选工卡
-        const highestCandidate = result.candidates.reduce((prev, current) => 
+        const highestCandidate = result.candidates.reduce((prev, current) =>
           (current.similarity_score > prev.similarity_score) ? current : prev
         )
 
@@ -572,23 +628,83 @@ const DefectProcessing: React.FC = () => {
     }
   }
 
-  // 删除缺陷记录
-  const handleDeleteDefectRecord = async (defectRecordId: number, defectNumber: string) => {
+  // 标记匹配错误：删除该缺陷记录的所有候选工卡，使其进入未匹配状态
+  const handleMarkMatchingError = async (defectRecordId: number, defectNumber: string) => {
     try {
-      await defectApi.deleteDefectRecord(defectRecordId)
-      message.success(`缺陷记录 ${defectNumber} 已删除`)
-      
-      // 从匹配结果中移除
+      await defectApi.markMatchingError(defectRecordId)
+      message.success(`缺陷记录 ${defectNumber} 已标记为匹配错误，已进入未匹配状态`)
+
+      // 更新匹配结果：清空候选工卡，标记为未匹配
       setMatchResults((prevResults) =>
-        prevResults.filter((result) => result.defect_record_id !== defectRecordId)
-      )
-      
-      // 从缺陷记录列表中移除
-      setDefectRecords((prevRecords) =>
-        prevRecords.filter((record) => record.id !== defectRecordId)
+        prevResults.map((result) =>
+          result.defect_record_id === defectRecordId
+            ? {
+              ...result,
+              candidates: [],
+              is_matched: false,
+              selected_workcard_id: undefined,
+            }
+            : result
+        )
       )
     } catch (error: any) {
-      message.error('删除失败: ' + (error.message || error))
+      message.error('标记匹配错误失败: ' + (error.message || error))
+    }
+  }
+
+  // 导出未匹配的缺陷清单
+  const handleExportUnmatched = () => {
+    try {
+      // 筛选未匹配的缺陷（没有相似度>=90的候选工卡）
+      const unmatchedResults = matchResults.filter(r => {
+        const isMatched = r.is_matched ?? (r.candidates.length > 0 && r.candidates.some(c => c.similarity_score >= 90))
+        return !isMatched
+      })
+
+      if (unmatchedResults.length === 0) {
+        message.info('没有未匹配的缺陷记录')
+        return
+      }
+
+      // 准备导出数据
+      const exportData = unmatchedResults.map((result, index) => ({
+        '序号': index + 1,
+        '缺陷编号': result.defect_number,
+        '工卡描述（中文）': result.description_cn || '',
+        '工卡描述（英文）': result.description_en || '',
+        '匹配状态': '未匹配',
+        '最高相似度': result.candidates.length > 0
+          ? `${Math.max(...result.candidates.map(c => c.similarity_score)).toFixed(1)}%`
+          : '无候选工卡'
+      }))
+
+      // 创建工作簿
+      const wb = XLSX.utils.book_new()
+      const ws = XLSX.utils.json_to_sheet(exportData)
+
+      // 设置列宽
+      const colWidths = [
+        { wch: 8 },   // 序号
+        { wch: 15 },  // 缺陷编号
+        { wch: 40 },  // 工卡描述（中文）
+        { wch: 40 },  // 工卡描述（英文）
+        { wch: 12 },  // 匹配状态
+        { wch: 15 },  // 最高相似度
+      ]
+      ws['!cols'] = colWidths
+
+      XLSX.utils.book_append_sheet(wb, ws, '未匹配缺陷清单')
+
+      // 生成文件名
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
+      const fileName = `未匹配缺陷清单_${timestamp}.xlsx`
+
+      // 导出文件
+      XLSX.writeFile(wb, fileName)
+      message.success(`成功导出 ${unmatchedResults.length} 条未匹配缺陷记录`)
+    } catch (error: any) {
+      console.error('导出失败:', error)
+      message.error('导出失败: ' + (error.message || '未知错误'))
     }
   }
 
@@ -597,9 +713,10 @@ const DefectProcessing: React.FC = () => {
       message.warning('暂无匹配结果可保存')
       return
     }
-    const hasUnselected = matchResults.some((result) => !result.selected_workcard_id)
-    if (hasUnselected) {
-      message.warning('请先为所有缺陷选择候选工卡')
+    // 允许部分保存，不再强制要求所有缺陷都已选择工卡
+    const selectedCount = matchResults.filter(r => r.selected_workcard_id).length
+    if (selectedCount === 0) {
+      message.warning('请至少选择一个匹配结果进行保存')
       return
     }
     metadataForm.resetFields()
@@ -617,23 +734,26 @@ const DefectProcessing: React.FC = () => {
     try {
       const metadataValues = await metadataForm.validateFields()
 
-      const items = matchResults.map((result, index) => {
-        const selectedCandidate = result.candidates.find(
-          (candidate) => candidate.id === result.selected_workcard_id
-        )
-        if (!selectedCandidate) {
-          throw new Error(`缺陷 ${result.defect_number} 缺少已选候选工卡`)
-        }
-        return {
-          defect_record_id: result.defect_record_id,
-          defect_number: result.defect_number,
-          description_cn: result.description_cn || '',
-          description_en: result.description_en || '',
-          workcard_number: selectedCandidate.workcard_number,
-          selected_workcard_id: selectedCandidate.id,
-          similarity_score: selectedCandidate.similarity_score ?? 0
-        }
-      })
+      const items = matchResults
+        .filter(result => result.selected_workcard_id) // 只保存已选择工卡的记录
+        .map((result, index) => {
+          const selectedCandidate = result.candidates.find(
+            (candidate) => candidate.id === result.selected_workcard_id
+          )
+          if (!selectedCandidate) {
+            // 理论上不会执行到这里，因为已经filter过了
+            return null
+          }
+          return {
+            defect_record_id: result.defect_record_id,
+            defect_number: result.defect_number,
+            description_cn: result.description_cn || '',
+            description_en: result.description_en || '',
+            workcard_number: selectedCandidate.workcard_number,
+            selected_workcard_id: selectedCandidate.id,
+            similarity_score: selectedCandidate.similarity_score ?? 0
+          }
+        }).filter(Boolean)
 
       setSavingBatch(true)
       const payload = {
@@ -651,7 +771,8 @@ const DefectProcessing: React.FC = () => {
 
       const result = await importBatchApi.create(payload)
       setLatestBatchId(result.id)
-      message.success('已保存到待导入工卡数据表')
+      setLatestBatchId(result.id)
+      message.success(`已保存 ${items.length} 条记录到待导入工卡数据表`)
       setSaveModalVisible(false)
     } catch (error: any) {
       if (error?.errorFields) {
@@ -800,6 +921,20 @@ const DefectProcessing: React.FC = () => {
 
   const matchResultColumns = [
     {
+      title: '匹配状态',
+      key: 'match_status',
+      width: 100,
+      fixed: 'left' as const,
+      render: (_: any, record: MatchResult) => {
+        const isMatched = record.is_matched ?? (record.candidates.length > 0 && record.candidates.some(c => c.similarity_score >= 90))
+        return (
+          <Tag color={isMatched ? 'green' : 'red'}>
+            {isMatched ? '已匹配' : '未匹配'}
+          </Tag>
+        )
+      },
+    },
+    {
       title: '缺陷编号',
       dataIndex: 'defect_number',
       key: 'defect_number',
@@ -823,53 +958,64 @@ const DefectProcessing: React.FC = () => {
       render: (text: string) => text || '-',
     },
     {
-      title: '候选工卡',
+      title: '候选工卡（相似度≥90）',
       key: 'candidates',
       width: 600,
-      render: (_: any, record: MatchResult) => (
-        <Radio.Group
-          name={`defect-${record.defect_record_id}`}
-          value={record.selected_workcard_id}
-          onChange={(e) => handleSelectWorkcard(record.defect_record_id, e.target.value)}
-        >
-          <Space direction="vertical" style={{ width: '100%' }}>
-            {record.candidates.map((candidate) => (
-              <Radio key={candidate.id} value={candidate.id}>
-                <Space>
-                  <Tag color="blue">工卡指令号: {candidate.workcard_number}</Tag>
-                  <span>工卡描述: {candidate.description || '-'}</span>
-                  <Tag color={candidate.similarity_score >= 80 ? 'green' : candidate.similarity_score >= 60 ? 'orange' : 'red'}>
-                    相似度: {candidate.similarity_score.toFixed(1)}%
-                  </Tag>
-                </Space>
-              </Radio>
-            ))}
-            {record.candidates.length === 0 && (
-              <span style={{ color: '#999' }}>暂无候选工卡</span>
-            )}
-          </Space>
-        </Radio.Group>
-      ),
+      render: (_: any, record: MatchResult) => {
+        // 只显示相似度>=90的候选工卡
+        const highScoreCandidates = record.candidates.filter(c => c.similarity_score >= 90)
+        return (
+          <Radio.Group
+            name={`defect-${record.defect_record_id}`}
+            value={record.selected_workcard_id}
+            onChange={(e) => handleSelectWorkcard(record.defect_record_id, e.target.value)}
+          >
+            <Space direction="vertical" style={{ width: '100%' }}>
+              {highScoreCandidates.map((candidate) => (
+                <Radio key={candidate.id} value={candidate.id}>
+                  <Space>
+                    <Tag color="blue">工卡指令号: {candidate.workcard_number}</Tag>
+                    <span>工卡描述: {candidate.description || '-'}</span>
+                    <Tag color="green">
+                      相似度: {candidate.similarity_score.toFixed(1)}%
+                    </Tag>
+                  </Space>
+                </Radio>
+              ))}
+              {highScoreCandidates.length === 0 && (
+                <span style={{ color: '#ff4d4f' }}>未找到相似度≥90的候选工卡</span>
+              )}
+            </Space>
+          </Radio.Group>
+        )
+      },
     },
     {
       title: '操作',
       key: 'action',
-      width: 100,
+      width: 120,
       fixed: 'right' as const,
-      render: (_: any, record: MatchResult) => (
-        <Popconfirm
-          title="确定要删除这条缺陷记录吗？"
-          description="删除后将无法恢复，相关的匹配结果和候选工卡也会被删除。"
-          onConfirm={() => handleDeleteDefectRecord(record.defect_record_id, record.defect_number)}
-          okText="确定"
-          cancelText="取消"
-          okButtonProps={{ danger: true }}
-        >
-          <Button type="link" danger size="small">
-            删除
-          </Button>
-        </Popconfirm>
-      ),
+      render: (_: any, record: MatchResult) => {
+        // 只对已匹配的记录显示"匹配错误"按钮
+        const isMatched = record.is_matched ?? (record.candidates.length > 0 && record.candidates.some(c => c.similarity_score >= 90))
+        if (!isMatched) {
+          return <span style={{ color: '#999' }}>-</span>
+        }
+        return (
+          <Popconfirm
+            title="确定要标记为匹配错误吗？"
+            description="标记后，该缺陷记录的所有候选工卡将被删除，记录将进入未匹配状态，可以在未匹配清单中导出。"
+            onConfirm={() => handleMarkMatchingError(record.defect_record_id, record.defect_number)}
+            okText="确定"
+            cancelText="取消"
+            okButtonProps={{ danger: true }}
+          >
+            <Button type="link" danger size="small">
+              匹配错误
+            </Button>
+          </Popconfirm>
+        )
+      },
     },
   ]
 
@@ -896,387 +1042,445 @@ const DefectProcessing: React.FC = () => {
   }
 
   const saveBatchDisabled =
-    matchResults.length === 0 || matchResults.some((result) => !result.selected_workcard_id)
+    matchResults.length === 0 || !matchResults.some((result) => result.selected_workcard_id)
 
   return (
     <>
       <div style={{ padding: '24px', background: '#f0f2f5', minHeight: '100vh' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <Title level={2} style={{ margin: 0 }}>缺陷处理与匹配</Title>
-        <Space>
-          <Button icon={<ReloadOutlined />} onClick={() => {
-            loadConfigurations()
-            loadDefectLists()
-            loadWorkcardGroups()
-          }}>
-            刷新
-          </Button>
-          <Button icon={<HomeOutlined />} onClick={() => navigate('/')}>
-            返回首页
-          </Button>
-        </Space>
-      </div>
-
-      <Card style={{ marginBottom: '24px' }}>
-        <Steps current={currentStep}>
-          <Step title="上传缺陷清单" description="上传缺陷清单文件" />
-          <Step title="选择索引数据表" description="选择用于清洗的索引数据" />
-          <Step title="清洗缺陷数据" description="使用AI清洗缺陷数据" />
-          <Step title="选择标准工卡数据表" description="选择匹配目标工卡数据表" />
-          <Step title="匹配与选择" description="查看匹配结果并选择工卡" />
-        </Steps>
-      </Card>
-
-      {/* 步骤1: 上传缺陷清单 */}
-      {currentStep === 0 && (
-        <Card title="上传缺陷清单" style={{ marginBottom: '24px' }}>
-          <Space direction="vertical" style={{ width: '100%' }}>
-            <Upload
-              accept=".xlsx,.xls"
-              beforeUpload={handleUpload}
-              showUploadList={false}
-            >
-              <Button icon={<UploadOutlined />} loading={uploading} type="primary" size="large">
-                上传缺陷清单文件 (Excel)
-              </Button>
-            </Upload>
-            <div style={{ color: '#999', fontSize: '14px' }}>
-              提示：系统将自动从文件名提取飞机号信息
-            </div>
-            {currentDefectList && (
-              <div style={{ marginTop: '16px' }}>
-                <Tag color="blue">当前缺陷清单: {currentDefectList.title}</Tag>
-                <Tag color="green">飞机号: {currentDefectList.aircraft_number}</Tag>
-              </div>
-            )}
-            {defectRecords.length > 0 && (
-              <div style={{ marginTop: '16px' }}>
-                <Divider>已上传的缺陷记录 ({defectRecords.length} 条)</Divider>
-                <Table
-                  columns={defectColumns}
-                  dataSource={defectRecords}
-                  rowKey="id"
-                  size="small"
-                  pagination={{ pageSize: 10 }}
-                />
-              </div>
-            )}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+          <Title level={2} style={{ margin: 0 }}>缺陷处理与匹配</Title>
+          <Space>
+            <Button icon={<ReloadOutlined />} onClick={() => {
+              loadConfigurations()
+              loadDefectLists()
+              loadWorkcardGroups()
+              if (currentDefectList) {
+                restoreProcessingState(currentDefectList.id)
+              }
+            }}>
+              刷新
+            </Button>
+            <Button onClick={() => navigate('/defect-history')}>
+              查看历史记录
+            </Button>
+            <Button icon={<HomeOutlined />} onClick={() => navigate('/')}>
+              返回首页
+            </Button>
           </Space>
-          <Divider />
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '16px' }}>
-            <Button 
-              icon={<LeftOutlined />}
-              onClick={handlePrevStep}
-              disabled={currentStep === 0}
-            >
-              上一步
-            </Button>
-            <Button 
-              type="primary"
-              icon={<RightOutlined />}
-              onClick={handleNextStep}
-              disabled={defectRecords.length === 0 || currentStep >= 4}
-            >
-              下一步
-            </Button>
-          </div>
-        </Card>
-      )}
+        </div>
 
-      {/* 步骤2: 选择索引数据表并清洗 */}
-      {(currentStep === 1 || currentStep === 2) && currentDefectList && defectRecords.length > 0 && (
-        <Card title="选择索引数据表并清洗" style={{ marginBottom: '24px' }}>
-          <Space direction="vertical" style={{ width: '100%' }}>
-            <div>
-              <div style={{ marginBottom: 8, color: '#666', fontSize: '14px' }}>
-                请手动选择用于清洗缺陷数据的索引数据表（构型）。系统不会自动选择。
+        <Card style={{ marginBottom: '24px' }}>
+          <Steps current={currentStep}>
+            <Step title="上传缺陷清单" description="上传缺陷清单文件" />
+            <Step title="选择索引数据表" description="选择用于清洗的索引数据" />
+            <Step title="清洗缺陷数据" description="使用AI清洗缺陷数据" />
+            <Step title="选择标准工卡数据表" description="选择匹配目标工卡数据表" />
+            <Step title="匹配与选择" description="查看匹配结果并选择工卡" />
+          </Steps>
+        </Card>
+
+        {/* 步骤1: 上传缺陷清单 */}
+        {currentStep === 0 && (
+          <Card title="上传缺陷清单" style={{ marginBottom: '24px' }}>
+            <Space direction="vertical" style={{ width: '100%' }}>
+              <Upload
+                accept=".xlsx,.xls"
+                beforeUpload={handleUpload}
+                showUploadList={false}
+              >
+                <Button icon={<UploadOutlined />} loading={uploading} type="primary" size="large">
+                  上传缺陷清单文件 (Excel)
+                </Button>
+              </Upload>
+              <div style={{ color: '#999', fontSize: '14px' }}>
+                提示：系统将自动从文件名提取飞机号信息
               </div>
+              {currentDefectList && (
+                <div style={{ marginTop: '16px' }}>
+                  <Tag color="blue">当前缺陷清单: {currentDefectList.title}</Tag>
+                  <Tag color="green">飞机号: {currentDefectList.aircraft_number}</Tag>
+                </div>
+              )}
+              {defectRecords.length > 0 && (
+                <div style={{ marginTop: '16px' }}>
+                  <Divider>已上传的缺陷记录 ({defectRecords.length} 条)</Divider>
+                  <Table
+                    columns={defectColumns}
+                    dataSource={defectRecords}
+                    rowKey="id"
+                    size="small"
+                    pagination={{ pageSize: 10 }}
+                  />
+                </div>
+              )}
+            </Space>
+            <Divider />
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '16px' }}>
+              <Button
+                icon={<LeftOutlined />}
+                onClick={handlePrevStep}
+                disabled={currentStep === 0}
+              >
+                上一步
+              </Button>
+              <Button
+                type="primary"
+                icon={<RightOutlined />}
+                onClick={handleNextStep}
+                disabled={defectRecords.length === 0 || currentStep >= 4}
+              >
+                下一步
+              </Button>
+            </div>
+          </Card>
+        )}
+
+        {/* 步骤2: 选择索引数据表并清洗 */}
+        {(currentStep === 1 || currentStep === 2) && currentDefectList && defectRecords.length > 0 && (
+          <Card title="选择索引数据表并清洗" style={{ marginBottom: '24px' }}>
+            <Space direction="vertical" style={{ width: '100%' }}>
+              <div>
+                <div style={{ marginBottom: 8, color: '#666', fontSize: '14px' }}>
+                  请手动选择用于清洗缺陷数据的索引数据表（构型）。系统不会自动选择。
+                </div>
+                <Select
+                  style={{ width: 400 }}
+                  placeholder={loadingConfigurations ? "加载中..." : configurations.length === 0 ? "暂无可用构型，请先创建构型" : "请选择索引数据表（构型）"}
+                  value={selectedIndexConfig}
+                  onChange={(value) => {
+                    setSelectedIndexConfig(value)
+                    message.success(`已选择索引数据表: ${configurations.find(c => c.id === value)?.name || ''}`)
+                  }}
+                  loading={loadingConfigurations}
+                  disabled={loadingConfigurations || configurations.length === 0}
+                  notFoundContent={configurations.length === 0 ? "暂无可用构型配置" : null}
+                  allowClear
+                  showSearch
+                  optionFilterProp="children"
+                  filterOption={(input, option) =>
+                    (option?.children as string)?.toLowerCase().includes(input.toLowerCase())
+                  }
+                >
+                  {configurations.map(config => (
+                    <Option key={config.id} value={config.id}>
+                      {config.name} {config.aircraft_type ? `(${config.aircraft_type})` : ''} {config.msn ? `MSN: ${config.msn}` : ''}
+                    </Option>
+                  ))}
+                </Select>
+                {configurations.length === 0 && (
+                  <div style={{ marginTop: 8, color: '#ff4d4f' }}>
+                    <span>提示：请先在 </span>
+                    <Button
+                      type="link"
+                      size="small"
+                      onClick={() => navigate('/configuration-index-data')}
+                      style={{ padding: 0, height: 'auto' }}
+                    >
+                      构型管理页面
+                    </Button>
+                    <span> 创建构型配置并上传索引数据</span>
+                  </div>
+                )}
+                {selectedIndexConfig && (
+                  <div style={{ marginTop: 8 }}>
+                    <Tag color="blue">已选择: {configurations.find(c => c.id === selectedIndexConfig)?.name || ''}</Tag>
+                  </div>
+                )}
+              </div>
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <Space>
+                  <Button
+                    type="primary"
+                    icon={<PlayCircleOutlined />}
+                    onClick={() => handleClean()}
+                    loading={cleaning}
+                    disabled={!selectedIndexConfig || configurations.length === 0}
+                  >
+                    清洗全部数据
+                  </Button>
+                  <Button
+                    icon={<PlayCircleOutlined />}
+                    onClick={() => handleClean(20)}
+                    loading={cleaning}
+                    disabled={!selectedIndexConfig || configurations.length === 0}
+                  >
+                    测试清洗20条
+                  </Button>
+                </Space>
+                {cleaning && (
+                  <div style={{ width: '100%', marginTop: '16px' }}>
+                    <Progress
+                      percent={cleaningProgress.percent}
+                      status={cleaningProgress.percent === 100 ? 'success' : 'active'}
+                      format={(percent) => `${percent}%`}
+                    />
+                    <div style={{ marginTop: '8px', color: '#666', fontSize: '14px' }}>
+                      {cleaningProgress.message}
+                      {cleaningProgress.total > 0 && (
+                        <span style={{ marginLeft: '8px' }}>
+                          ({cleaningProgress.current} / {cleaningProgress.total})
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </Space>
+              {cleanedData && cleanedData.length > 0 ? (
+                <div style={{ marginTop: '24px' }}>
+                  <Divider>清洗后的数据 ({cleanedData.length} 条)</Divider>
+                  <Tag color="green" style={{ marginBottom: '16px' }}>清洗完成，可以进行下一步匹配</Tag>
+                  <Table
+                    columns={cleanedDataColumns}
+                    dataSource={cleanedData}
+                    rowKey="id"
+                    size="small"
+                    scroll={{ x: 1500 }}
+                    pagination={{
+                      showSizeChanger: true,
+                      showTotal: (total) => `共 ${total} 条清洗后的数据`,
+                      pageSize: 10,
+                    }}
+                    locale={{
+                      emptyText: <Empty description="暂无清洗后的数据" />
+                    }}
+                  />
+                </div>
+              ) : (
+                cleanedData && cleanedData.length === 0 && (
+                  <div style={{ marginTop: '24px', color: '#999' }}>
+                    <Tag color="orange">暂无清洗后的数据，请先执行清洗操作</Tag>
+                  </div>
+                )
+              )}
+            </Space>
+            <Divider />
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '16px' }}>
+              <Button
+                icon={<LeftOutlined />}
+                onClick={handlePrevStep}
+                disabled={currentStep === 0}
+              >
+                上一步
+              </Button>
+              <Button
+                type="primary"
+                icon={<RightOutlined />}
+                onClick={handleNextStep}
+                disabled={!cleanedData || cleanedData.length === 0 || currentStep >= 4}
+              >
+                下一步
+              </Button>
+            </div>
+          </Card>
+        )}
+
+        {/* 步骤3: 选择标准工卡数据表并匹配 */}
+        {currentStep >= 3 && cleanedData.length > 0 && (
+          <Card title="选择标准工卡数据表并匹配" style={{ marginBottom: '24px' }}>
+            <Space direction="vertical" style={{ width: '100%' }}>
               <Select
-                style={{ width: 400 }}
-                placeholder={loadingConfigurations ? "加载中..." : configurations.length === 0 ? "暂无可用构型，请先创建构型" : "请选择索引数据表（构型）"}
-                value={selectedIndexConfig}
+                style={{ width: 600 }}
+                placeholder="选择标准工卡数据表"
+                value={selectedWorkcardGroup ? `${selectedWorkcardGroup.aircraft_number || ''}_${selectedWorkcardGroup.configuration_id}` : null}
                 onChange={(value) => {
-                  setSelectedIndexConfig(value)
-                  message.success(`已选择索引数据表: ${configurations.find(c => c.id === value)?.name || ''}`)
+                  const group = workcardGroups.find(g => `${g.aircraft_number || ''}_${g.configuration_id}` === value)
+                  setSelectedWorkcardGroup(group || null)
                 }}
-                loading={loadingConfigurations}
-                disabled={loadingConfigurations || configurations.length === 0}
-                notFoundContent={configurations.length === 0 ? "暂无可用构型配置" : null}
-                allowClear
                 showSearch
-                optionFilterProp="children"
                 filterOption={(input, option) =>
                   (option?.children as string)?.toLowerCase().includes(input.toLowerCase())
                 }
               >
-                {configurations.map(config => (
-                  <Option key={config.id} value={config.id}>
-                    {config.name} {config.aircraft_type ? `(${config.aircraft_type})` : ''} {config.msn ? `MSN: ${config.msn}` : ''}
+                {workcardGroups.map(group => (
+                  <Option key={`${group.aircraft_number || ''}_${group.configuration_id}`} value={`${group.aircraft_number || ''}_${group.configuration_id}`}>
+                    {getGroupTitle(group)} (工卡数: {group.count})
                   </Option>
                 ))}
               </Select>
-              {configurations.length === 0 && (
-                <div style={{ marginTop: 8, color: '#ff4d4f' }}>
-                  <span>提示：请先在 </span>
-                  <Button 
-                    type="link" 
-                    size="small" 
-                    onClick={() => navigate('/configuration-index-data')}
-                    style={{ padding: 0, height: 'auto' }}
-                  >
-                    构型管理页面
-                  </Button>
-                  <span> 创建构型配置并上传索引数据</span>
-                </div>
-              )}
-              {selectedIndexConfig && (
-                <div style={{ marginTop: 8 }}>
-                  <Tag color="blue">已选择: {configurations.find(c => c.id === selectedIndexConfig)?.name || ''}</Tag>
-                </div>
-              )}
-            </div>
-            <Space direction="vertical" style={{ width: '100%' }}>
-              <Space>
-                <Button
-                  type="primary"
-                  icon={<PlayCircleOutlined />}
-                  onClick={() => handleClean()}
-                  loading={cleaning}
-                  disabled={!selectedIndexConfig || configurations.length === 0}
-                >
-                  清洗全部数据
-                </Button>
-                <Button
-                  icon={<PlayCircleOutlined />}
-                  onClick={() => handleClean(20)}
-                  loading={cleaning}
-                  disabled={!selectedIndexConfig || configurations.length === 0}
-                >
-                  测试清洗20条
-                </Button>
-              </Space>
-              {cleaning && (
-                <div style={{ width: '100%', marginTop: '16px' }}>
-                  <Progress
-                    percent={cleaningProgress.percent}
-                    status={cleaningProgress.percent === 100 ? 'success' : 'active'}
-                    format={(percent) => `${percent}%`}
-                  />
-                  <div style={{ marginTop: '8px', color: '#666', fontSize: '14px' }}>
-                    {cleaningProgress.message}
-                    {cleaningProgress.total > 0 && (
-                      <span style={{ marginLeft: '8px' }}>
-                        ({cleaningProgress.current} / {cleaningProgress.total})
-                      </span>
-                    )}
+              <Button
+                type="primary"
+                icon={<PlayCircleOutlined />}
+                onClick={handleMatch}
+                loading={matching}
+                disabled={!selectedWorkcardGroup}
+              >
+                开始匹配
+              </Button>
+
+              {/* 匹配进度展示 */}
+              {matchingProgress.status === 'processing' && (
+                <Card style={{ marginTop: '16px', background: '#f5f5f5' }}>
+                  <div style={{ marginBottom: '16px' }}>
+                    <Title level={5}>匹配进度</Title>
                   </div>
-                </div>
+
+                  {/* 进度条 */}
+                  <Progress
+                    percent={matchingProgress.total > 0
+                      ? Math.round((matchingProgress.completed / matchingProgress.total) * 100)
+                      : 0}
+                    status="active"
+                    strokeColor={{
+                      '0%': '#108ee9',
+                      '100%': '#87d068',
+                    }}
+                  />
+
+                  {/* 详细信息 */}
+                  <div style={{ marginTop: '16px', fontSize: '14px', color: '#666' }}>
+                    <Row gutter={16}>
+                      <Col span={12}>
+                        <div>总记录数: {matchingProgress.total}</div>
+                        <div>已完成: {matchingProgress.completed}</div>
+                        <div>剩余: {matchingProgress.total - matchingProgress.completed}</div>
+                      </Col>
+                      <Col span={12}>
+                        <div>匹配成功: {matchingProgress.matchedCount}</div>
+                        <div>失败: {matchingProgress.failedCount}</div>
+                        <div>候选工卡总数: {matchingProgress.candidatesFound}</div>
+                        {matchingProgress.current && (
+                          <div style={{ marginTop: '8px', color: '#1890ff' }}>
+                            当前处理: {matchingProgress.current.defect_number} - {matchingProgress.current.description}
+                          </div>
+                        )}
+                      </Col>
+                    </Row>
+                  </div>
+                </Card>
               )}
             </Space>
-            {cleanedData && cleanedData.length > 0 ? (
-              <div style={{ marginTop: '24px' }}>
-                <Divider>清洗后的数据 ({cleanedData.length} 条)</Divider>
-                <Tag color="green" style={{ marginBottom: '16px' }}>清洗完成，可以进行下一步匹配</Tag>
-                <Table
-                  columns={cleanedDataColumns}
-                  dataSource={cleanedData}
-                  rowKey="id"
-                  size="small"
-                  scroll={{ x: 1500 }}
-                  pagination={{
-                    showSizeChanger: true,
-                    showTotal: (total) => `共 ${total} 条清洗后的数据`,
-                    pageSize: 10,
-                  }}
-                  locale={{
-                    emptyText: <Empty description="暂无清洗后的数据" />
-                  }}
-                />
-              </div>
-            ) : (
-              cleanedData && cleanedData.length === 0 && (
-                <div style={{ marginTop: '24px', color: '#999' }}>
-                  <Tag color="orange">暂无清洗后的数据，请先执行清洗操作</Tag>
-                </div>
-              )
-            )}
-          </Space>
-          <Divider />
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '16px' }}>
-            <Button 
-              icon={<LeftOutlined />}
-              onClick={handlePrevStep}
-              disabled={currentStep === 0}
-            >
-              上一步
-            </Button>
-            <Button 
-              type="primary"
-              icon={<RightOutlined />}
-              onClick={handleNextStep}
-              disabled={!cleanedData || cleanedData.length === 0 || currentStep >= 4}
-            >
-              下一步
-            </Button>
-          </div>
-        </Card>
-      )}
+            <Divider />
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '16px' }}>
+              <Button
+                icon={<LeftOutlined />}
+                onClick={handlePrevStep}
+                disabled={currentStep === 0}
+              >
+                上一步
+              </Button>
+              <Button
+                type="primary"
+                icon={<RightOutlined />}
+                onClick={handleNextStep}
+                disabled={!selectedWorkcardGroup || currentStep >= 4}
+              >
+                下一步
+              </Button>
+            </div>
+          </Card>
+        )}
 
-      {/* 步骤3: 选择标准工卡数据表并匹配 */}
-      {currentStep >= 3 && cleanedData.length > 0 && (
-        <Card title="选择标准工卡数据表并匹配" style={{ marginBottom: '24px' }}>
-          <Space direction="vertical" style={{ width: '100%' }}>
-            <Select
-              style={{ width: 600 }}
-              placeholder="选择标准工卡数据表"
-              value={selectedWorkcardGroup ? `${selectedWorkcardGroup.aircraft_number || ''}_${selectedWorkcardGroup.configuration_id}` : null}
-              onChange={(value) => {
-                const group = workcardGroups.find(g => `${g.aircraft_number || ''}_${g.configuration_id}` === value)
-                setSelectedWorkcardGroup(group || null)
+        {/* 步骤4: 显示匹配结果 */}
+        {currentStep >= 3 && matchResults.length > 0 && (
+          <Card title="匹配结果" style={{ marginBottom: '24px' }}>
+            {/* 统计信息 */}
+            <div style={{ marginBottom: '16px', padding: '12px', background: '#f5f5f5', borderRadius: '4px' }}>
+              <Row gutter={16}>
+                <Col span={6}>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1890ff' }}>
+                      {matchResults.length}
+                    </div>
+                    <div style={{ color: '#666' }}>总记录数</div>
+                  </div>
+                </Col>
+                <Col span={6}>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#52c41a' }}>
+                      {matchResults.filter(r => r.is_matched ?? (r.candidates.length > 0 && r.candidates.some(c => c.similarity_score >= 90))).length}
+                    </div>
+                    <div style={{ color: '#666' }}>已匹配（≥90分）</div>
+                  </div>
+                </Col>
+                <Col span={6}>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#ff4d4f' }}>
+                      {matchResults.filter(r => !(r.is_matched ?? (r.candidates.length > 0 && r.candidates.some(c => c.similarity_score >= 90)))).length}
+                    </div>
+                    <div style={{ color: '#666' }}>未匹配（&lt;90分）</div>
+                  </div>
+                </Col>
+                <Col span={6}>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#722ed1' }}>
+                      {matchResults.filter(r => r.selected_workcard_id).length}
+                    </div>
+                    <div style={{ color: '#666' }}>已选择工卡</div>
+                  </div>
+                </Col>
+              </Row>
+            </div>
+            <Table
+              columns={matchResultColumns}
+              dataSource={matchResults}
+              rowKey="defect_record_id"
+              scroll={{ x: 1000 }}
+              pagination={{
+                showSizeChanger: true,
+                showTotal: (total, range) => {
+                  const matched = matchResults.filter(r => r.is_matched ?? (r.candidates.length > 0 && r.candidates.some(c => c.similarity_score >= 90))).length
+                  const unmatched = matchResults.filter(r => !(r.is_matched ?? (r.candidates.length > 0 && r.candidates.some(c => c.similarity_score >= 90)))).length
+                  return `共 ${total} 条（已匹配: ${matched}，未匹配: ${unmatched}）`
+                },
+                pageSize: 10,
               }}
-              showSearch
-              filterOption={(input, option) =>
-                (option?.children as string)?.toLowerCase().includes(input.toLowerCase())
-              }
-            >
-              {workcardGroups.map(group => (
-                <Option key={`${group.aircraft_number || ''}_${group.configuration_id}`} value={`${group.aircraft_number || ''}_${group.configuration_id}`}>
-                  {getGroupTitle(group)} (工卡数: {group.count})
-                </Option>
-              ))}
-            </Select>
-            <Button
-              type="primary"
-              icon={<PlayCircleOutlined />}
-              onClick={handleMatch}
-              loading={matching}
-              disabled={!selectedWorkcardGroup}
-            >
-              开始匹配
-            </Button>
-            
-            {/* 匹配进度展示 */}
-            {matchingProgress.status === 'processing' && (
-              <Card style={{ marginTop: '16px', background: '#f5f5f5' }}>
-                <div style={{ marginBottom: '16px' }}>
-                  <Title level={5}>匹配进度</Title>
-                </div>
-                
-                {/* 进度条 */}
-                <Progress
-                  percent={matchingProgress.total > 0 
-                    ? Math.round((matchingProgress.completed / matchingProgress.total) * 100) 
-                    : 0}
-                  status="active"
-                  strokeColor={{
-                    '0%': '#108ee9',
-                    '100%': '#87d068',
-                  }}
-                />
-                
-                {/* 详细信息 */}
-                <div style={{ marginTop: '16px', fontSize: '14px', color: '#666' }}>
-                  <Row gutter={16}>
-                    <Col span={12}>
-                      <div>总记录数: {matchingProgress.total}</div>
-                      <div>已完成: {matchingProgress.completed}</div>
-                      <div>剩余: {matchingProgress.total - matchingProgress.completed}</div>
-                    </Col>
-                    <Col span={12}>
-                      <div>匹配成功: {matchingProgress.matchedCount}</div>
-                      <div>失败: {matchingProgress.failedCount}</div>
-                      <div>候选工卡总数: {matchingProgress.candidatesFound}</div>
-                      {matchingProgress.current && (
-                        <div style={{ marginTop: '8px', color: '#1890ff' }}>
-                          当前处理: {matchingProgress.current.defect_number} - {matchingProgress.current.description}
-                        </div>
-                      )}
-                    </Col>
-                  </Row>
-                </div>
-              </Card>
-            )}
-          </Space>
-          <Divider />
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '16px' }}>
-            <Button 
-              icon={<LeftOutlined />}
-              onClick={handlePrevStep}
-              disabled={currentStep === 0}
-            >
-              上一步
-            </Button>
-            <Button 
-              type="primary"
-              icon={<RightOutlined />}
-              onClick={handleNextStep}
-              disabled={!selectedWorkcardGroup || currentStep >= 4}
-            >
-              下一步
-            </Button>
-          </div>
-        </Card>
-      )}
-
-      {/* 步骤4: 显示匹配结果 */}
-      {currentStep >= 3 && matchResults.length > 0 && (
-        <Card title="匹配结果" style={{ marginBottom: '24px' }}>
-          <Table
-            columns={matchResultColumns}
-            dataSource={matchResults}
-            rowKey="defect_record_id"
-            scroll={{ x: 1000 }}
-            pagination={{
-              showSizeChanger: true,
-              showTotal: (total) => `共 ${total} 条缺陷记录`,
-              pageSize: 10,
-            }}
-            locale={{
-              emptyText: <Empty description="暂无匹配结果" />
-            }}
-          />
-          <Divider />
-          <Space style={{ marginBottom: 24 }}>
-            <Button
-              type="primary"
-              icon={<SaveOutlined />}
-              onClick={handleOpenSaveModal}
-              disabled={saveBatchDisabled}
-            >
-              保存到待导入工卡数据表
-            </Button>
-            <Button
-              onClick={handleSelectAllHighest}
-              disabled={matchResults.length === 0 || loading}
-              loading={loading}
-            >
-              全选最高评分
-            </Button>
-            <Button
-              icon={<RightOutlined />}
-              onClick={() =>
-                navigate('/defect-processing/batch-open', {
-                  state: latestBatchId ? { importBatchId: latestBatchId } : undefined
-                })
-              }
-              disabled={matchResults.length === 0}
-            >
-              前往批量导入调试
-            </Button>
-          </Space>
-          <Divider />
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '16px' }}>
-            <Button 
-              icon={<LeftOutlined />}
-              onClick={handlePrevStep}
-              disabled={currentStep === 0}
-            >
-              上一步
-            </Button>
-            <div />
-          </div>
-        </Card>
-      )}
+              rowClassName={(record) => {
+                const isMatched = record.is_matched ?? (record.candidates.length > 0 && record.candidates.some(c => c.similarity_score >= 90))
+                return isMatched ? '' : 'unmatched-row'
+              }}
+              locale={{
+                emptyText: <Empty description="暂无匹配结果" />
+              }}
+            />
+            <Divider />
+            <Space style={{ marginBottom: 24 }}>
+              <Button
+                type="primary"
+                icon={<SaveOutlined />}
+                onClick={handleOpenSaveModal}
+                disabled={saveBatchDisabled}
+              >
+                保存到待导入工卡数据表
+              </Button>
+              <Button
+                onClick={handleSelectAllHighest}
+                disabled={matchResults.length === 0 || loading}
+                loading={loading}
+              >
+                全选最高评分
+              </Button>
+              <Button
+                icon={<RightOutlined />}
+                onClick={() =>
+                  navigate('/defect-processing/batch-open', {
+                    state: latestBatchId ? { importBatchId: latestBatchId } : undefined
+                  })
+                }
+                disabled={matchResults.length === 0}
+              >
+                前往批量导入调试
+              </Button>
+              <Button
+                icon={<DownloadOutlined />}
+                onClick={handleExportUnmatched}
+                disabled={matchResults.filter(r => !(r.is_matched ?? (r.candidates.length > 0 && r.candidates.some(c => c.similarity_score >= 90)))).length === 0}
+              >
+                导出未匹配清单
+              </Button>
+            </Space>
+            <Divider />
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '16px' }}>
+              <Button
+                icon={<LeftOutlined />}
+                onClick={handlePrevStep}
+                disabled={currentStep === 0}
+              >
+                上一步
+              </Button>
+              <div />
+            </div>
+          </Card>
+        )}
       </div>
 
       <Modal

@@ -9,11 +9,11 @@ class IndexData(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     
-    # 层级字段（有依赖关系）
-    main_area = Column(String(100), nullable=False, index=True)  # 主区域
-    main_component = Column(String(100), nullable=False, index=True)  # 主部件
-    first_level_subcomponent = Column(String(100), nullable=False, index=True)  # 一级子部件
-    second_level_subcomponent = Column(String(100), nullable=False, index=True)  # 二级子部件
+    # Hierarchy fields (all optional)
+    main_area = Column(String(100), nullable=True, index=True)  # Main Area
+    main_component = Column(String(100), nullable=True, index=True)  # Main Component
+    first_level_subcomponent = Column(String(100), nullable=True, index=True)  # First Level Subcomponent
+    second_level_subcomponent = Column(String(100), nullable=True, index=True)  # Second Level Subcomponent
     
     # 独立字段
     orientation = Column(String(50), nullable=True)  # 方位

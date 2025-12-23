@@ -18,10 +18,19 @@ class MatchingService:
 
     @staticmethod
     def _extract_descriptions(record: DefectRecord) -> Dict[str, str]:
+        """提取工卡描述（中文和英文）
+
+        约定：
+        - 优先使用原始表中的字段（raw_data/cleaned_data）。
+        - 若中文描述为空，但已存在清洗后的9字段，则用9字段 JSON 作为兜底（用于导出/展示）。
+        """
         description_cn = ""
         description_en = ""
+        
+        # 优先从cleaned_data获取
         if record.cleaned_data:
             description_cn = (record.cleaned_data.description_cn or "").strip()
+        
         raw_data = {}
         if record.raw_data:
             if isinstance(record.raw_data, dict):
@@ -34,15 +43,19 @@ class MatchingService:
                     raw_data = {}
 
         if raw_data:
-            description_cn = (
+            # 从raw_data中提取中文描述，如果为空则保持为空
+            cn_value = (
                 raw_data.get("description_cn")
                 or raw_data.get("工卡描述（中文）")
                 or raw_data.get("工卡描述(中文)")
-                or description_cn
             )
-            if isinstance(description_cn, str):
-                description_cn = description_cn.strip()
+            if cn_value and isinstance(cn_value, str):
+                description_cn = cn_value.strip()
+            elif not description_cn:
+                # 如果cleaned_data中没有，且raw_data中也没有，保持为空
+                description_cn = ""
 
+            # 从raw_data中提取英文描述，如果为空则保持为空
             candidate_keys = [
                 "description_en",
                 "descriptionEng",
@@ -57,8 +70,43 @@ class MatchingService:
                     if description_en:
                         break
 
-        if not description_cn:
-            description_cn = (record.description or record.title or "").strip()
+            # 兼容：如果仍未提取到英文描述，遍历包含“英文/english”的字段名
+            if not description_en:
+                for k, v in raw_data.items():
+                    if not v or not isinstance(v, str):
+                        continue
+                    k_str = str(k).lower()
+                    if "英文" in str(k) or "english" in k_str:
+                        vv = v.strip()
+                        if vv:
+                            description_en = vv
+                            break
+
+        # 兜底：中文描述为空时，用清洗后的9字段 JSON（与匹配接口展示一致）
+        if not description_cn and record.cleaned_data:
+            try:
+                import json
+                cleaned = record.cleaned_data
+                cleaned_fields = {
+                    "main_area": (cleaned.main_area or "").strip(),
+                    "main_component": (cleaned.main_component or "").strip(),
+                    "first_level_subcomponent": (cleaned.first_level_subcomponent or "").strip(),
+                    "second_level_subcomponent": (cleaned.second_level_subcomponent or "").strip(),
+                    "orientation": (cleaned.orientation or "").strip(),
+                    "defect_subject": (cleaned.defect_subject or "").strip(),
+                    "defect_description": (cleaned.defect_description or "").strip(),
+                    "location": (cleaned.location or "").strip(),
+                    "quantity": (cleaned.quantity or "").strip(),
+                }
+                # 避免全空时产生“{}”
+                if any(v for v in cleaned_fields.values()):
+                    description_cn = json.dumps(cleaned_fields, ensure_ascii=False, indent=2)
+            except Exception:
+                # 保持为空
+                pass
+
+        # 不再用record.description或record.title来补齐description_cn
+        # 如果原始数据中为空，则保持为空
 
         return {
             "description_cn": description_cn,
@@ -221,6 +269,37 @@ class MatchingService:
         return self.db.query(MatchingResult).filter(
             MatchingResult.defect_record_id == defect_record_id
         ).order_by(desc(MatchingResult.similarity_score)).all()
+
+    def mark_matching_error(self, defect_record_id: int) -> bool:
+        """标记匹配错误：删除该缺陷记录的所有候选工卡，使其进入未匹配状态"""
+        try:
+            # 检查缺陷记录是否存在
+            defect_record = self.db.query(DefectRecord).filter(
+                DefectRecord.id == defect_record_id
+            ).first()
+            
+            if not defect_record:
+                return False
+            
+            # 删除所有候选工卡
+            self.db.query(CandidateWorkCard).filter(
+                CandidateWorkCard.defect_record_id == defect_record_id
+            ).delete(synchronize_session=False)
+            
+            # 删除匹配结果
+            self.db.query(MatchingResult).filter(
+                MatchingResult.defect_record_id == defect_record_id
+            ).delete(synchronize_session=False)
+            
+            # 重置已选择的工卡
+            defect_record.selected_workcard_id = None
+            defect_record.is_selected = False
+            
+            self.db.commit()
+            return True
+        except Exception as e:
+            self.db.rollback()
+            raise e
 
     def select_candidate_workcard(self, defect_record_id: int, workcard_id: int) -> bool:
         """选择候选工卡"""
@@ -408,21 +487,13 @@ class MatchingService:
         configuration_id: Optional[int] = None
     ) -> List[Dict[str, Any]]:
         """从数据库中获取已保存的匹配结果"""
+        # 获取所有缺陷记录，不管是否有候选工卡
         defect_records_query = self.db.query(DefectRecord).filter(
             DefectRecord.defect_list_id == defect_list_id
         )
 
-        if configuration_id is not None:
-            defect_records_query = defect_records_query.join(
-                CandidateWorkCard,
-                CandidateWorkCard.defect_record_id == DefectRecord.id
-            ).join(
-                WorkCard,
-                WorkCard.id == CandidateWorkCard.workcard_id
-            ).filter(
-                WorkCard.configuration_id == configuration_id
-            ).distinct(DefectRecord.id)
-
+        # 注意：不再使用join过滤，因为这会排除没有候选工卡的缺陷记录
+        # 我们会在后续查询候选工卡时再根据configuration_id过滤
         defect_records = defect_records_query.all()
         results: List[Dict[str, Any]] = []
 
@@ -449,8 +520,9 @@ class MatchingService:
                     "is_selected": candidate.is_selected,
                 })
 
-            if not candidates_data:
-                continue
+            # 即使没有候选工卡，也要返回缺陷记录（用于显示未匹配的缺陷）
+            # if not candidates_data:
+            #     continue
 
             descriptions = self._extract_descriptions(record)
             description_cn = descriptions["description_cn"]
@@ -472,7 +544,7 @@ class MatchingService:
             results.append({
                 "defect_record_id": record.id,
                 "defect_number": record.defect_number,
-                "description_cn": description_cn or record.description or record.title,
+                "description_cn": description_cn,  # 保持原始值，不进行补齐
                 "description_en": description_en,
                 "candidates": candidates_data,
                 "selected_workcard_id": record.selected_workcard_id,

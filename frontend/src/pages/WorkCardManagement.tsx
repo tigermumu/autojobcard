@@ -423,7 +423,7 @@ const WorkCardManagement: React.FC = () => {
     <div style={{ padding: '24px', background: '#f0f2f5', minHeight: '100vh' }}>
       {/* 页面头部 */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <Title level={2} style={{ margin: 0 }}>标准工卡数据库管理</Title>
+        <Title level={2} style={{ margin: 0 }}>历史工卡数据库管理</Title>
         <Space>
           <Button icon={<ReloadOutlined />} onClick={loadGroups} loading={loading}>
             刷新

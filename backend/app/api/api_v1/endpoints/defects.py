@@ -11,6 +11,7 @@ from app.schemas.defect import (
     DefectRecordCreate, DefectListUpdate
 )
 from app.services.defect_service import DefectService
+from app.models.defect import DefectList
 
 router = APIRouter()
 
@@ -63,6 +64,15 @@ def update_defect_list(
     if not updated_defect_list:
         raise HTTPException(status_code=404, detail="缺陷清单未找到")
     return updated_defect_list
+
+@router.delete("/lists/{defect_list_id}")
+def delete_defect_list(defect_list_id: int, db: Session = Depends(get_db)):
+    """删除缺陷清单及其关联数据"""
+    service = DefectService(db)
+    success = service.delete_defect_list(defect_list_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="缺陷清单未找到")
+    return {"message": "缺陷清单删除成功"}
 
 @router.post("/lists/{defect_list_id}/upload")
 def upload_defect_data(
@@ -184,6 +194,148 @@ def export_unmatched_defects(
     """导出未匹配的缺陷记录"""
     service = DefectService(db)
     return service.export_unmatched_defects(defect_list_id, format)
+
+@router.get("/lists/{defect_list_id}/export-cleaned")
+def export_cleaned_data(
+    defect_list_id: int,
+    db: Session = Depends(get_db)
+):
+    """导出清洗后的缺陷数据"""
+    from app.models.defect_cleaned import DefectCleanedData
+    from app.models.defect import DefectRecord
+    import pandas as pd
+    import io
+    
+    defect_records = db.query(DefectRecord).filter(
+        DefectRecord.defect_list_id == defect_list_id,
+        DefectRecord.is_cleaned == True
+    ).all()
+    
+    if not defect_records:
+        raise HTTPException(status_code=404, detail="未找到已清洗的缺陷记录")
+    
+    export_data = []
+    for record in defect_records:
+        cleaned_data = db.query(DefectCleanedData).filter(
+            DefectCleanedData.defect_record_id == record.id
+        ).first()
+        
+        if cleaned_data:
+            export_data.append({
+                '缺陷编号': record.defect_number,
+                '工卡描述（中文）': cleaned_data.description_cn or '',
+                '工卡描述（英文）': getattr(record, 'raw_data', {}).get('description_en', '') if isinstance(getattr(record, 'raw_data', {}), dict) else '',
+                '主区域': cleaned_data.main_area or '',
+                '主部件': cleaned_data.main_component or '',
+                '一级子部件': cleaned_data.first_level_subcomponent or '',
+                '二级子部件': cleaned_data.second_level_subcomponent or '',
+                '方位': cleaned_data.orientation or '',
+                '缺陷主体': cleaned_data.defect_subject or '',
+                '缺陷描述': cleaned_data.defect_description or '',
+                '位置': cleaned_data.location or '',
+                '数量': cleaned_data.quantity or '',
+                '清洗时间': cleaned_data.cleaned_at.strftime('%Y-%m-%d %H:%M:%S') if cleaned_data.cleaned_at else ''
+            })
+    
+    df = pd.DataFrame(export_data)
+    output = io.BytesIO()
+    df.to_excel(output, index=False, engine='openpyxl')
+    output.seek(0)
+
+    # Starlette 会用 latin-1 编码 header，中文文件名会触发 UnicodeEncodeError
+    # 这里同时提供 ASCII filename + RFC5987 filename*（UTF-8）
+    from urllib.parse import quote
+    ascii_filename = f"cleaned_defects_{defect_list_id}.xlsx"
+    utf8_filename = quote(f"清洗后的缺陷数据_{defect_list_id}.xlsx")
+    content_disposition = f"attachment; filename=\"{ascii_filename}\"; filename*=UTF-8''{utf8_filename}"
+
+    return StreamingResponse(
+        io.BytesIO(output.read()),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": content_disposition}
+    )
+
+@router.get("/lists/{defect_list_id}/export-matched")
+def export_matched_data(
+    defect_list_id: int,
+    configuration_id: Optional[int] = None,
+    db: Session = Depends(get_db)
+):
+    """导出匹配结果"""
+    from app.services.matching_service import MatchingService
+    import pandas as pd
+    import io
+    
+    matching_service = MatchingService(db)
+    results = matching_service.get_saved_match_results(defect_list_id, configuration_id)
+    
+    if not results:
+        raise HTTPException(status_code=404, detail="未找到匹配结果")
+    
+    export_data = []
+    for result in results:
+        candidates = result.get('candidates', [])
+        highest_score = max([c.get('similarity_score', 0) for c in candidates]) if candidates else 0
+        best_candidate = next((c for c in candidates if c.get('similarity_score') == highest_score), None)
+        
+        export_data.append({
+            '缺陷编号': result.get('defect_number', ''),
+            '工卡描述（中文）': result.get('description_cn', ''),
+            '工卡描述（英文）': result.get('description_en', ''),
+            '匹配状态': '已匹配' if highest_score >= 90 else '未匹配',
+            '最高相似度': f"{highest_score:.1f}%" if highest_score > 0 else '无候选工卡',
+            '最佳候选工卡号': best_candidate.get('workcard_number', '') if best_candidate else '',
+            '已选择工卡号': result.get('selected_workcard_id', '') or '',
+            '候选工卡数量': len(candidates)
+        })
+    
+    df = pd.DataFrame(export_data)
+    output = io.BytesIO()
+    df.to_excel(output, index=False, engine='openpyxl')
+    output.seek(0)
+
+    # Starlette 会用 latin-1 编码 header，中文文件名会触发 UnicodeEncodeError
+    # 这里同时提供 ASCII filename + RFC5987 filename*（UTF-8）
+    from urllib.parse import quote
+    ascii_filename = f"matched_results_{defect_list_id}.xlsx"
+    utf8_filename = quote(f"匹配结果_{defect_list_id}.xlsx")
+    content_disposition = f"attachment; filename=\"{ascii_filename}\"; filename*=UTF-8''{utf8_filename}"
+
+    return StreamingResponse(
+        io.BytesIO(output.read()),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": content_disposition}
+    )
+
+@router.get("/lists/{defect_list_id}/processing-status")
+def get_processing_status(
+    defect_list_id: int,
+    db: Session = Depends(get_db)
+):
+    """获取缺陷清单的处理状态"""
+    from app.models.defect import DefectRecord
+    
+    defect_list = db.query(DefectList).filter(DefectList.id == defect_list_id).first()
+    if not defect_list:
+        raise HTTPException(status_code=404, detail="缺陷清单未找到")
+    
+    all_records = db.query(DefectRecord).filter(DefectRecord.defect_list_id == defect_list_id).all()
+    total_count = len(all_records)
+    cleaned_count = sum(1 for r in all_records if getattr(r, 'is_cleaned', False))
+    matched_count = sum(1 for r in all_records if getattr(r, 'is_matched', False))
+    
+    return {
+        "defect_list_id": defect_list_id,
+        "total_records": total_count,
+        "cleaned_count": cleaned_count,
+        "matched_count": matched_count,
+        "cleaning_status": getattr(defect_list, 'cleaning_status', 'pending'),
+        "cleaning_progress": getattr(defect_list, 'cleaning_progress', 0.0),
+        "matching_status": getattr(defect_list, 'matching_status', 'pending'),
+        "matching_progress": getattr(defect_list, 'matching_progress', 0.0),
+        "processing_stage": getattr(defect_list, 'processing_stage', 'upload'),
+        "last_processed_at": defect_list.last_processed_at.isoformat() if getattr(defect_list, 'last_processed_at', None) else None
+    }
 
 @router.post("/clean")
 def clean_defect_data(

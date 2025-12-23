@@ -1,10 +1,12 @@
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from app.models.configuration import Configuration, IndexFile
 from app.schemas.configuration import ConfigurationCreate, ConfigurationUpdate
 import os
 import json
 from datetime import datetime
+import pandas as pd
+from io import BytesIO
 
 class ConfigurationService:
     def __init__(self, db: Session):
@@ -89,4 +91,116 @@ class ConfigurationService:
         self.db.delete(configuration)
         self.db.commit()
         return True
+
+    def export_field_mapping_to_excel(self, configuration_id: int):
+        """导出独立索引字段（field_mapping）到Excel"""
+        configuration = self.get_configuration_by_id(configuration_id)
+        if not configuration:
+            raise ValueError("构型配置未找到")
+        
+        # 获取field_mapping，如果没有则使用空字典
+        field_mapping = configuration.field_mapping or {}
+        
+        # 字段名称映射（中文显示名）
+        field_name_map = {
+            'orientation': '方位',
+            'defectSubject': '缺陷主体',
+            'defectDescription': '缺陷描述',
+            'location': '位置',
+            'quantity': '数量'
+        }
+        
+        # 准备Excel数据 - 每个字段一列，值按行展开
+        max_rows = 0
+        excel_data = {}
+        
+        for field_key, field_name in field_name_map.items():
+            values = field_mapping.get(field_key, [])
+            if isinstance(values, list):
+                excel_data[field_name] = values
+                max_rows = max(max_rows, len(values))
+            else:
+                excel_data[field_name] = []
+        
+        # 确保所有列长度一致（用空字符串填充）
+        for field_name in excel_data.keys():
+            while len(excel_data[field_name]) < max_rows:
+                excel_data[field_name].append('')
+        
+        # 创建DataFrame
+        df = pd.DataFrame(excel_data)
+        
+        # 创建Excel文件到内存
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='独立索引字段')
+        
+        output.seek(0)
+        return output
+
+    def import_field_mapping_from_excel(self, configuration_id: int, file_path: str) -> Dict[str, Any]:
+        """从Excel导入独立索引字段（field_mapping）"""
+        configuration = self.get_configuration_by_id(configuration_id)
+        if not configuration:
+            raise ValueError("构型配置未找到")
+        
+        try:
+            # 读取Excel文件
+            df = pd.read_excel(file_path, sheet_name=0)
+            
+            # 字段名称映射（中文到英文）
+            field_name_map = {
+                '方位': 'orientation',
+                '缺陷主体': 'defectSubject',
+                '缺陷描述': 'defectDescription',
+                '位置': 'location',
+                '数量': 'quantity'
+            }
+            
+            # 初始化field_mapping
+            field_mapping = {}
+            
+            # 处理每一列
+            for col_name in df.columns:
+                col_name_str = str(col_name).strip()
+                if col_name_str in field_name_map:
+                    field_key = field_name_map[col_name_str]
+                    # 获取该列的所有非空值
+                    values = df[col_name].dropna().astype(str).str.strip()
+                    # 过滤空字符串
+                    values = values[values != ''].tolist()
+                    # 去重
+                    values = list(dict.fromkeys(values))  # 保持顺序的去重
+                    field_mapping[field_key] = values
+                else:
+                    # 尝试直接匹配英文字段名
+                    if col_name_str in field_name_map.values():
+                        field_key = col_name_str
+                        values = df[col_name].dropna().astype(str).str.strip()
+                        values = values[values != ''].tolist()
+                        values = list(dict.fromkeys(values))
+                        field_mapping[field_key] = values
+            
+            # 确保所有字段都存在（即使为空列表）
+            for field_key in field_name_map.values():
+                if field_key not in field_mapping:
+                    field_mapping[field_key] = []
+            
+            # 更新配置
+            configuration.field_mapping = field_mapping
+            self.db.commit()
+            self.db.refresh(configuration)
+            
+            # 统计导入的数据
+            total_values = sum(len(v) for v in field_mapping.values())
+            
+            return {
+                "message": "导入成功",
+                "field_mapping": field_mapping,
+                "total_values": total_values
+            }
+            
+        except Exception as e:
+            self.db.rollback()
+            raise Exception(f"导入Excel失败: {str(e)}")
 

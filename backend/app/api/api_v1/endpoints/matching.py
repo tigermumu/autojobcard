@@ -60,7 +60,31 @@ def batch_match_defect_list_new(
         
         # 获取缺陷记录
         defect_service = DefectService(db)
-        defect_records = defect_service.get_defect_records(req.defect_list_id)
+        defect_list = defect_service.get_defect_list_by_id(req.defect_list_id)
+        if not defect_list:
+            return {
+                "success": False,
+                "message": "缺陷清单未找到",
+                "results": []
+            }
+        
+        # 更新缺陷清单状态
+        from datetime import datetime
+        defect_list.matching_status = "processing"
+        defect_list.processing_stage = "matching"
+        defect_list.last_processed_at = datetime.now()
+        db.commit()
+        
+        # 支持断点续传：只处理已清洗但未匹配的记录
+        all_defect_records = defect_service.get_defect_records(req.defect_list_id)
+        defect_records = [r for r in all_defect_records if getattr(r, 'is_cleaned', False) and not getattr(r, 'is_matched', False)]
+        
+        # 如果没有未匹配的记录，使用所有已清洗的记录
+        if not defect_records:
+            defect_records = [r for r in all_defect_records if getattr(r, 'is_cleaned', False)]
+            logger.info(f"所有记录都已匹配，将重新匹配所有已清洗的记录")
+        else:
+            logger.info(f"断点续传模式：发现 {len(defect_records)} 条未匹配记录，{len(all_defect_records) - len(defect_records)} 条已匹配")
         
         # 刷新所有记录，确保从数据库重新加载最新的raw_data（包含清洗后的字段）
         for record in defect_records:
@@ -70,7 +94,7 @@ def batch_match_defect_list_new(
         if not defect_records:
             return {
                 "success": False,
-                "message": "未找到缺陷记录",
+                "message": "未找到已清洗的缺陷记录",
                 "results": []
             }
         
@@ -159,343 +183,407 @@ def _batch_match_with_llm_sync(
     failed_count = 0
     total_candidates = 0
     
+    # 获取缺陷清单，用于更新状态
+    from app.services.defect_service import DefectService
+    defect_service = DefectService(db)
+    defect_list = defect_service.get_defect_list_by_id(defect_records[0].defect_list_id) if defect_records else None
+    total_all_records = len(defect_service.get_defect_records(defect_records[0].defect_list_id)) if defect_records else total
+    
     try:
-        for idx, defect_record in enumerate(defect_records):
-            # 更新进度
-            current_progress = {
-                "task_id": task_id,
-                "status": "processing",
-                "total": total,
-                "completed": idx,
-                "current": {
-                    "defect_id": defect_record.id,
-                    "defect_number": defect_record.defect_number,
-                    "description": (defect_record.description or defect_record.title or "")[:50] + ("..." if len(defect_record.description or defect_record.title or "") > 50 else "")
-                },
-                "statistics": {
-                    "matched": matched_count,
-                    "failed": failed_count,
-                    "candidates_found": total_candidates
-                }
-            }
-            set_matching_progress(task_id, current_progress)
+        # 分批处理，每批处理完后保存状态
+        batch_size = 20  # 每批处理20条
+        matching_service = MatchingService(db)
+        
+        for batch_start in range(0, total, batch_size):
+            batch_end = min(batch_start + batch_size, total)
+            batch_records = defect_records[batch_start:batch_end]
             
-            try:
-                logger.info(f"匹配缺陷记录 {idx + 1}/{len(defect_records)}, 缺陷编号: {defect_record.defect_number}")
-                
-                # 从 DefectCleanedData 表中获取清洗后的9个字段（优先）
-                # 如果没有，则从 raw_data 中提取（向后兼容）
-                from app.models.defect_cleaned import DefectCleanedData
-                
-                defect_cleaned_fields = {}
-                description_cn = ""
-                description_en = ""
-                
-                # 优先从 DefectCleanedData 表读取
-                cleaned_data = db.query(DefectCleanedData).filter(
-                    DefectCleanedData.defect_record_id == defect_record.id
-                ).first()
-                
-                if cleaned_data:
-                    defect_cleaned_fields = {
-                        "main_area": cleaned_data.main_area or '',
-                        "main_component": cleaned_data.main_component or '',
-                        "first_level_subcomponent": cleaned_data.first_level_subcomponent or '',
-                        "second_level_subcomponent": cleaned_data.second_level_subcomponent or '',
-                        "orientation": cleaned_data.orientation or '',
-                        "defect_subject": cleaned_data.defect_subject or '',
-                        "defect_description": cleaned_data.defect_description or '',
-                        "location": cleaned_data.location or '',
-                        "quantity": cleaned_data.quantity or ''
+            logger.info(f"处理匹配批次 {batch_start + 1}-{batch_end}/{total}")
+            batch_results = []
+            
+            for idx, defect_record in enumerate(batch_records):
+                record_idx = batch_start + idx
+                # 更新进度
+                current_progress = {
+                    "task_id": task_id,
+                    "status": "processing",
+                    "total": total,
+                    "completed": record_idx,
+                    "current": {
+                        "defect_id": defect_record.id,
+                        "defect_number": defect_record.defect_number,
+                        "description": (defect_record.description or defect_record.title or "")[:50] + ("..." if len(defect_record.description or defect_record.title or "") > 50 else "")
+                    },
+                    "statistics": {
+                        "matched": matched_count,
+                        "failed": failed_count,
+                        "candidates_found": total_candidates
                     }
-                    description_cn = cleaned_data.description_cn or ''
-                    logger.info(f"从 DefectCleanedData 表读取清洗字段: main_area='{defect_cleaned_fields.get('main_area', '')}', main_component='{defect_cleaned_fields.get('main_component', '')}', first_level_subcomponent='{defect_cleaned_fields.get('first_level_subcomponent', '')}'")
-                else:
-                    # 向后兼容：从 raw_data 中提取
-                    logger.warning(f"缺陷记录 {defect_record.id} 没有 DefectCleanedData 记录，尝试从 raw_data 读取")
-                    if defect_record.raw_data and isinstance(defect_record.raw_data, dict):
+                }
+                set_matching_progress(task_id, current_progress)
+                
+                try:
+                    logger.info(f"匹配缺陷记录 {record_idx + 1}/{total}, 缺陷编号: {defect_record.defect_number}")
+                    
+                    # 从 DefectCleanedData 表中获取清洗后的9个字段（优先）
+                    # 如果没有，则从 raw_data 中提取（向后兼容）
+                    from app.models.defect_cleaned import DefectCleanedData
+                    
+                    defect_cleaned_fields = {}
+                    description_cn = ""
+                    description_en = ""
+                    
+                    # 优先从 DefectCleanedData 表读取
+                    cleaned_data = db.query(DefectCleanedData).filter(
+                        DefectCleanedData.defect_record_id == defect_record.id
+                    ).first()
+                    
+                    if cleaned_data:
                         defect_cleaned_fields = {
-                            "main_area": defect_record.raw_data.get('main_area', ''),
-                            "main_component": defect_record.raw_data.get('main_component', ''),
-                            "first_level_subcomponent": defect_record.raw_data.get('first_level_subcomponent', ''),
-                            "second_level_subcomponent": defect_record.raw_data.get('second_level_subcomponent', ''),
-                            "orientation": defect_record.raw_data.get('orientation', ''),
-                            "defect_subject": defect_record.raw_data.get('defect_subject', ''),
-                            "defect_description": defect_record.raw_data.get('defect_description', ''),
-                            "location": defect_record.raw_data.get('location', ''),
-                            "quantity": defect_record.raw_data.get('quantity', '')
+                            "main_area": cleaned_data.main_area or '',
+                            "main_component": cleaned_data.main_component or '',
+                            "first_level_subcomponent": cleaned_data.first_level_subcomponent or '',
+                            "second_level_subcomponent": cleaned_data.second_level_subcomponent or '',
+                            "orientation": cleaned_data.orientation or '',
+                            "defect_subject": cleaned_data.defect_subject or '',
+                            "defect_description": cleaned_data.defect_description or '',
+                            "location": cleaned_data.location or '',
+                            "quantity": cleaned_data.quantity or ''
                         }
-                        logger.info(f"从raw_data中提取的清洗字段: main_area='{defect_cleaned_fields.get('main_area', '')}', main_component='{defect_cleaned_fields.get('main_component', '')}'")
+                        description_cn = cleaned_data.description_cn or ''
+                        logger.info(f"从 DefectCleanedData 表读取清洗字段: main_area='{defect_cleaned_fields.get('main_area', '')}', main_component='{defect_cleaned_fields.get('main_component', '')}', first_level_subcomponent='{defect_cleaned_fields.get('first_level_subcomponent', '')}'")
                     else:
-                        logger.warning(f"缺陷记录 {defect_record.id} (缺陷编号: {defect_record.defect_number}) 的raw_data为空或不是字典类型")
+                        # 向后兼容：从 raw_data 中提取
+                        logger.warning(f"缺陷记录 {defect_record.id} 没有 DefectCleanedData 记录，尝试从 raw_data 读取")
+                        if defect_record.raw_data and isinstance(defect_record.raw_data, dict):
+                            defect_cleaned_fields = {
+                                "main_area": defect_record.raw_data.get('main_area', ''),
+                                "main_component": defect_record.raw_data.get('main_component', ''),
+                                "first_level_subcomponent": defect_record.raw_data.get('first_level_subcomponent', ''),
+                                "second_level_subcomponent": defect_record.raw_data.get('second_level_subcomponent', ''),
+                                "orientation": defect_record.raw_data.get('orientation', ''),
+                                "defect_subject": defect_record.raw_data.get('defect_subject', ''),
+                                "defect_description": defect_record.raw_data.get('defect_description', ''),
+                                "location": defect_record.raw_data.get('location', ''),
+                                "quantity": defect_record.raw_data.get('quantity', '')
+                            }
+                            logger.info(f"从raw_data中提取的清洗字段: main_area='{defect_cleaned_fields.get('main_area', '')}', main_component='{defect_cleaned_fields.get('main_component', '')}'")
+                        else:
+                            logger.warning(f"缺陷记录 {defect_record.id} (缺陷编号: {defect_record.defect_number}) 的raw_data为空或不是字典类型")
 
-                description_data = MatchingService._extract_descriptions(defect_record)
-                if description_data["description_cn"]:
-                    description_cn = description_data["description_cn"]
-                elif not description_cn:
-                    description_cn = json.dumps(defect_cleaned_fields, ensure_ascii=False, indent=2)
-                    logger.info(f"使用清洗后的9个字段构建工卡描述（中文）JSON: {description_cn[:200]}...")
-                else:
-                    description_cn = description_cn.strip()
+                    description_data = MatchingService._extract_descriptions(defect_record)
+                    if description_data["description_cn"]:
+                        description_cn = description_data["description_cn"]
+                    elif not description_cn:
+                        description_cn = json.dumps(defect_cleaned_fields, ensure_ascii=False, indent=2)
+                        logger.info(f"使用清洗后的9个字段构建工卡描述（中文）JSON: {description_cn[:200]}...")
+                    else:
+                        description_cn = description_cn.strip()
 
-                description_en = description_data["description_en"]
-                
-                # 分步筛选策略：逐步缩小候选工卡范围，减少向大模型提交的数据量
-                # 第一步：主区域筛选（粗筛选）
-                # 第二步：主部件筛选（中筛选）
-                # 第三步：一级子部件筛选（细筛选）
-                
-                main_area = defect_cleaned_fields.get('main_area', '').strip()
-                main_component = defect_cleaned_fields.get('main_component', '').strip()
-                first_level_subcomponent = defect_cleaned_fields.get('first_level_subcomponent', '').strip()
-                
-                logger.info(f"开始分步筛选，初始工卡数量: {len(all_workcards)}")
-                logger.info(f"缺陷记录字段 - 主区域: {main_area}, 主部件: {main_component}, 一级子部件: {first_level_subcomponent}")
-                
-                # 辅助函数：检查字段匹配（支持中英文同义词和部分匹配）
-                def field_match(defect_field: str, workcard_field: str, strict: bool = False) -> bool:
-                    """
-                    检查字段是否匹配，支持包含关系和同义词
-                    strict=True: 严格模式，主区域必须完全匹配或同义词匹配，不允许包含关系
-                    strict=False: 宽松模式，允许包含关系匹配
-                    """
-                    if not defect_field or not workcard_field:
+                    description_en = description_data["description_en"]
+                    
+                    # 分步筛选策略：逐步缩小候选工卡范围，减少向大模型提交的数据量
+                    # 第一步：主区域筛选（粗筛选）
+                    # 第二步：主部件筛选（中筛选）
+                    # 第三步：一级子部件筛选（细筛选）
+                    
+                    main_area = defect_cleaned_fields.get('main_area', '').strip()
+                    main_component = defect_cleaned_fields.get('main_component', '').strip()
+                    first_level_subcomponent = defect_cleaned_fields.get('first_level_subcomponent', '').strip()
+                    
+                    logger.info(f"开始分步筛选，初始工卡数量: {len(all_workcards)}")
+                    logger.info(f"缺陷记录字段 - 主区域: {main_area}, 主部件: {main_component}, 一级子部件: {first_level_subcomponent}")
+                    
+                    # 辅助函数：检查字段匹配（支持中英文同义词和部分匹配）
+                    def field_match(defect_field: str, workcard_field: str, strict: bool = False) -> bool:
+                        """
+                        检查字段是否匹配，支持包含关系和同义词
+                        strict=True: 严格模式，主区域必须完全匹配或同义词匹配，不允许包含关系
+                        strict=False: 宽松模式，允许包含关系匹配
+                        """
+                        if not defect_field or not workcard_field:
+                            return False
+                        
+                        # 完全匹配
+                        if defect_field == workcard_field:
+                            return True
+                        
+                        # 同义词匹配（优先检查）
+                        synonyms_map = {
+                            '驾驶舱': ['Cockpit', '驾驶室', '驾驶舱区域'],
+                            '客舱': ['Cabin', '客舱区域'],
+                            '座椅': ['Seat', '座位'],
+                            '安全带': ['Safety Belt', 'Seat Belt', '安全扣带']
+                        }
+                        for key, synonyms in synonyms_map.items():
+                            if defect_field == key and workcard_field in synonyms:
+                                return True
+                            if workcard_field == key and defect_field in synonyms:
+                                return True
+                        
+                        # 如果是严格模式（主区域匹配），不允许包含关系匹配
+                        if strict:
+                            return False
+                        
+                        # 包含关系匹配（仅用于非主区域字段）
+                        # 只有当其中一个字段是另一个字段的子串时才匹配
+                        if defect_field in workcard_field or workcard_field in defect_field:
+                            return True
+                        
                         return False
                     
-                    # 完全匹配
-                    if defect_field == workcard_field:
-                        return True
-                    
-                    # 同义词匹配（优先检查）
-                    synonyms_map = {
-                        '驾驶舱': ['Cockpit', '驾驶室', '驾驶舱区域'],
-                        '客舱': ['Cabin', '客舱区域'],
-                        '座椅': ['Seat', '座位'],
-                        '安全带': ['Safety Belt', 'Seat Belt', '安全扣带']
-                    }
-                    for key, synonyms in synonyms_map.items():
-                        if defect_field == key and workcard_field in synonyms:
-                            return True
-                        if workcard_field == key and defect_field in synonyms:
-                            return True
-                    
-                    # 如果是严格模式（主区域匹配），不允许包含关系匹配
-                    if strict:
-                        return False
-                    
-                    # 包含关系匹配（仅用于非主区域字段）
-                    # 只有当其中一个字段是另一个字段的子串时才匹配
-                    if defect_field in workcard_field or workcard_field in defect_field:
-                        return True
-                    
-                    return False
-                
-                # 第一步：主区域筛选（粗筛选）- 必须严格匹配
-                step1_workcards = []
-                if main_area:
-                    for workcard in all_workcards:
-                        workcard_main_area = (workcard.main_area or '').strip()
-                        # 主区域必须严格匹配（完全匹配或同义词匹配，不允许包含关系）
-                        if workcard_main_area and field_match(main_area, workcard_main_area, strict=True):
-                            step1_workcards.append(workcard)
-                    logger.info(f"第一步（主区域筛选，严格模式）后工卡数量: {len(step1_workcards)}")
-                    if len(step1_workcards) == 0:
-                        logger.warning(f"缺陷记录 {defect_record.defect_number} 主区域 '{main_area}' 没有匹配到任何工卡，返回空结果")
-                        results.append({
+                    # 第一步：主区域筛选（粗筛选）- 必须严格匹配
+                    step1_workcards = []
+                    if main_area:
+                        for workcard in all_workcards:
+                            workcard_main_area = (workcard.main_area or '').strip()
+                            # 主区域必须严格匹配（完全匹配或同义词匹配，不允许包含关系）
+                            if workcard_main_area and field_match(main_area, workcard_main_area, strict=True):
+                                step1_workcards.append(workcard)
+                        logger.info(f"第一步（主区域筛选，严格模式）后工卡数量: {len(step1_workcards)}")
+                        if len(step1_workcards) == 0:
+                            logger.warning(f"缺陷记录 {defect_record.defect_number} 主区域 '{main_area}' 没有匹配到任何工卡，返回空结果")
+                            empty_result = {
+                                "defect_record_id": defect_record.id,
+                                "defect_number": defect_record.defect_number,
+                                "description_cn": description_cn,
+                                "description_en": description_en,
+                                "candidates": []
+                            }
+                            results.append(empty_result)
+                            batch_results.append(empty_result)
+                            continue
+                    else:
+                        logger.warning(f"缺陷记录 {defect_record.defect_number} 没有主区域，无法进行匹配（主区域是必填字段）")
+                        empty_result2 = {
                             "defect_record_id": defect_record.id,
                             "defect_number": defect_record.defect_number,
                             "description_cn": description_cn,
                             "description_en": description_en,
                             "candidates": []
-                        })
+                        }
+                        results.append(empty_result2)
+                        batch_results.append(empty_result2)
                         continue
-                else:
-                    logger.warning(f"缺陷记录 {defect_record.defect_number} 没有主区域，无法进行匹配（主区域是必填字段）")
-                    results.append({
-                        "defect_record_id": defect_record.id,
-                        "defect_number": defect_record.defect_number,
-                        "description_cn": description_cn,
-                        "description_en": description_en,
-                        "candidates": []
-                    })
-                    continue
-                
-                # 如果第一步筛选后数量<=20，直接进入大模型匹配
-                if len(step1_workcards) <= 20:
-                    filtered_workcards = step1_workcards
-                    logger.info(f"第一步筛选后工卡数量({len(filtered_workcards)})<=20，直接进入大模型匹配")
-                else:
-                    # 第二步：主部件筛选（中筛选）
-                    step2_workcards = []
-                    if main_component:
-                        priority1 = []  # 主区域+主部件都匹配
-                        priority2 = []  # 只有主区域匹配
-                        
-                        for workcard in step1_workcards:
-                            workcard_main_component = (workcard.main_component or '').strip()
-                            if workcard_main_component and field_match(main_component, workcard_main_component):
-                                priority1.append(workcard)
-                            else:
-                                priority2.append(workcard)
-                        
-                        # 优先使用主区域+主部件都匹配的
-                        # 如果数量不足5条，可以补充一些只有主区域匹配的工卡（但不超过10条）
-                        if priority1:
-                            step2_workcards = priority1
-                            if len(step2_workcards) < 5 and priority2:
-                                # 只补充到5条，确保至少有基本的候选数量，但不要太多不匹配的
-                                step2_workcards.extend(priority2[:5 - len(step2_workcards)])
-                            logger.info(f"第二步（主部件筛选）后工卡数量: {len(step2_workcards)} (主区域+主部件匹配: {len(priority1)}, 仅主区域匹配: {len(priority2)})")
-                        else:
-                            # 如果主部件都不匹配，只保留少量只有主区域匹配的工卡（最多10条）
-                            step2_workcards = priority2[:10] if priority2 else []
-                            logger.warning(f"第二步（主部件筛选）没有匹配的工卡，只保留 {len(step2_workcards)} 条仅主区域匹配的工卡")
-                    else:
-                        step2_workcards = step1_workcards[:30]  # 如果没有主部件，保留前30条
-                        logger.warning(f"缺陷记录 {defect_record.defect_number} 没有主部件，跳过第二步筛选，保留前30条")
                     
-                    # 如果第二步筛选后数量<=20，直接进入大模型匹配
-                    if len(step2_workcards) <= 20:
-                        filtered_workcards = step2_workcards
-                        logger.info(f"第二步筛选后工卡数量({len(filtered_workcards)})<=20，直接进入大模型匹配")
+                    # 如果第一步筛选后数量<=20，直接进入大模型匹配
+                    if len(step1_workcards) <= 20:
+                        filtered_workcards = step1_workcards
+                        logger.info(f"第一步筛选后工卡数量({len(filtered_workcards)})<=20，直接进入大模型匹配")
                     else:
-                        # 第三步：一级子部件筛选（细筛选）
-                        step3_workcards = []
-                        if first_level_subcomponent:
-                            priority1 = []  # 主区域+主部件+一级子部件都匹配
-                            priority2 = []  # 主区域+主部件匹配（但一级子部件不匹配）
+                        # 第二步：主部件筛选（中筛选）
+                        step2_workcards = []
+                        if main_component:
+                            priority1 = []  # 主区域+主部件都匹配
+                            priority2 = []  # 只有主区域匹配
                             
-                            for workcard in step2_workcards:
-                                workcard_first_level = (workcard.first_level_subcomponent or '').strip()
-                                if workcard_first_level and field_match(first_level_subcomponent, workcard_first_level):
+                            for workcard in step1_workcards:
+                                workcard_main_component = (workcard.main_component or '').strip()
+                                if workcard_main_component and field_match(main_component, workcard_main_component):
                                     priority1.append(workcard)
                                 else:
                                     priority2.append(workcard)
                             
-                            # 优先使用主区域+主部件+一级子部件都匹配的
-                            # 如果数量不足5条，可以补充一些主区域+主部件匹配的工卡（但不超过10条）
+                            # 优先使用主区域+主部件都匹配的
+                            # 如果数量不足5条，可以补充一些只有主区域匹配的工卡（但不超过10条）
                             if priority1:
-                                step3_workcards = priority1
-                                if len(step3_workcards) < 5 and priority2:
-                                    # 只补充到5条，确保至少有基本的候选数量
-                                    step3_workcards.extend(priority2[:5 - len(step3_workcards)])
-                                logger.info(f"第三步（一级子部件筛选）后工卡数量: {len(step3_workcards)} (全部匹配: {len(priority1)}, 部分匹配: {len(priority2)})")
+                                step2_workcards = priority1
+                                if len(step2_workcards) < 5 and priority2:
+                                    # 只补充到5条，确保至少有基本的候选数量，但不要太多不匹配的
+                                    step2_workcards.extend(priority2[:5 - len(step2_workcards)])
+                                logger.info(f"第二步（主部件筛选）后工卡数量: {len(step2_workcards)} (主区域+主部件匹配: {len(priority1)}, 仅主区域匹配: {len(priority2)})")
                             else:
-                                # 如果一级子部件都不匹配，只保留少量主区域+主部件匹配的工卡（最多10条）
-                                step3_workcards = priority2[:10] if priority2 else []
-                                logger.warning(f"第三步（一级子部件筛选）没有匹配的工卡，只保留 {len(step3_workcards)} 条主区域+主部件匹配的工卡")
+                                # 如果主部件都不匹配，只保留少量只有主区域匹配的工卡（最多10条）
+                                step2_workcards = priority2[:10] if priority2 else []
+                                logger.warning(f"第二步（主部件筛选）没有匹配的工卡，只保留 {len(step2_workcards)} 条仅主区域匹配的工卡")
                         else:
-                            step3_workcards = step2_workcards[:20]  # 如果没有一级子部件，保留前20条
-                            logger.warning(f"缺陷记录 {defect_record.defect_number} 没有一级子部件，跳过第三步筛选，保留前20条")
+                            step2_workcards = step1_workcards[:30]  # 如果没有主部件，保留前30条
+                            logger.warning(f"缺陷记录 {defect_record.defect_number} 没有主部件，跳过第二步筛选，保留前30条")
                         
-                        filtered_workcards = step3_workcards
-                        logger.info(f"第三步筛选后工卡数量: {len(filtered_workcards)}")
-                
-                logger.info(f"最终筛选后工卡数量: {len(filtered_workcards)} (从 {len(all_workcards)} 条减少到 {len(filtered_workcards)} 条，减少 {((1 - len(filtered_workcards)/len(all_workcards)) * 100):.1f}%)")
-                
-                if not filtered_workcards:
-                    logger.warning(f"缺陷记录 {defect_record.defect_number} 没有筛选到匹配的工卡（主区域: {main_area}, 主部件: {main_component}）")
-                    # 如果没有筛选到工卡，返回空结果
-                    results.append({
+                        # 如果第二步筛选后数量<=20，直接进入大模型匹配
+                        if len(step2_workcards) <= 20:
+                            filtered_workcards = step2_workcards
+                            logger.info(f"第二步筛选后工卡数量({len(filtered_workcards)})<=20，直接进入大模型匹配")
+                        else:
+                            # 第三步：一级子部件筛选（细筛选）
+                            step3_workcards = []
+                            if first_level_subcomponent:
+                                priority1 = []  # 主区域+主部件+一级子部件都匹配
+                                priority2 = []  # 主区域+主部件匹配（但一级子部件不匹配）
+                                
+                                for workcard in step2_workcards:
+                                    workcard_first_level = (workcard.first_level_subcomponent or '').strip()
+                                    if workcard_first_level and field_match(first_level_subcomponent, workcard_first_level):
+                                        priority1.append(workcard)
+                                    else:
+                                        priority2.append(workcard)
+                                
+                                # 优先使用主区域+主部件+一级子部件都匹配的
+                                # 如果数量不足5条，可以补充一些主区域+主部件匹配的工卡（但不超过10条）
+                                if priority1:
+                                    step3_workcards = priority1
+                                    if len(step3_workcards) < 5 and priority2:
+                                        # 只补充到5条，确保至少有基本的候选数量
+                                        step3_workcards.extend(priority2[:5 - len(step3_workcards)])
+                                    logger.info(f"第三步（一级子部件筛选）后工卡数量: {len(step3_workcards)} (全部匹配: {len(priority1)}, 部分匹配: {len(priority2)})")
+                                else:
+                                    # 如果一级子部件都不匹配，只保留少量主区域+主部件匹配的工卡（最多10条）
+                                    step3_workcards = priority2[:10] if priority2 else []
+                                    logger.warning(f"第三步（一级子部件筛选）没有匹配的工卡，只保留 {len(step3_workcards)} 条主区域+主部件匹配的工卡")
+                            else:
+                                step3_workcards = step2_workcards[:20]  # 如果没有一级子部件，保留前20条
+                                logger.warning(f"缺陷记录 {defect_record.defect_number} 没有一级子部件，跳过第三步筛选，保留前20条")
+                            
+                            filtered_workcards = step3_workcards
+                            logger.info(f"第三步筛选后工卡数量: {len(filtered_workcards)}")
+                    
+                    logger.info(f"最终筛选后工卡数量: {len(filtered_workcards)} (从 {len(all_workcards)} 条减少到 {len(filtered_workcards)} 条，减少 {((1 - len(filtered_workcards)/len(all_workcards)) * 100):.1f}%)")
+                    
+                    if not filtered_workcards:
+                        logger.warning(f"缺陷记录 {defect_record.defect_number} 没有筛选到匹配的工卡（主区域: {main_area}, 主部件: {main_component}）")
+                        # 如果没有筛选到工卡，返回空结果
+                        empty_result3 = {
+                            "defect_record_id": defect_record.id,
+                            "defect_number": defect_record.defect_number,
+                            "description_cn": description_cn,  # 工卡描述（中文）
+                            "description_en": description_en,
+                            "candidates": []
+                        }
+                        results.append(empty_result3)
+                        batch_results.append(empty_result3)
+                        continue
+                    
+                    # 第二步：将缺陷记录的9个字段组合成JSON，准备传递给大模型
+                    defect_json = json.dumps(defect_cleaned_fields, ensure_ascii=False)
+                    logger.debug(f"缺陷记录JSON: {defect_json}")
+                    
+                    # 第三步：将筛选后的工卡也组合成JSON列表，传递给大模型
+                    workcard_json_list = []
+                    for workcard in filtered_workcards:
+                        workcard_fields = {
+                            "id": workcard.id,
+                            "workcard_number": workcard.workcard_number,
+                            "description": workcard.description or workcard.title or "",
+                            "main_area": workcard.main_area or "",
+                            "main_component": workcard.main_component or "",
+                            "first_level_subcomponent": workcard.first_level_subcomponent or "",
+                            "second_level_subcomponent": workcard.second_level_subcomponent or "",
+                            "orientation": workcard.orientation or "",
+                            "defect_subject": workcard.defect_subject or "",
+                            "defect_description": workcard.defect_description or "",
+                            "location_index": workcard.location_index or "",
+                            "quantity": workcard.quantity or ""
+                        }
+                        workcard_json_list.append(workcard_fields)
+                    
+                    logger.info(f"准备调用大模型，缺陷记录 {defect_record.defect_number}，候选工卡数: {len(workcard_json_list)}")
+                    
+                    # 第四步：调用大模型进行对比
+                    candidates = _match_with_llm(
+                        defect_json,
+                        workcard_json_list,
+                        description_cn,  # 使用description_cn作为工卡描述（中文）
+                        llm_service,
+                        logger
+                    )
+                    
+                    logger.info(f"大模型返回候选工卡数: {len(candidates)}")
+                    
+                    # 记录最终返回的工卡描述（中文）值
+                    logger.info(f"缺陷记录 {defect_record.id} (缺陷编号: {defect_record.defect_number}) 的工卡描述（中文）: {description_cn[:200] if description_cn else '(空)'}")
+
+                    description_data = MatchingService._extract_descriptions(defect_record)
+                    description_en = description_data["description_en"]
+                    result_item = {
                         "defect_record_id": defect_record.id,
                         "defect_number": defect_record.defect_number,
-                        "description_cn": description_cn,  # 工卡描述（中文）
+                        "description_cn": description_cn,  # 工卡描述（中文）- 从清洗后的raw_data中获取
                         "description_en": description_en,
-                        "candidates": []
-                    })
-                    continue
-                
-                # 第二步：将缺陷记录的9个字段组合成JSON，准备传递给大模型
-                defect_json = json.dumps(defect_cleaned_fields, ensure_ascii=False)
-                logger.debug(f"缺陷记录JSON: {defect_json}")
-                
-                # 第三步：将筛选后的工卡也组合成JSON列表，传递给大模型
-                workcard_json_list = []
-                for workcard in filtered_workcards:
-                    workcard_fields = {
-                        "id": workcard.id,
-                        "workcard_number": workcard.workcard_number,
-                        "description": workcard.description or workcard.title or "",
-                        "main_area": workcard.main_area or "",
-                        "main_component": workcard.main_component or "",
-                        "first_level_subcomponent": workcard.first_level_subcomponent or "",
-                        "second_level_subcomponent": workcard.second_level_subcomponent or "",
-                        "orientation": workcard.orientation or "",
-                        "defect_subject": workcard.defect_subject or "",
-                        "defect_description": workcard.defect_description or "",
-                        "location_index": workcard.location_index or "",
-                        "quantity": workcard.quantity or ""
+                        "candidates": candidates
                     }
-                    workcard_json_list.append(workcard_fields)
+                    logger.info(f"返回的匹配结果项: {json.dumps(result_item, ensure_ascii=False, default=str)[:500]}")
+                    results.append(result_item)
+                    batch_results.append(result_item)
+                    
+                    # 更新统计信息
+                    if len(candidates) > 0:
+                        matched_count += 1
+                        total_candidates += len(candidates)
                 
-                logger.info(f"准备调用大模型，缺陷记录 {defect_record.defect_number}，候选工卡数: {len(workcard_json_list)}")
-                
-                # 第四步：调用大模型进行对比
-                candidates = _match_with_llm(
-                    defect_json,
-                    workcard_json_list,
-                    description_cn,  # 使用description_cn作为工卡描述（中文）
-                    llm_service,
-                    logger
-                )
-                
-                logger.info(f"大模型返回候选工卡数: {len(candidates)}")
-                
-                # 记录最终返回的工卡描述（中文）值
-                logger.info(f"缺陷记录 {defect_record.id} (缺陷编号: {defect_record.defect_number}) 的工卡描述（中文）: {description_cn[:200] if description_cn else '(空)'}")
-
-                description_data = MatchingService._extract_descriptions(defect_record)
-                description_en = description_data["description_en"]
-                result_item = {
-                    "defect_record_id": defect_record.id,
-                    "defect_number": defect_record.defect_number,
-                    "description_cn": description_cn,  # 工卡描述（中文）- 从清洗后的raw_data中获取
-                    "description_en": description_en,
-                    "candidates": candidates
-                }
-                logger.info(f"返回的匹配结果项: {json.dumps(result_item, ensure_ascii=False, default=str)[:500]}")
-                results.append(result_item)
-                
-                # 更新统计信息
-                if len(candidates) > 0:
-                    matched_count += 1
-                    total_candidates += len(candidates)
+                except Exception as e:
+                    logger.error(f"匹配缺陷记录 {defect_record.id} 失败: {str(e)}", exc_info=True)
+                    failed_count += 1
+                    # 如果匹配失败，返回空结果
+                    # 尝试获取工卡描述（中文）
+                    description_data = MatchingService._extract_descriptions(defect_record)
+                    failed_description_cn = description_data["description_cn"]
+                    failed_description_en = description_data["description_en"]
+                    
+                    failed_result = {
+                        "defect_record_id": defect_record.id,
+                        "defect_number": defect_record.defect_number,
+                        "description_cn": failed_description_cn,  # 工卡描述（中文）
+                        "description_en": failed_description_en,
+                        "candidates": []
+                    }
+                    results.append(failed_result)
+                    batch_results.append(failed_result)
             
-            except Exception as e:
-                logger.error(f"匹配缺陷记录 {defect_record.id} 失败: {str(e)}", exc_info=True)
-                failed_count += 1
-                # 如果匹配失败，返回空结果
-                # 尝试获取工卡描述（中文）
-                description_data = MatchingService._extract_descriptions(defect_record)
-                failed_description_cn = description_data["description_cn"]
-                failed_description_en = description_data["description_en"]
+            # 每批处理完后立即保存结果
+            try:
+                matching_service.save_batch_results(batch_results)
+                logger.info(f"批次 {batch_start + 1}-{batch_end} 匹配结果已保存")
                 
-                results.append({
-                    "defect_record_id": defect_record.id,
-                    "defect_number": defect_record.defect_number,
-                    "description_cn": failed_description_cn,  # 工卡描述（中文）
-                    "description_en": failed_description_en,
-                    "candidates": []
-                })
+                # 更新缺陷记录的状态
+                from datetime import datetime
+                for record in batch_records:
+                    record.is_matched = True
+                    record.matched_at = datetime.now()
+                
+                # 更新缺陷清单的匹配进度
+                if defect_list:
+                    matching_progress = ((batch_end) / total_all_records) * 100 if total_all_records > 0 else 100
+                    defect_list.matching_progress = min(matching_progress, 100.0)
+                    defect_list.last_processed_at = datetime.now()
+                
+                db.commit()
+            except Exception as e:
+                db.rollback()
+                logger.error(f"保存批次 {batch_start + 1}-{batch_end} 匹配结果失败: {str(e)}")
         
-            # 更新最终进度（每处理完一条记录）
-            final_progress = {
-                "task_id": task_id,
-                "status": "processing",
-                "total": total,
-                "completed": idx + 1,
-                "current": {
-                    "defect_id": defect_record.id,
-                    "defect_number": defect_record.defect_number,
-                    "description": (defect_record.description or defect_record.title or "")[:50] + ("..." if len(defect_record.description or defect_record.title or "") > 50 else "")
-                },
-                "statistics": {
-                    "matched": matched_count,
-                    "failed": failed_count,
-                    "candidates_found": total_candidates
-                }
+        # 所有批次处理完成，更新最终状态
+        if defect_list:
+            from datetime import datetime
+            # 检查是否所有记录都已匹配
+            all_records = defect_service.get_defect_records(defect_list.id)
+            all_matched = all([getattr(r, 'is_matched', False) for r in all_records if getattr(r, 'is_cleaned', False)])
+            
+            if all_matched:
+                defect_list.matching_status = "completed"
+                defect_list.matching_progress = 100.0
+                defect_list.processing_stage = "completed"
+                logger.info(f"所有缺陷记录已匹配完成")
+            else:
+                defect_list.matching_status = "processing"  # 部分完成，保持处理中状态
+                logger.info(f"部分缺陷记录已匹配，还有未匹配的记录")
+            
+            defect_list.last_processed_at = datetime.now()
+            db.commit()
+        
+        # 更新最终进度
+        final_progress = {
+            "task_id": task_id,
+            "status": "processing",
+            "total": total,
+            "completed": total,
+            "current": None,
+            "statistics": {
+                "matched": matched_count,
+                "failed": failed_count,
+                "candidates_found": total_candidates
             }
-            set_matching_progress(task_id, final_progress)
+        }
+        set_matching_progress(task_id, final_progress)
     
     except Exception as e:
         logger.error(f"匹配任务循环执行失败: {str(e)}", exc_info=True)
@@ -515,43 +603,21 @@ def _batch_match_with_llm_sync(
         set_matching_progress(task_id, error_progress, expire_seconds=7200)
         return []
 
-    # 匹配完成，保存结果
-    try:
-        matching_service = MatchingService(db)
-        matching_service.save_batch_results(results)
-        
-        # 更新完成状态
-        completed_progress = {
-            "task_id": task_id,
-            "status": "completed",
-            "total": total,
-            "completed": total,
-            "current": None,
-            "statistics": {
-                "matched": matched_count,
-                "failed": failed_count,
-                "candidates_found": total_candidates
-            }
+    # 匹配完成，更新最终状态（结果已在分批处理时保存）
+    completed_progress = {
+        "task_id": task_id,
+        "status": "completed",
+        "total": total,
+        "completed": total,
+        "current": None,
+        "statistics": {
+            "matched": matched_count,
+            "failed": failed_count,
+            "candidates_found": total_candidates
         }
-        set_matching_progress(task_id, completed_progress, expire_seconds=7200)  # 完成后保存2小时
-        logger.info(f"匹配任务 {task_id} 完成，共处理 {total} 条记录，匹配成功 {matched_count} 条，失败 {failed_count} 条")
-    except Exception as e:
-        logger.error(f"保存匹配结果失败: {str(e)}", exc_info=True)
-        # 即使保存失败，也更新进度状态为失败
-        error_progress = {
-            "task_id": task_id,
-            "status": "failed",
-            "total": total,
-            "completed": total,
-            "current": None,
-            "statistics": {
-                "matched": matched_count,
-                "failed": failed_count,
-                "candidates_found": total_candidates
-            },
-            "error": str(e)
-        }
-        set_matching_progress(task_id, error_progress, expire_seconds=7200)
+    }
+    set_matching_progress(task_id, completed_progress, expire_seconds=7200)  # 完成后保存2小时
+    logger.info(f"匹配任务 {task_id} 完成，共处理 {total} 条记录，匹配成功 {matched_count} 条，失败 {failed_count} 条")
 
 
 @router.get("/batch-contexts")
@@ -852,13 +918,13 @@ def _match_with_llm(
         # 按相似度排序
         formatted_candidates.sort(key=lambda x: x["similarity_score"], reverse=True)
         
-        # 过滤掉相似度为0的工卡
-        formatted_candidates = [c for c in formatted_candidates if c["similarity_score"] > 0]
+        # 只返回相似度>=90的候选工卡
+        formatted_candidates = [c for c in formatted_candidates if c["similarity_score"] >= 90]
         
         # 限制最多返回5个
         formatted_candidates = formatted_candidates[:5]
         
-        logger.info(f"大模型匹配完成，返回 {len(formatted_candidates)} 个候选工卡")
+        logger.info(f"大模型匹配完成，返回 {len(formatted_candidates)} 个候选工卡（相似度>=90）")
         return formatted_candidates
         
     except Exception as e:
@@ -899,6 +965,18 @@ def select_candidate_workcard(
     if not success:
         raise HTTPException(status_code=404, detail="缺陷记录或工卡未找到")
     return {"message": "候选工卡选择成功"}
+
+@router.post("/defect/{defect_record_id}/mark-matching-error")
+def mark_matching_error(
+    defect_record_id: int,
+    db: Session = Depends(get_db)
+):
+    """标记匹配错误：删除该缺陷记录的所有候选工卡，使其进入未匹配状态"""
+    service = MatchingService(db)
+    success = service.mark_matching_error(defect_record_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="缺陷记录未找到")
+    return {"message": "已标记为匹配错误，该记录已进入未匹配状态"}
 
 @router.get("/defect-list/{defect_list_id}/statistics")
 def get_matching_statistics(defect_list_id: int, db: Session = Depends(get_db)):

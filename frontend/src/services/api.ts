@@ -18,7 +18,7 @@ class ApiClient {
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`
-    
+
     const response = await fetch(url, {
       ...options,
       headers: {
@@ -32,13 +32,23 @@ class ApiClient {
       try {
         const errorData = await response.json()
         if (errorData.detail) {
-          errorDetail = errorData.detail
+          if (Array.isArray(errorData.detail)) {
+            errorDetail = errorData.detail.map((err: any) =>
+              (err && typeof err === 'object')
+                ? `${Array.isArray(err.loc) ? err.loc.join('.') : 'unknown'}: ${err.msg || JSON.stringify(err)}`
+                : JSON.stringify(err)
+            ).join('; ')
+          } else {
+            errorDetail = errorData.detail
+          }
         } else if (errorData.message) {
           errorDetail = errorData.message
         } else if (Array.isArray(errorData)) {
-          // FastAPI验证错误格式
-          errorDetail = errorData.map((err: any) => 
-            `${err.loc?.join('.')}: ${err.msg}`
+          // FastAPI验证错误格式 (Shouldn't happen with standard FastAPI but handled just in case)
+          errorDetail = errorData.map((err: any) =>
+            (err && typeof err === 'object')
+              ? `${Array.isArray(err.loc) ? err.loc.join('.') : 'unknown'}: ${err.msg || JSON.stringify(err)}`
+              : JSON.stringify(err)
           ).join('; ')
         } else {
           errorDetail = JSON.stringify(errorData)
@@ -48,8 +58,8 @@ class ApiClient {
         errorDetail = response.statusText
       }
       const error = new Error(errorDetail || `HTTP error! status: ${response.status}`)
-      // 附加响应信息以便调试
-      ;(error as any).response = { status: response.status }
+        // 附加响应信息以便调试
+        ; (error as any).response = { status: response.status }
       throw error
     }
 
@@ -115,7 +125,7 @@ class ApiClient {
   ): Promise<T> {
     const formData = new FormData()
     formData.append('file', file)
-    
+
     if (additionalData) {
       Object.entries(additionalData).forEach(([key, value]) => {
         formData.append(key, String(value))
@@ -138,7 +148,7 @@ class ApiClient {
         } else if (errorData.message) {
           errorDetail = errorData.message
         } else if (Array.isArray(errorData)) {
-          errorDetail = errorData.map((err: any) => 
+          errorDetail = errorData.map((err: any) =>
             `${err.loc?.join('.')}: ${err.msg}`
           ).join('; ')
         } else {
@@ -149,7 +159,7 @@ class ApiClient {
         errorDetail = response.statusText
       }
       const error = new Error(errorDetail || `HTTP error! status: ${response.status}`)
-      ;(error as any).response = { status: response.status }
+        ; (error as any).response = { status: response.status }
       throw error
     }
 
@@ -165,7 +175,7 @@ class ApiClient {
     onComplete?: () => void
   ): Promise<void> {
     const url = `${this.baseUrl}${endpoint}`
-    
+
     try {
       const response = await fetch(url, {
         method: 'POST',
@@ -194,7 +204,7 @@ class ApiClient {
 
       while (true) {
         const { done, value } = await reader.read()
-        
+
         if (done) {
           if (onComplete) onComplete()
           break

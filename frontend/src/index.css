@@ -85,4 +85,12 @@ code {
   color: #faad14;
 }
 
+.unmatched-row {
+  background-color: #fff1f0 !important;
+}
+
+.unmatched-row:hover {
+  background-color: #ffe7e5 !important;
+}
+
 

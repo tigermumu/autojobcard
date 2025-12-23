@@ -3,10 +3,10 @@ from typing import Optional, Dict, Any, List
 from datetime import datetime
 
 class IndexDataBase(BaseModel):
-    main_area: str
-    main_component: str
-    first_level_subcomponent: str
-    second_level_subcomponent: str
+    main_area: Optional[str] = None
+    main_component: Optional[str] = None
+    first_level_subcomponent: Optional[str] = None
+    second_level_subcomponent: Optional[str] = None
     orientation: Optional[str] = None
     defect_subject: Optional[str] = None
     defect_description: Optional[str] = None
@@ -37,15 +37,15 @@ class IndexDataResponse(IndexDataBase):
         from_attributes = True
 
 class IndexDataHierarchy(BaseModel):
-    """层级结构数据"""
+    """Hierarchy data"""
     main_area: str
     main_components: List[Dict[str, Any]]
 
 class IndexDataImport(BaseModel):
-    """批量导入数据"""
+    """Batch import data"""
     configuration_id: int
     data: List[IndexDataBase]
 
 class IndexDataReplace(BaseModel):
-    """批量替换数据"""
+    """Batch replace data"""
     data: List[IndexDataBase]

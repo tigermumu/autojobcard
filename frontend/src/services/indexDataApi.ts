@@ -1,4 +1,4 @@
-// 索引数据API
+// Index Data API
 import { apiClient } from './api'
 
 export interface IndexData {
@@ -72,7 +72,7 @@ export interface IndependentFields {
 }
 
 export const indexDataApi = {
-  // 获取索引数据列表
+  // Get index data list
   getAll: async (params?: {
     configuration_id?: number
     main_area?: string
@@ -85,17 +85,17 @@ export const indexDataApi = {
     return apiClient.get<IndexData[]>('/index-data/', params)
   },
 
-  // 获取单个索引数据
+  // Get single index data by ID
   getById: async (id: number): Promise<IndexData> => {
     return apiClient.get<IndexData>(`/index-data/${id}`)
   },
 
-  // 创建索引数据
+  // Create index data
   create: async (data: IndexDataCreate): Promise<IndexData> => {
     return apiClient.post<IndexData>('/index-data/', data)
   },
 
-  // 批量创建索引数据
+  // Batch create index data
   batchCreate: async (items: IndexDataCreate[]): Promise<IndexData[]> => {
     const results = await Promise.all(
       items.map(item => apiClient.post<IndexData>('/index-data/', item))
@@ -103,47 +103,47 @@ export const indexDataApi = {
     return results
   },
 
-  // 替换索引数据（删除旧的，创建新的）
+  // Replace index data (delete old, create new)
   replaceIndexData: async (configurationId: number, items: IndexDataCreate[]): Promise<any> => {
-    // 调用后端新接口，一次性原子替换
+    // Call new backend interface for atomic replacement
     return apiClient.put(`/index-data/configuration/${configurationId}/replace`, {
       data: items
     })
   },
 
-  // 更新索引数据
+  // Update index data
   update: async (id: number, data: IndexDataUpdate): Promise<IndexData> => {
     return apiClient.put<IndexData>(`/index-data/${id}`, data)
   },
 
-  // 删除索引数据
+  // Delete index data
   delete: async (id: number): Promise<void> => {
     return apiClient.delete(`/index-data/${id}`)
   },
 
-  // 获取层级结构数据
+  // Get hierarchy data
   getHierarchy: async (configurationId: number): Promise<IndexDataHierarchy[]> => {
     return apiClient.get<IndexDataHierarchy[]>(
       `/index-data/configuration/${configurationId}/hierarchy`
     )
   },
 
-  // 获取统计信息
+  // Get statistics
   getStatistics: async (configurationId: number): Promise<Statistics> => {
     return apiClient.get<Statistics>(
       `/index-data/configuration/${configurationId}/statistics`
     )
   },
 
-  // 批量导入
-  batchImport: async (configurationId: number, file: File): Promise<any> => {
+  // Batch import (default: replace mode)
+  batchImport: async (configurationId: number, file: File, replace: boolean = true): Promise<any> => {
     return apiClient.upload(
-      `/index-data/batch-import?configuration_id=${configurationId}`,
+      `/index-data/batch-import?configuration_id=${configurationId}&replace=${replace}`,
       file
     )
   },
 
-  // 获取指定字段的唯一值
+  // Get unique values for a field
   getUniqueValues: async (
     configurationId: number,
     field: string
@@ -154,7 +154,7 @@ export const indexDataApi = {
     )
   },
 
-  // 获取独立对照字段（前端聚合）
+  // Get independent fields (frontend aggregation)
   getIndependentFields: async (configurationId: number): Promise<IndependentFields> => {
     const allData = await indexDataApi.getAll({ configuration_id: configurationId })
     
@@ -186,5 +186,51 @@ export const indexDataApi = {
 
     return independent
   },
-}
 
+  // Export index data to Excel
+  exportToExcel: async (configurationId: number): Promise<void> => {
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'
+    const url = `${API_BASE_URL}/index-data/configuration/${configurationId}/export`
+    const response = await fetch(url)
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: response.statusText }))
+      throw new Error(errorData.detail || `HTTP error! status: ${response.status}`)
+    }
+    
+    // Get filename from Content-Disposition header
+    // Support both RFC 5987 format (filename*=UTF-8''...) and standard format
+    const contentDisposition = response.headers.get('Content-Disposition')
+    let filename = `索引数据_${configurationId}.xlsx`
+    if (contentDisposition) {
+      // Try RFC 5987 format first (filename*=UTF-8''...)
+      const rfc5987Match = contentDisposition.match(/filename\*=UTF-8''(.+)/i)
+      if (rfc5987Match && rfc5987Match[1]) {
+        filename = decodeURIComponent(rfc5987Match[1])
+      } else {
+        // Fallback to standard format
+        const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/)
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1].replace(/['"]/g, '')
+          // Handle URL encoding
+          try {
+            filename = decodeURIComponent(filename)
+          } catch (e) {
+            // If decoding fails, use as-is
+          }
+        }
+      }
+    }
+    
+    // Download file
+    const blob = await response.blob()
+    const downloadUrl = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = downloadUrl
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(downloadUrl)
+  },
+}

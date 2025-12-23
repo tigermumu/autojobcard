@@ -23,8 +23,11 @@ import {
   BranchesOutlined,
   SaveOutlined,
   HomeOutlined,
-  ReloadOutlined
+  ReloadOutlined,
+  UploadOutlined,
+  DownloadOutlined
 } from '@ant-design/icons'
+import { Upload } from 'antd'
 import { useNavigate } from 'react-router-dom'
 import IndexDataTreeEditor from './IndexDataTreeEditor'
 import { configApi, Configuration as ApiConfiguration } from '../services/configApi'
@@ -281,6 +284,68 @@ const ConfigurationIndexData: React.FC = () => {
     })
   }
 
+  // 导入Excel
+  const handleImportExcel = async (file: File) => {
+    if (!currentConfig) {
+      message.warning('请先选择一个构型')
+      return
+    }
+
+    Modal.confirm({
+      title: '确认导入',
+      content: '导入将替换当前构型下的所有索引数据，确定要继续吗？',
+      onOk: async () => {
+        try {
+          setLoading(true)
+          const result = await indexDataApi.batchImport(currentConfig, file)
+          
+          const totalRows = result.imported_count + (result.error_count || 0)
+          if (result.error_count > 0) {
+            message.warning(
+              `导入完成：成功 ${result.imported_count} 条，失败 ${result.error_count} 条（共处理 ${totalRows} 条）`,
+              5
+            )
+            if (result.errors && result.errors.length > 0) {
+              console.error('导入错误详情:', result.errors)
+              // 显示前5条错误信息
+              const errorPreview = result.errors.slice(0, 5).join('; ')
+              message.info(`错误详情（前5条）: ${errorPreview}`, 8)
+            }
+          } else {
+            message.success(`成功导入 ${result.imported_count} 条索引数据`)
+          }
+          
+          // 重新加载数据
+          await loadIndexData(currentConfig)
+        } catch (error: any) {
+          console.error('导入失败:', error)
+          message.error('导入失败: ' + (error.message || '未知错误'))
+        } finally {
+          setLoading(false)
+        }
+      }
+    })
+  }
+
+  // 导出Excel
+  const handleExportExcel = async () => {
+    if (!currentConfig) {
+      message.warning('请先选择一个构型')
+      return
+    }
+
+    try {
+      setLoading(true)
+      await indexDataApi.exportToExcel(currentConfig)
+      message.success('导出成功')
+    } catch (error: any) {
+      console.error('导出失败:', error)
+      message.error('导出失败: ' + (error.message || '未知错误'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
   // 构型管理
   const handleAddConfig = () => {
     setEditingConfig(null)
@@ -415,7 +480,7 @@ const ConfigurationIndexData: React.FC = () => {
     <div style={{ padding: '24px', background: '#f0f2f5', minHeight: '100vh' }}>
       {/* 页面头部 */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <Title level={2} style={{ margin: 0 }}>构型与索引数据管理</Title>
+        <Title level={2} style={{ margin: 0 }}>构型与缺陷关键词库数据管理</Title>
         <Button icon={<HomeOutlined />} onClick={() => navigate('/')}>
           返回首页
         </Button>
@@ -489,7 +554,7 @@ const ConfigurationIndexData: React.FC = () => {
                 </div>
               </Col>
               <Col span={6}>
-                <Space size="middle">
+                <Space size="middle" direction="vertical" style={{ width: '100%' }}>
                   {!isEditing ? (
                     <Button 
                       type="primary" 
@@ -507,15 +572,43 @@ const ConfigurationIndexData: React.FC = () => {
                         icon={<SaveOutlined />}
                         onClick={handleSaveIndexData}
                         size="large"
+                        block
                       >
                         保存
                       </Button>
                       <Button 
                         onClick={handleCancelEdit}
                         size="large"
+                        block
                       >
                         取消
                       </Button>
+                      <Space style={{ width: '100%' }}>
+                        <Upload
+                          accept=".xlsx,.xls"
+                          showUploadList={false}
+                          beforeUpload={(file) => {
+                            handleImportExcel(file)
+                            return false
+                          }}
+                        >
+                          <Button 
+                            icon={<UploadOutlined />}
+                            size="large"
+                            block
+                          >
+                            导入Excel
+                          </Button>
+                        </Upload>
+                        <Button 
+                          icon={<DownloadOutlined />}
+                          size="large"
+                          onClick={handleExportExcel}
+                          block
+                        >
+                          导出Excel
+                        </Button>
+                      </Space>
                     </>
                   )}
                 </Space>

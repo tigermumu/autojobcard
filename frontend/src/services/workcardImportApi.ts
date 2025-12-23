@@ -56,7 +56,7 @@ export interface RunResponse {
   artifacts: Artifact[]
 }
 
-export interface TestRequest extends PreviewRequest {}
+export interface TestRequest extends PreviewRequest { }
 
 export interface TestResponse {
   success: boolean
@@ -114,6 +114,18 @@ export interface ImportStepsResponse {
   artifacts: Artifact[]
 }
 
+export interface ACInfoRequest {
+  tail_no: string
+  work_order: string
+  cookies?: string
+}
+
+export interface ACInfoResponse {
+  success: boolean
+  data: Record<string, any>
+  message: string
+}
+
 export const workcardImportApi = {
   preview(payload: PreviewRequest) {
     return apiClient.post<PreviewResponse>('/workcard-import/preview', payload)
@@ -132,5 +144,8 @@ export const workcardImportApi = {
   },
   importSteps(payload: ImportStepsRequest) {
     return apiClient.post<ImportStepsResponse>('/workcard-import/import-steps', payload)
+  },
+  getACInfo(payload: ACInfoRequest) {
+    return apiClient.post<ACInfoResponse>('/workcard-import/ac-info', payload)
   }
 }

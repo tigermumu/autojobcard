@@ -16,6 +16,14 @@ class DefectList(Base):
     status = Column(String(20), default="pending")  # pending, processing, completed, failed
     processing_progress = Column(Float, default=0.0)
     
+    # 分阶段处理状态
+    cleaning_status = Column(String(20), default="pending")  # pending, processing, completed, failed
+    cleaning_progress = Column(Float, default=0.0)
+    matching_status = Column(String(20), default="pending")  # pending, processing, completed, failed
+    matching_progress = Column(Float, default=0.0)
+    processing_stage = Column(String(20), default="upload")  # upload, cleaning, matching, completed
+    last_processed_at = Column(DateTime(timezone=True))
+    
     # 配置关联
     configuration_id = Column(Integer, ForeignKey("configurations.id"))
     
@@ -44,6 +52,11 @@ class DefectRecord(Base):
     is_selected = Column(Boolean, default=False)
     selected_workcard_id = Column(Integer, ForeignKey("workcards.id"))
     issued_workcard_number = Column(String(100), nullable=True)  # 已开出的工卡号
+    
+    # 分阶段处理状态
+    is_cleaned = Column(Boolean, default=False)
+    cleaned_at = Column(DateTime(timezone=True))
+    matched_at = Column(DateTime(timezone=True))
     
     # 原始数据
     raw_data = Column(JSON)
