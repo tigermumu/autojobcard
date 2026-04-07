@@ -1,11 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from app.core.config import settings
 from app.api.api_v1.api import api_router
 import logging
 import sys
 import os
+from pathlib import Path
 
 # 配置日志输出到控制台
 logging.basicConfig(
@@ -56,9 +58,27 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 os.makedirs("uploads", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
+frontend_dist_dir = Path(os.getenv("FRONTEND_DIST_DIR", "/app/frontend_dist"))
+frontend_index = frontend_dist_dir / "index.html"
+
 @app.get("/")
 async def root():
+    if frontend_index.exists():
+        return FileResponse(str(frontend_index))
     return {"message": "飞机方案处理系统 API"}
+
+@app.get("/{full_path:path}", include_in_schema=False)
+async def spa_fallback(full_path: str):
+    if not frontend_index.exists():
+        return {"detail": "Not Found"}
+    if full_path.startswith("api/") or full_path.startswith("uploads/") or full_path == "api" or full_path == "uploads":
+        return {"detail": "Not Found"}
+    requested = (frontend_dist_dir / full_path).resolve()
+    if not str(requested).startswith(str(frontend_dist_dir.resolve())):
+        return FileResponse(str(frontend_index))
+    if requested.exists() and requested.is_file():
+        return FileResponse(str(requested))
+    return FileResponse(str(frontend_index))
 
 @app.get("/health")
 async def health_check():

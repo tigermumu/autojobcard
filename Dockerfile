@@ -11,11 +11,12 @@ RUN npm run build
 FROM python:3.9-slim
 WORKDIR /app
 RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
-RUN apt-get update && apt-get install -y nginx gcc g++ && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y nginx gcc g++ gettext-base && rm -rf /var/lib/apt/lists/*
 COPY backend/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt && pip install --no-cache-dir beautifulsoup4
 COPY backend/ ./
 COPY --from=frontend-builder /app/frontend/dist /usr/share/nginx/html
+COPY --from=frontend-builder /app/frontend/dist /app/frontend_dist
 COPY deploy/nginx.conf /tmp/nginx.conf
 RUN sed 's|http://backend:8000|http://127.0.0.1:8000|g' /tmp/nginx.conf | sed 's|listen 80;|listen \\$PORT;|g' > /etc/nginx/conf.d/default.conf.template && rm /tmp/nginx.conf
 RUN rm -f /etc/nginx/sites-enabled/default
