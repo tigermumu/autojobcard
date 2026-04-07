@@ -1,0 +1,381 @@
+
+
+<html>
+<head>
+<title>浠诲姟鎶ュ憡涓庡崗鍚屼俊鎭�绯荤粺--Task Reporting And Collaborating Express System</title>
+<script type="text/javascript" src="common/jquery-1.4.2.js"></script>
+<script type="text/javascript">
+//鍒锋柊楠岃瘉鐮�
+function refresh() {  
+    var url = "/trace/public/queryMatStatus.do?method=createCode&number="+Math.random();  
+    $("#img").attr("src",url);
+}
+
+//鐧诲綍
+function goProving(){
+// 	var loginCode = $("#loginCode").val();
+// 	if(loginCode == "" || loginCode == 'undefined' || loginCode == null){
+// 		alert("楠岃瘉鐮佷笉鑳戒负绌猴紒");
+// 		return;
+// 	}
+	
+// 	$.ajax({
+// 		   type:"post",
+// 		   url:"/trace/public/queryMatStatus.do?method=provingCode&code="+loginCode,
+// 		   dataType:"json",
+// 		   async:false,
+// 		   success: function(data){
+// 			   //alert(data);
+// 			   if(data){ 
+// 				   document.forms[0].action = "j_acegi_security_check";
+// 				   document.forms[0].submit();
+// 			   }else{
+// 				   alert("楠岃瘉鐮侀敊璇�锛�");
+// 				   return;
+// 			   }
+// 			},
+// 		   error: function(){
+// 			   alert("Request Error 璇锋眰鍑洪敊");
+// 		   }
+// 	   }) ;
+	
+	if (!checkForm()) {
+		return false;
+	}
+
+	document.forms[0].action = "j_acegi_security_check";
+	document.forms[0].submit();
+	return true;
+}
+
+//妫�鏌ヨ〃鍗�
+function checkForm() {
+	//妫�鏌ョ敤鎴峰悕
+	checkName();
+	
+	//妫�鏌ュ瘑鐮�
+	checkPass();
+	
+	//妫�鏌ュ瘑鐮佷笉鑳藉寘鍚�涓変釜杩炵画鏁板瓧
+	//checkCharAt();
+	
+	//妫�鏌ラ獙璇佺爜
+	checkCode();
+	
+	var ebox, isPass=0, gcolor="green";
+	if (isPass == 0) {
+		ebox = document.getElementById('e_username');
+		if(ebox.style.color && ebox.style.color != gcolor){
+			document.getElementById('j_username').focus();
+			isPass = 1;
+		}
+	}
+	if (isPass == 0) {
+		ebox = document.getElementById('e_password');
+		if(ebox.style.color && ebox.style.color != gcolor){
+			document.getElementById('j_password').focus();
+			isPass = 1;
+		}
+	}
+	if (isPass == 0) {
+		ebox = document.getElementById('e_loginCode');
+		if(ebox.style.color && ebox.style.color != gcolor){
+			document.getElementById('loginCode').focus();
+			isPass = 1;
+		}
+	}
+	
+	//杈撳叆鐧诲綍淇℃伅涓嶇�﹀悎瑙勫垯涓嶈繘涓�姝ラ獙璇佺櫥褰曚俊鎭�
+	if (isPass == 1) {
+		return false;
+	}
+	return true;
+}
+
+
+//妫�鏌ラ獙璇佺爜
+function checkCode(callback) {
+	var elbox = document.getElementById('e_loginCode');
+	var lcbox = document.getElementById('loginCode');
+	var loginCode = lcbox.value;
+	var isPass = false;
+	
+	elbox.innerText = "";
+	elbox.style.color = "red";
+	if(loginCode == '' || loginCode == 'undefined' || loginCode == null){
+		elbox.innerText = "楠岃瘉鐮佷笉鑳戒负绌猴紒";
+		return false;
+	}
+	
+	$.ajax({
+	   type:"post",
+	   url:"/trace/public/queryMatStatus.do?method=provingCode&code="+loginCode,
+	   dataType:"json", 
+	   async:false, 
+	   success: function(data){
+		   if(data){
+			   elbox.style.color = "green";
+			   elbox.innerText = "鉁�";
+			   isPass = true;
+		   }else{
+			   elbox.innerText = "楠岃瘉鐮侀敊璇�锛�";
+			   refresh();
+		   }
+	   },
+	   error: function(){
+		   elbox.innerText = "Request Error 璇锋眰鍑洪敊锛�";
+		   refresh();
+	   }
+   	}) ;
+	return isPass;
+}
+
+
+//妫�鏌ョ敤鎴峰悕
+function checkName() {
+	var nmbox = document.getElementById('e_username');
+	var unbox = document.getElementById('j_username');
+	var un = unbox.value.replace(/\s/g, "");
+	var unLength = un.length; 
+	
+	
+	nmbox.innerText = "";
+	nmbox.style.color = "red";
+	if (unLength == 0) {
+		nmbox.innerText = "鐢ㄦ埛鍚嶄笉鑳界┖锛�";
+		return false;
+	}
+	
+// 	if (unLength > 6 || unLength < 6) {
+// 		nmbox.innerText = "鐢ㄦ埛鍚嶄笉姝ｇ‘锛�";
+// 		return false;
+// 	}
+	
+	nmbox.style.color = "green";
+	nmbox.innerText = "鉁�";
+	return true;
+}
+
+
+//妫�鏌ュ瘑鐮�
+function checkPass() {
+	var pmbox = document.getElementById('e_password');
+	var pwbox = document.getElementById('j_password');
+	var pwVal = pwbox.value.replace(/\s/g, "");
+	var pwLength = pwVal.length;
+	var unbox = document.getElementById('j_username');
+	var un = unbox.value.replace(/\s/g, "");	
+		
+	pmbox.innerText = "";
+	pmbox.style.color = "red";
+	if (pwLength == 0) {
+		pmbox.innerText = "瀵嗙爜涓嶈兘绌猴紒";
+		return false;
+	}
+	
+	/* if (pwLength < 8) {
+		pmbox.innerText = "瀵嗙爜闀垮害蹇呴』8浣嶆垨浠ヤ笂锛�";
+		return false;
+	} */
+	
+	/* var isuc = /[A-Z]/.test(pwVal);
+	if (!isuc) {//涓嶅寘鍚�澶у啓
+		pmbox.innerText = "瀵嗙爜涓�蹇呴』鍖呭惈涓�涓�澶у啓瀛楃�︼紒";
+		return false;
+	} */
+	
+	/* var isucs = /[a-z]/.test(pwVal);
+	if (!isucs) {//涓嶅寘鍚�灏忓啓
+		pmbox.innerText = "瀵嗙爜涓�蹇呴』鍖呭惈涓�涓�灏忓啓瀛楃�︼紒";
+		return false;
+	} */
+	
+	/* var isucs = /[a-z]/.test(pwVal);
+	if (!isucs) {//涓嶅寘鍚�灏忓啓
+		pmbox.innerText = "瀵嗙爜涓�蹇呴』鍖呭惈涓�涓�灏忓啓瀛楃�︼紒";
+		return false;
+	} */
+	
+	//var issp = /[\`~\!\@#$%\^\&amp;\*\(\)\+&lt;&gt;\?:"\{\},\.\\\/;'\[\]]/.test(pwVal);
+	/* var issp = /[^a-zA-Z0-9]/.test(pwVal);
+	if (!issp) {//涓嶅寘鍚�鐗规畩瀛楃��
+		pmbox.innerText = "瀵嗙爜涓�蹇呴』鍖呭惈涓�涓�鐗规畩瀛楃�︼紝濡�!銆丂銆�#绛夛紒";
+		return false;
+	} */
+	
+	var reCode=/(?=^.{8,}$)(?=.*\d)(?=.*[^a-zA-Z0-9])(?=.*[A-Z])(?=.*[a-z])(?!.*\n).*$/;
+	if(!reCode.test(pwVal)){
+		pmbox.innerText = "瀵嗙爜闀垮害8浣嶆垨浠ヤ笂锛屽苟涓斿瘑鐮佷腑蹇呴』鍖呭惈涓�涓�澶у啓瀛楁瘝銆佸皬鍐欏瓧姣嶃�佹暟瀛椼�佺壒娈婂瓧绗︼紝濡傦細锛併�丂銆�#绛夛紒";
+		return false;
+	}
+	
+	var isct = /gameco/.test(pwVal.toLowerCase());
+	var isct2 = /password/.test(pwVal.toLowerCase());
+	var isct3 = /mima/.test(pwVal.toLowerCase());
+	if (isct || isct2 || isct3) {//鍖呭惈鍏�鍏卞悕绉板叧閿�瀛�
+		pmbox.innerText = "瀵嗙爜涓�涓嶈兘鍖呭惈'Gameco'銆�'Password'銆�'Mima'绛夊叕鍏卞悕绉扮殑鍏抽敭瀛楋紒";
+		return false;
+	}
+	
+	if (pwVal.indexOf(un) != -1) {//鍖呭惈鍛樺伐鍙�
+		pmbox.innerText = "瀵嗙爜涓�涓嶈兘鍖呭惈鍛樺伐鍙凤紒";
+		return false;
+	}
+	
+	//var isca = /(\w)*(\w)\2{2}(\w)*/g.test(pwVal);
+	var isca = checkCharAt(pwVal.toLowerCase());
+	if (!isca) {//鍖呭惈鍏�鍏卞悕绉板叧閿�瀛�
+		pmbox.innerText = "瀵嗙爜涓�涓嶈兘鍖呭惈涓変釜(鍚�)浠ヤ笂鐨勮繛缁�鏁板瓧鎴栧瓧姣嶏紝濡�123銆乤bc銆丄bc绛�";
+		return false;
+	}
+	
+	
+	var isca2 = checkCharAt2(pwVal.toLowerCase());
+	if (!isca2) {
+		pmbox.innerText = "瀵嗙爜涓�涓嶈兘鍖呭惈涓変釜(鍚�)浠ヤ笂鐨勯敭鐩樻í绾靛悜瀛楁瘝鎴栫�﹀彿锛屽�俼Az銆乹we绛�";
+		return false;
+	}
+	
+	pmbox.style.color = "green";
+	pmbox.innerText = "鉁�";
+	return true;
+}
+
+
+//妫�鏌ュ瘑鐮佷笉鑳藉寘鍚�涓変釜(鍚�)浠ヤ笂鐨勯敭鐩樻í绾靛悜瀛楁瘝鎴栫�﹀彿
+function checkCharAt2(pwVal) {
+	var flag = true;
+	var arr = ['qwe','wer','ert','rty','tyu','yui','uio','iop','asd','sdf','dfg','fgh','ghj','hjk','jkl'
+						,'zxc','xcv','cvb','vbn','bnm','qaz','wsx','edc'
+						,'rfv','tgb','yhn','ujm','ik,','ik锛�','ol.','p;/','p锛涖��'];
+	for (var i = 0; i < arr.length; i++) {
+		if(pwVal.toLowerCase().indexOf(arr[i]) != -1){
+			flag = false;
+			break;
+		}
+	}
+	
+	return flag;
+}
+
+
+//妫�鏌ュ瘑鐮佷笉鑳藉寘鍚�涓変釜杩炵画鏁板瓧
+function checkCharAt(pwVal) {
+	var flag = true;
+	var arr = pwVal.split("");
+	if (arr && arr.length > 0) {
+		for (var i = 1; i < arr.length-1; i++) {
+		    var previousIndex = arr[i-1].charCodeAt();
+		    var nextIndex = arr[i+1].charCodeAt();
+		    var currentIndex = arr[i].charCodeAt();
+		    
+			if (currentIndex == previousIndex + 1 && currentIndex == nextIndex - 1) {
+		        flag = false;
+		    }
+		}
+	}
+	return flag;
+}
+
+</script>
+<style type="text/css">
+<!--
+.borderstyle {
+        height: 20px;
+        width: 136px;
+        border: 1px solid #2E85DA;
+}
+.smart-fixed {
+		position:absolute; 
+		bottom:auto;
+		white-space:nowrap;
+		z-index:10;
+}
+-->
+</style>
+</head>
+
+<body leftmargin="0" topmargin="0">
+<form action="" method="POST">
+<table width="100%" height="100%" border="0" cellpadding="0" cellspacing="0">
+  <tr>
+    <td bgcolor="#FFFFFF">&nbsp;</td>
+  </tr>
+  <tr>
+    <td height="275" valign="top">
+        <table width="100%" border="0" cellspacing="0" cellpadding="0">
+        <tr>
+          <td background="images/index_mid_bg.gif">&nbsp;</td>
+          <td width="732"><table width="100%" border="0" cellspacing="0" cellpadding="0">
+              <tr>
+                <td width="356" height="164" valign="top" background="images/trace11.gif">
+                    <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                    <tr>
+                      <td width="41%">&nbsp;</td>
+                      <td height="30">&nbsp;</td>
+                      <td width="20%">&nbsp;</td>
+                    </tr>
+                    <tr>
+                      <td>&nbsp;</td>
+                      <td height="30">
+                      	<input name="j_username" id="j_username" type="text" class="borderstyle" value="" onblur="checkName();" onchange="checkName();">
+                      	<small class="smart-fixed">
+							<span>&nbsp;</span>
+							<span id="e_username"></span>
+						</small>
+                      </td> <!-- OST02  -->
+                      <td>&nbsp;</td>
+                    </tr>
+                    <tr>
+                      <td>&nbsp;</td>
+                      <td height="30">
+                      	<input name="j_password" id="j_password" type="password" class="borderstyle" value="" onblur="checkPass();" onchange="checkPass();">
+                      	<small class="smart-fixed">
+							<span>&nbsp;</span>
+							<span id="e_password"></span>
+						</small>
+                      </td>
+                      <td>&nbsp;</td>
+                    </tr>
+                    <tr>
+                      <td>&nbsp;</td>
+                      <td height="30">
+						<input type="text" name="loginCode" style="width: 72px;" class="borderstyle" id="loginCode" onblur="checkCode();" onchange="checkCode();" >
+  					    <img id="img" height="30px" width="60px" src="/trace/public/queryMatStatus.do?method=createCode" style="vertical-align: middle;" onclick="refresh()">
+  					    <small class="smart-fixed" style="margin-top: 8px;">
+							<span>&nbsp;</span>
+							<span id="e_loginCode"></span>
+						</small>
+  					  </td>
+                      <td>
+                         &nbsp;
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>&nbsp;</td>
+                      <td height="40" align="right">
+                      <input type="image" src="images/index_button_dl.gif" alt="璇峰崟鍑绘�ゅ��" width="98" height="28" onClick="return goProving();"></td>
+                      <td>&nbsp;</td>
+                    </tr>
+                  </table>
+                  </td>
+                <td width="403" valign="bottom"><img src="images/trace12.gif" width="376" height="164"></td>
+              </tr>
+              <tr>
+                  <td width="356" valign="top"><img src="images/trace21.gif" width="356" height="111"></td>
+                  <td width="403" valign="top"><img src="images/trace22.gif" width="376" height="111"></td>
+              </tr>
+            </table></td>
+          <td background="images/index_mid_bg.gif">&nbsp;</td>
+        </tr>
+      </table>
+
+ </td>
+  </tr>
+  <tr>
+    <td valign="top" background="images/index_bg.gif">&nbsp;</td>
+  </tr>
+</table>
+</form>
+</body>
+</html>

@@ -1,0 +1,6461 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<HTML>
+<HEAD>
+<META http-equiv="Content-Type" content="text/html; charset=GBK">
+
+<link rel="stylesheet" href="/trace/common/css.css" type="text/css">
+<link rel="stylesheet" type="text/css" href="/trace/common/easyui/themes/default/easyui.css">
+<link rel="stylesheet" type="text/css" href="/trace/common/easyui/themes/icon.css">
+<link type="text/css" rel="stylesheet" href="/trace/common/jquery_dialog.css" />
+<script type="text/javascript" src="/trace/common/js/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="/trace/common/easyui/jquery.easyui.min.js"></script>
+<script type="text/javascript" src="/trace/common/jquery_dialog.js"></script>
+<script type="text/javascript" src="/trace/common/common.js?_t=1766973124593"></script>
+<script type="text/javascript" src="/trace/common/selectDateTime1.js?_t=1766973124593"></script>
+<script type="text/javascript" src="/trace/common/multipleSelect.js?_t=1766973124593"></script>
+<META name="GENERATOR" content="IBM WebSphere Studio">
+<TITLE>指令工卡管理</TITLE>
+</HEAD>
+
+<BODY>
+
+
+<form name="form" method="post" action="#" onsubmit="return doSubmit();">
+<input type="hidden" name="page" id ="page" value="1"/>
+<input type="hidden" name="wgp" id="wgpId" value="3_CABIN_TPG"/>
+<input type="hidden" id="updatedWophs" value="false"/>
+<input type="hidden" name="customer" id="customer" value=""/>
+<input type="hidden" name="ownerCode" id="ownerCodeId" value="EK"/>
+<input type="hidden" name="flagFgm" id="flagFgm" value="Y"/>
+<input type="hidden" name="flight_check_no" value="4C"/>
+<input type="hidden" name="tailno" id="tailnoId" value="A6-ENL"/>
+<input type="hidden" name="preCheck" id="preCheckId" value=""/>
+<input type="hidden" name="visitDetailDesc" id="visitDetailDescId" value=""/>
+<input type="hidden" name="visitDetailDescEn" id="visitDetailDescEnId" value=""/>
+<input type="hidden" name="woRid" id="woRidId" value="13756461"/>
+<input type="hidden" name="jcMode" id="jcModeId" value="E"/>
+<input type="hidden" id="eSign" value=""/>
+<input type="hidden" id="hsPlanStartDate" value="2025-12-27 00:00:00.0"/>
+<input type="hidden" id="planStartDate" value="2025-12-27"/>
+<input type="hidden" id="soDept" value="HM1"/>
+<input type="hidden" id="txtMenuID" name="txtMenuID" value="22800"/>
+
+<table width="100%" border="0" align="center">
+	<tr align="right">
+		<td>
+			帮助:
+			<a href="/trace/images/FAQ.pdf" target="_blank">TRACE系统FAQ</a>
+			&nbsp;
+			<a href="/trace/images/eSignHelp.pdf" target="_blank">非例行工卡电子流程运作指引</a>
+			&nbsp;
+			<a href="/trace/images/eNRC_QA_List.pdf" target="_blank">电子NRC流程常见问题清单</a>
+			&nbsp;
+			<a href="/trace/fgm/workOrder/uploadTemplet/list.jsp" target="_blank">下载上传模板</a>
+		</td>
+	</tr>
+</table>
+
+<table width="100%" border="0" align="center" cellpadding="0" cellspacing="0">
+	<tr> 
+		<td width="36"><img src="/trace/images/tableTitle1.gif" width="36" height="27"></td>
+		<td width="80" background="/trace/images/tableTitle2.gif"><strong>查询条件</strong></td>
+		<td width="28"><img src="/trace/images/tableTitle3.gif" width="28" height="27"></td>
+		<td background="/trace/images/main_bt_4.gif">&nbsp;<label></label></td>
+		<td width="5"><img src="/trace/images/main_bt_5.gif" width="5" height="27"></td>
+	</tr>
+</table>
+
+<table width="100%" border="0" align="center" cellpadding="2" cellspacing="1" bgcolor="#3366FF">
+	<tr bgcolor="#FFFFFF">
+		<td width="90px">飞机号：</td>
+		<td width="90px">
+			<input type="text" name="txtFullReg" id="txtFullReg" onchange="clearValue(this.value)"  value="A6-ENL" onblur=getWorkorder(this) style="width:100%"/>
+		</td>
+		<td width="90px">工作指令：</td>
+		<td width="110px">
+			<input type="text" name="qWorkorder" id="qWorkorder" value="120000588375" style="width:100%" onchange="changeSearch()"/>
+		</td> 
+		<td width="90px">定检级别：</td>
+		<td width="100px">
+			<input type="text" name="txtFlight_Check_No" id="txtFlight_Check_No" value="4C" class="textType" style="width:100%" readonly="readonly"/>
+		</td>
+		<td width="90px">IPC适用号：</td>
+		<td width="100px">
+			<input type="text" name="txtIPC_Num" id="txtIPC_Num" value="" style="width:100%" />
+		</td>
+		<td width="60px">MPD号：</td>
+		<td width="80px">
+			<input type="hidden" name="txtVisit_Desc" id="txtVisit_Desc" value="4C" class="textType" style="width:100%" readonly="readonly"/>
+			<input type="text" name="txtMpd" id="txtMpd" value="" style="width:100%" />
+		</td>
+	</tr>
+	<tr bgcolor="#FFFFFF"> 
+		<td>工卡类型：</td>
+		<td>
+			<select name="txtType" style="width:50%">
+				<option value=""></option>
+				<option value=""></option>
+				<option value="AD">AD</option>
+				<option value="AP">AP</option>
+				<option value="CMO">CMO</option>
+				<option value="EO">EO</option>
+				<option value="NR">NR</option>
+				<option value="RO">RO</option>
+				<option value="-NR">-NR</option>
+				<option value="JCC">JCC</option>
+			</select>
+		</td>
+		<td>工卡序号：</td>
+		<td><input type="text" name="txtSeq" value="" onclick="this.select()" style="width:100%"/></td>
+		<td>工卡号：&nbsp;</td>
+		<td><input name="txtJobcard" type="text" value="NR/000000352" style="width:100%"/></td>
+		<td>工卡描述：</td>
+		<td>
+			<input type="text" name="txtJcDesc" value="" style="width:100%"/>
+		</td>
+		<td>QC终检：</td>
+		<td>
+			<select name="txtQcFinal">
+				<option value="" ></option>
+				<option value="Y" >Y</option>
+				<option value="N" >N</option>
+			</select>
+		</td>
+	</tr>
+	<tr bgcolor="#FFFFFF" > 
+		<td>工卡状态：</td>
+		<td>
+			<select name="txtJcStatus" style="width:50%">
+				<option value=""></option>
+				<option value=""></option>
+				<option value="N">N</option>
+				<option value="Y">Y</option>
+				<option value="X">X</option>
+				<option value="M">M</option>
+				<option value="D">D</option>
+				<option value="S">S</option>
+			</select>
+		</td>
+		<td>方案状态：</td>
+		<td>
+			<select name="txtSlnStatus" style="width:50%">
+				<option value=""></option>
+				<option value=""></option>
+				<option value="Y">Y</option>
+				<option value="N">N</option>
+				<option value="T">T</option>
+			</select>
+		</td>
+		<td>重要：</td>
+		<td>
+			<select name="txtImport" style="width:50%">
+				<option value=""></option>
+				<option value=""></option>
+				<option value="Y">Y</option>
+				<option value="N">N</option>
+			</select>
+		</td>
+		<td>工卡站协助：</td>
+		<td>
+			<select name="txtBoothAss" style="width:50%">
+				<option value=""></option>
+				<option value=""></option>
+				<option value="Y">Y</option>
+				<option value="N">N</option>
+			</select>
+		</td>
+		<td>打印状态：</td>
+		<td>
+			<select name="txtSlnPrinted" style="width:50%">
+				<option value=""></option>
+				<option value=""></option>
+				<option value="Y">Y</option>
+				<option value="N">N</option>
+			</select>
+		</td>
+	</tr>
+	<tr bgcolor="#FFFFFF">
+		<td>前一工作组：</td>
+		<td>
+			<select name="preWorkGrp" style="width:100%">
+				<option value=""></option>
+			
+				<option value="">
+					
+				</option>
+			
+				<option value="--">
+					--
+				</option>
+			
+				<option value="HM_TPG">
+					机电工艺组
+				</option>
+			
+				<option value="CABIN_TPG">
+					客舱车间工艺组
+				</option>
+			
+				<option value="STR_TPG">
+					结构车间工艺组
+				</option>
+			
+				<option value="A_CHK_TPG">
+					航三A检工艺组
+				</option>
+			
+				<option value="ENG_SUP">
+					工程支援
+				</option>
+			
+				<option value="PP">
+					生产计划
+				</option>
+			
+				<option value="ENG_STR">
+					工程结构
+				</option>
+			
+				<option value="AV">
+					AV
+				</option>
+			
+				<option value="QC">
+					检验
+				</option>
+			
+				<option value="BOOTH">
+					工卡站
+				</option>
+			
+				<option value="ENG_AV">
+					工程电子
+				</option>
+			
+				<option value="ENG_ENG">
+					工程发动机
+				</option>
+			
+				<option value="ENG_SD">
+					工程软件组
+				</option>
+			
+				<option value="LM1 ME">
+					空客窄体机电
+				</option>
+			
+				<option value="LM2 ME">
+					波音窄体机电
+				</option>
+			
+				<option value="LM3 EMB ME">
+					航三国产民机维护机电
+				</option>
+			
+				<option value="LM3 CABIN">
+					航三客舱
+				</option>
+			
+				<option value="HM3_ENG">
+					大修三发动机
+				</option>
+			
+				<option value="PMA">
+					PMA
+				</option>
+			
+				<option value="DMDOR">
+					DMDOR
+				</option>
+			
+				<option value="MOCC PPC1">
+					MOCC动态
+				</option>
+			
+				<option value="MOCC PPC2">
+					MOCC静态
+				</option>
+			
+				<option value="LM2 AV">
+					波音窄体电子
+				</option>
+			
+				<option value="LM1 AV">
+					空客窄体电子
+				</option>
+			
+				<option value="LM3 EMB AV">
+					航三国产民机维护电子
+				</option>
+			
+				<option value="LM3 FAST ME">
+					航三外航机电
+				</option>
+			
+				<option value="3_CABIN_TPG">
+					三部客舱工艺
+				</option>
+			
+				<option value="3_STR_TPG">
+					CRC复合材料
+				</option>
+			
+				<option value="PAT_TPG">
+					综合维修工艺
+				</option>
+			
+				<option value="LM5">
+					航一跟机
+				</option>
+			
+				<option value="LM6 ME">
+					航三A检机电
+				</option>
+			
+				<option value="PVG ME">
+					上海外站机电
+				</option>
+			
+				<option value="PVG AV">
+					上海外站电子
+				</option>
+			
+				<option value="LM6 AV">
+					航三A检电子
+				</option>
+			
+				<option value="NDT">
+					NDT
+				</option>
+			
+				<option value="MOCC BOOTH">
+					MOCC工卡站
+				</option>
+			
+				<option value="ENG_FTM">
+					工程FTM
+				</option>
+			
+				<option value="CQ_ENG_SUP">
+					CQ MOCC工程
+				</option>
+			
+				<option value="CQ_LM_G1">
+					CQ维修一组
+				</option>
+			
+				<option value="CQ_LM_G2">
+					CQ维修二组
+				</option>
+			
+				<option value="CQ_LM_G3">
+					CQ维修三组
+				</option>
+			
+				<option value="CQ_LM_G4">
+					CQ维修四班
+				</option>
+			
+				<option value="CQ_MOCC_PP">
+					CQ计划
+				</option>
+			
+				<option value="CQ_LM_G5">
+					CQ维修五组
+				</option>
+			
+				<option value="ENG_CABIN">
+					工程客舱
+				</option>
+			
+				<option value="LM4 ME">
+					航三联邦机电
+				</option>
+			
+				<option value="LM4 AV">
+					航三联邦电子
+				</option>
+			
+				<option value="LM8 ME">
+					空客宽体机电
+				</option>
+			
+				<option value="LM8 AV">
+					空客宽体电子
+				</option>
+			
+				<option value="DMPF">
+					改装自制件
+				</option>
+			
+				<option value="APF">
+					飞机零部件加工
+				</option>
+			
+				<option value="AUS MEL">
+					墨尔本
+				</option>
+			
+				<option value="AUS SYD">
+					悉尼
+				</option>
+			
+				<option value="ANZ AKL">
+					奥克兰
+				</option>
+			
+				<option value="CQ_GSE">
+					CQ特种车队
+				</option>
+			
+				<option value="LM7 AV">
+					波音宽体电子
+				</option>
+			
+				<option value="LM7 ME">
+					波音宽体机电
+				</option>
+			
+				<option value="NAC">
+					CRC工程
+				</option>
+			
+				<option value="HM4_SYS_TPG">
+					HM4系统工艺组
+				</option>
+			
+				<option value="ARJ_CNV">
+					ARJ客改货项目组
+				</option>
+			
+			</select>
+		</td>
+		<td>当前工作组：</td>
+		<td>
+			<select name="curWorkGrp" style="width:100%">
+				<!--option value="%=curWorkGrp %>">%=SoliUtil.nullTransition(workGroupMap.get(curWorkGrp)) %></option-->
+			
+				<option value="" selected>
+					
+				</option>
+			
+				<option value="--" >
+					--
+				</option>
+			
+				<option value="filter1" >--非工卡站</option>
+				<option value="filter2" >--非工卡站及三大组</option>			
+			
+				<option value="HM_TPG" >
+					机电工艺组
+				</option>
+			
+				<option value="CABIN_TPG" >
+					客舱车间工艺组
+				</option>
+			
+				<option value="STR_TPG" >
+					结构车间工艺组
+				</option>
+			
+				<option value="A_CHK_TPG" >
+					航三A检工艺组
+				</option>
+			
+				<option value="ENG_SUP" >
+					工程支援
+				</option>
+			
+				<option value="PP" >
+					生产计划
+				</option>
+			
+				<option value="ENG_STR" >
+					工程结构
+				</option>
+			
+				<option value="AV" >
+					AV
+				</option>
+			
+				<option value="QC" >
+					检验
+				</option>
+			
+				<option value="BOOTH" >
+					工卡站
+				</option>
+			
+				<option value="ENG_AV" >
+					工程电子
+				</option>
+			
+				<option value="ENG_ENG" >
+					工程发动机
+				</option>
+			
+				<option value="ENG_SD" >
+					工程软件组
+				</option>
+			
+				<option value="LM1 ME" >
+					空客窄体机电
+				</option>
+			
+				<option value="LM2 ME" >
+					波音窄体机电
+				</option>
+			
+				<option value="LM3 EMB ME" >
+					航三国产民机维护机电
+				</option>
+			
+				<option value="LM3 CABIN" >
+					航三客舱
+				</option>
+			
+				<option value="HM3_ENG" >
+					大修三发动机
+				</option>
+			
+				<option value="PMA" >
+					PMA
+				</option>
+			
+				<option value="DMDOR" >
+					DMDOR
+				</option>
+			
+				<option value="MOCC PPC1" >
+					MOCC动态
+				</option>
+			
+				<option value="MOCC PPC2" >
+					MOCC静态
+				</option>
+			
+				<option value="LM2 AV" >
+					波音窄体电子
+				</option>
+			
+				<option value="LM1 AV" >
+					空客窄体电子
+				</option>
+			
+				<option value="LM3 EMB AV" >
+					航三国产民机维护电子
+				</option>
+			
+				<option value="LM3 FAST ME" >
+					航三外航机电
+				</option>
+			
+				<option value="3_CABIN_TPG" >
+					三部客舱工艺
+				</option>
+			
+				<option value="3_STR_TPG" >
+					CRC复合材料
+				</option>
+			
+				<option value="PAT_TPG" >
+					综合维修工艺
+				</option>
+			
+				<option value="LM5" >
+					航一跟机
+				</option>
+			
+				<option value="LM6 ME" >
+					航三A检机电
+				</option>
+			
+				<option value="PVG ME" >
+					上海外站机电
+				</option>
+			
+				<option value="PVG AV" >
+					上海外站电子
+				</option>
+			
+				<option value="LM6 AV" >
+					航三A检电子
+				</option>
+			
+				<option value="NDT" >
+					NDT
+				</option>
+			
+				<option value="MOCC BOOTH" >
+					MOCC工卡站
+				</option>
+			
+				<option value="ENG_FTM" >
+					工程FTM
+				</option>
+			
+				<option value="CQ_ENG_SUP" >
+					CQ MOCC工程
+				</option>
+			
+				<option value="CQ_LM_G1" >
+					CQ维修一组
+				</option>
+			
+				<option value="CQ_LM_G2" >
+					CQ维修二组
+				</option>
+			
+				<option value="CQ_LM_G3" >
+					CQ维修三组
+				</option>
+			
+				<option value="CQ_LM_G4" >
+					CQ维修四班
+				</option>
+			
+				<option value="CQ_MOCC_PP" >
+					CQ计划
+				</option>
+			
+				<option value="CQ_LM_G5" >
+					CQ维修五组
+				</option>
+			
+				<option value="ENG_CABIN" >
+					工程客舱
+				</option>
+			
+				<option value="LM4 ME" >
+					航三联邦机电
+				</option>
+			
+				<option value="LM4 AV" >
+					航三联邦电子
+				</option>
+			
+				<option value="LM8 ME" >
+					空客宽体机电
+				</option>
+			
+				<option value="LM8 AV" >
+					空客宽体电子
+				</option>
+			
+				<option value="DMPF" >
+					改装自制件
+				</option>
+			
+				<option value="APF" >
+					飞机零部件加工
+				</option>
+			
+				<option value="AUS MEL" >
+					墨尔本
+				</option>
+			
+				<option value="AUS SYD" >
+					悉尼
+				</option>
+			
+				<option value="ANZ AKL" >
+					奥克兰
+				</option>
+			
+				<option value="CQ_GSE" >
+					CQ特种车队
+				</option>
+			
+				<option value="LM7 AV" >
+					波音宽体电子
+				</option>
+			
+				<option value="LM7 ME" >
+					波音宽体机电
+				</option>
+			
+				<option value="NAC" >
+					CRC工程
+				</option>
+			
+				<option value="HM4_SYS_TPG" >
+					HM4系统工艺组
+				</option>
+			
+				<option value="ARJ_CNV" >
+					ARJ客改货项目组
+				</option>
+			
+			</select>
+		</td> 
+		<td>方案编写组：</td>
+		<td>
+			<select name="schemeGrp" style="width:100%">
+				<option value=""></option>
+			
+				<option value="">
+					
+				</option>
+			
+				<option value="--">
+					--
+				</option>
+			
+				<option value="HM_TPG">
+					机电工艺组
+				</option>
+			
+				<option value="CABIN_TPG">
+					客舱车间工艺组
+				</option>
+			
+				<option value="STR_TPG">
+					结构车间工艺组
+				</option>
+			
+				<option value="A_CHK_TPG">
+					航三A检工艺组
+				</option>
+			
+				<option value="ENG_SUP">
+					工程支援
+				</option>
+			
+				<option value="PP">
+					生产计划
+				</option>
+			
+				<option value="ENG_STR">
+					工程结构
+				</option>
+			
+				<option value="AV">
+					AV
+				</option>
+			
+				<option value="QC">
+					检验
+				</option>
+			
+				<option value="BOOTH">
+					工卡站
+				</option>
+			
+				<option value="ENG_AV">
+					工程电子
+				</option>
+			
+				<option value="ENG_ENG">
+					工程发动机
+				</option>
+			
+				<option value="ENG_SD">
+					工程软件组
+				</option>
+			
+				<option value="LM1 ME">
+					空客窄体机电
+				</option>
+			
+				<option value="LM2 ME">
+					波音窄体机电
+				</option>
+			
+				<option value="LM3 EMB ME">
+					航三国产民机维护机电
+				</option>
+			
+				<option value="LM3 CABIN">
+					航三客舱
+				</option>
+			
+				<option value="HM3_ENG">
+					大修三发动机
+				</option>
+			
+				<option value="PMA">
+					PMA
+				</option>
+			
+				<option value="DMDOR">
+					DMDOR
+				</option>
+			
+				<option value="MOCC PPC1">
+					MOCC动态
+				</option>
+			
+				<option value="MOCC PPC2">
+					MOCC静态
+				</option>
+			
+				<option value="LM2 AV">
+					波音窄体电子
+				</option>
+			
+				<option value="LM1 AV">
+					空客窄体电子
+				</option>
+			
+				<option value="LM3 EMB AV">
+					航三国产民机维护电子
+				</option>
+			
+				<option value="LM3 FAST ME">
+					航三外航机电
+				</option>
+			
+				<option value="3_CABIN_TPG">
+					三部客舱工艺
+				</option>
+			
+				<option value="3_STR_TPG">
+					CRC复合材料
+				</option>
+			
+				<option value="PAT_TPG">
+					综合维修工艺
+				</option>
+			
+				<option value="LM5">
+					航一跟机
+				</option>
+			
+				<option value="LM6 ME">
+					航三A检机电
+				</option>
+			
+				<option value="PVG ME">
+					上海外站机电
+				</option>
+			
+				<option value="PVG AV">
+					上海外站电子
+				</option>
+			
+				<option value="LM6 AV">
+					航三A检电子
+				</option>
+			
+				<option value="NDT">
+					NDT
+				</option>
+			
+				<option value="MOCC BOOTH">
+					MOCC工卡站
+				</option>
+			
+				<option value="ENG_FTM">
+					工程FTM
+				</option>
+			
+				<option value="CQ_ENG_SUP">
+					CQ MOCC工程
+				</option>
+			
+				<option value="CQ_LM_G1">
+					CQ维修一组
+				</option>
+			
+				<option value="CQ_LM_G2">
+					CQ维修二组
+				</option>
+			
+				<option value="CQ_LM_G3">
+					CQ维修三组
+				</option>
+			
+				<option value="CQ_LM_G4">
+					CQ维修四班
+				</option>
+			
+				<option value="CQ_MOCC_PP">
+					CQ计划
+				</option>
+			
+				<option value="CQ_LM_G5">
+					CQ维修五组
+				</option>
+			
+				<option value="ENG_CABIN">
+					工程客舱
+				</option>
+			
+				<option value="LM4 ME">
+					航三联邦机电
+				</option>
+			
+				<option value="LM4 AV">
+					航三联邦电子
+				</option>
+			
+				<option value="LM8 ME">
+					空客宽体机电
+				</option>
+			
+				<option value="LM8 AV">
+					空客宽体电子
+				</option>
+			
+				<option value="DMPF">
+					改装自制件
+				</option>
+			
+				<option value="APF">
+					飞机零部件加工
+				</option>
+			
+				<option value="AUS MEL">
+					墨尔本
+				</option>
+			
+				<option value="AUS SYD">
+					悉尼
+				</option>
+			
+				<option value="ANZ AKL">
+					奥克兰
+				</option>
+			
+				<option value="CQ_GSE">
+					CQ特种车队
+				</option>
+			
+				<option value="LM7 AV">
+					波音宽体电子
+				</option>
+			
+				<option value="LM7 ME">
+					波音宽体机电
+				</option>
+			
+				<option value="NAC">
+					CRC工程
+				</option>
+			
+				<option value="HM4_SYS_TPG">
+					HM4系统工艺组
+				</option>
+			
+				<option value="ARJ_CNV">
+					ARJ客改货项目组
+				</option>
+			
+			</select>
+		</td>
+		<td>编写者：</td>
+		<td>
+			<input type="text" name="txtUpdatedBy" id="txtUpdatedBy" value="" style="width:100%" />
+		</td>
+		<td>含危险品：</td>
+		<td>
+			<select id="txtDangerousCargoId" name="txtDangerousCargo">
+				<option value="">ALL</option>
+				<option value="N" >N</option>
+				<option value="Y" >Y</option>
+			</select>
+		</td>
+	</tr>
+	<tr bgcolor="#FFFFFF">
+		<td>阶段：</td>
+		<td colspan="2">
+			<select name="txtSchedPhase" style="width:100%">
+				<option value=""></option>
+				<option value=""></option>
+				<option value="--">--</option>
+			
+				<option value="阶段1-进机位前的清洁、检查、测试">
+					阶段1-进机位前的清洁、检查、测试
+				</option>
+			
+				<option value="阶段2-打开、拆卸">
+					阶段2-打开、拆卸
+				</option>
+			
+				<option value="阶段2-清洁">
+					阶段2-清洁
+				</option>
+			
+				<option value="阶段2-检查">
+					阶段2-检查
+				</option>
+			
+				<option value="阶段2-修理">
+					阶段2-修理
+				</option>
+			
+				<option value="阶段2-复杂改装">
+					阶段2-复杂改装
+				</option>
+			
+				<option value="阶段2-勤务">
+					阶段2-勤务
+				</option>
+			
+				<option value="阶段2-恢复">
+					阶段2-恢复
+				</option>
+			
+				<option value="阶段3-顶飞机的检查">
+					阶段3-顶飞机的检查
+				</option>
+			
+				<option value="阶段4-通电测试">
+					阶段4-通电测试
+				</option>
+			
+				<option value="阶段5-通电、通液压测试（通用）">
+					阶段5-通电、通液压测试（通用）
+				</option>
+			
+				<option value="阶段5-须气源车的测试">
+					阶段5-须气源车的测试
+				</option>
+			
+				<option value="阶段5-须液压车的测试">
+					阶段5-须液压车的测试
+				</option>
+			
+				<option value="阶段5-须顶飞机的测试">
+					阶段5-须顶飞机的测试
+				</option>
+			
+				<option value="阶段6-离机位检查、测试、恢复">
+					阶段6-离机位检查、测试、恢复
+				</option>
+			
+				<option value="阶段7-试车及排故">
+					阶段7-试车及排故
+				</option>
+			
+				<option value="阶段8-按需的试飞、终检">
+					阶段8-按需的试飞、终检
+				</option>
+			
+			</select>
+		</td>
+		<td>区域：</td>
+		<td colspan="2">
+			<select name="txtSchedZone" style="width:100%">
+				<option value=""></option>
+				<option value=""></option>
+			
+				<option value="电子舱(主)">
+					电子舱(主)
+				</option>
+			
+				<option value="前电子舱">
+					前电子舱
+				</option>
+			
+				<option value="后电子舱">
+					后电子舱
+				</option>
+			
+				<option value="主电子舱">
+					主电子舱
+				</option>
+			
+				<option value="侧电子舱">
+					侧电子舱
+				</option>
+			
+				<option value="货舱(主)">
+					货舱(主)
+				</option>
+			
+				<option value="前货舱">
+					前货舱
+				</option>
+			
+				<option value="后货舱">
+					后货舱
+				</option>
+			
+				<option value="散货舱">
+					散货舱
+				</option>
+			
+				<option value="机下(主)">
+					机下(主)
+				</option>
+			
+				<option value="空调舱">
+					空调舱
+				</option>
+			
+				<option value="龙骨梁">
+					龙骨梁
+				</option>
+			
+				<option value="下部机身">
+					下部机身
+				</option>
+			
+				<option value="机上(主)">
+					机上(主)
+				</option>
+			
+				<option value="驾驶舱">
+					驾驶舱
+				</option>
+			
+				<option value="客舱">
+					客舱
+				</option>
+			
+				<option value="上部机身">
+					上部机身
+				</option>
+			
+				<option value="上部客舱">
+					上部客舱
+				</option>
+			
+				<option value="主货舱">
+					主货舱
+				</option>
+			
+				<option value="尾部(主)">
+					尾部(主)
+				</option>
+			
+				<option value="APU及舱">
+					APU及舱
+				</option>
+			
+				<option value="尾舱">
+					尾舱
+				</option>
+			
+				<option value="水平安定面">
+					水平安定面
+				</option>
+			
+				<option value="垂直安定面">
+					垂直安定面
+				</option>
+			
+				<option value="配平油箱">
+					配平油箱
+				</option>
+			
+				<option value="发动机及吊架(主)">
+					发动机及吊架(主)
+				</option>
+			
+				<option value="左发">
+					左发
+				</option>
+			
+				<option value="右发">
+					右发
+				</option>
+			
+				<option value="左吊架/吊舱">
+					左吊架/吊舱
+				</option>
+			
+				<option value="右吊架/吊舱">
+					右吊架/吊舱
+				</option>
+			
+				<option value="1#发动机">
+					1#发动机
+				</option>
+			
+				<option value="2#发动机">
+					2#发动机
+				</option>
+			
+				<option value="3#发动机">
+					3#发动机
+				</option>
+			
+				<option value="4#发动机">
+					4#发动机
+				</option>
+			
+				<option value="1#吊架/吊舱">
+					1#吊架/吊舱
+				</option>
+			
+				<option value="2#吊架/吊舱">
+					2#吊架/吊舱
+				</option>
+			
+				<option value="3#吊架/吊舱">
+					3#吊架/吊舱
+				</option>
+			
+				<option value="4#吊架/吊舱">
+					4#吊架/吊舱
+				</option>
+			
+				<option value="大翼(主)">
+					大翼(主)
+				</option>
+			
+				<option value="左大翼(主)">
+					左大翼(主)
+				</option>
+			
+				<option value="左大翼前缘">
+					左大翼前缘
+				</option>
+			
+				<option value="左大翼油箱">
+					左大翼油箱
+				</option>
+			
+				<option value="左大翼后缘">
+					左大翼后缘
+				</option>
+			
+				<option value="右大翼(主)">
+					右大翼(主)
+				</option>
+			
+				<option value="右大翼前缘">
+					右大翼前缘
+				</option>
+			
+				<option value="右大翼油箱">
+					右大翼油箱
+				</option>
+			
+				<option value="右大翼后缘">
+					右大翼后缘
+				</option>
+			
+				<option value="中央翼">
+					中央翼
+				</option>
+			
+				<option value="中央翼盒">
+					中央翼盒
+				</option>
+			
+				<option value="中央油箱">
+					中央油箱
+				</option>
+			
+				<option value="大翼/机身整流罩(主)">
+					大翼/机身整流罩(主)
+				</option>
+			
+				<option value="起落架(主)">
+					起落架(主)
+				</option>
+			
+				<option value="前起落架">
+					前起落架
+				</option>
+			
+				<option value="前轮舱">
+					前轮舱
+				</option>
+			
+				<option value="左主起落架">
+					左主起落架
+				</option>
+			
+				<option value="左主轮舱">
+					左主轮舱
+				</option>
+			
+				<option value="右主起落架">
+					右主起落架
+				</option>
+			
+				<option value="右主轮舱">
+					右主轮舱
+				</option>
+			
+				<option value="左机身起落架">
+					左机身起落架
+				</option>
+			
+				<option value="左机身起落架轮舱">
+					左机身起落架轮舱
+				</option>
+			
+				<option value="右机身起落架">
+					右机身起落架
+				</option>
+			
+				<option value="右机身起落架轮舱">
+					右机身起落架轮舱
+				</option>
+			
+				<option value="左大翼起落架">
+					左大翼起落架
+				</option>
+			
+				<option value="左大翼起落架轮舱">
+					左大翼起落架轮舱
+				</option>
+			
+				<option value="右大翼起落架">
+					右大翼起落架
+				</option>
+			
+				<option value="右大翼起落架轮舱">
+					右大翼起落架轮舱
+				</option>
+			
+				<option value="门(主)">
+					门(主)
+				</option>
+			
+				<option value="客舱门">
+					客舱门
+				</option>
+			
+				<option value="应急出口">
+					应急出口
+				</option>
+			
+				<option value="驾驶舱门">
+					驾驶舱门
+				</option>
+			
+				<option value="主舱门">
+					主舱门
+				</option>
+			
+				<option value="前货舱门">
+					前货舱门
+				</option>
+			
+				<option value="后货舱门">
+					后货舱门
+				</option>
+			
+				<option value="散货舱门">
+					散货舱门
+				</option>
+			
+				<option value="SHOP(主)">
+					SHOP(主)
+				</option>
+			
+				<option value="座椅">
+					座椅
+				</option>
+			
+				<option value="天行侧">
+					天行侧
+				</option>
+			
+				<option value="厨卫">
+					厨卫
+				</option>
+			
+				<option value="内饰">
+					内饰
+				</option>
+			
+			</select>
+		</td> 
+		<td>工种：</td>
+		<td>
+			<input type="text" name="txtLaborCode" onfocus="multipleSelect(this,140,240,'--,--,COMP,CRC复合材料,MCH,CRC机加工,NAC,CRC金工,CRCPT,CRC喷漆,SPEC TR,CRC特种处理,CRCZP,CRC装配,PMC-3D,PMC-3D打印,PMC-CNC,PMC-CNC下料,PMC-CRC焊接,PMC-CRC焊接,PMC-SM,PMC-钣金加工,PMC-TAG,PMC-标牌制作,PMC-SEW,PMC-缝纫,PMC-COMP,PMC-复合材料,PMC-MCH,PMC-机加工,PMC-PT,PMC-喷漆,PMC-SPE,PMC-特种处理,PMC-EXA,PMC-外协,PMC-BLI,PMC-吸塑,PMC-INM,PMC-注塑,PMC-ASSE,PMC-装配,WIP,WIP,AKL,奥克兰,FAC,厂房设施,AVIO,电子,ENG,发动机,BSI,发动机孔探,ENGINEER,工程师,ENGINEER-AVIO,工艺工程师-电子,ENGINEER-AIRP,工艺工程师-机电,ENGINEER-TRIM,工艺工程师-机上,ENGINEER-STR,工艺工程师-结构,LM-AVIO,航线电子,LM-AIRP,航线机电,AIRP,机电,AIRP-WING,机电-大翼,AIRP-ENG,机电-发动机,AIRP-UPR,机电-机上,AIRP-LOW,机电-机下,AIRP-GEAR,机电-起落架,AIRP-TAIL,机电-尾部,TRIM,机上,PP,计划,INSP,检验,S/M,金工,CABIN_PNT,客舱漆工,PC,控制,MEL,墨尔本,DST,配送,PNT,漆工,CLN,清洁,HM3_S/M,三部金工,HM3_CABIN,三部客舱,NDT,无损探伤,SYD,悉尼,SYS,系统',true)" 
+					value="" readonly="readonly" style="width: 100%"/>
+		</td>
+		<td>收发方式：</td>
+		<td>
+			<select name="txtTransferMode" style="width:50%">
+				<option value=""></option>
+				<option value="I" >发</option>
+				<option value="R" >收</option>
+			</select>
+		</td>
+	</tr>
+	<tr bgcolor="#FFFFFF">
+		<td>ME未上传：</td>
+		<td>
+			<select name="txtme_unUpload">
+				<option value=""></option>
+				<option value="Y" >Y</option>
+				<option value="N" >N</option>
+			</select>
+		</td>
+		<td>检验级别：</td>
+		<td>
+			<select name="txtRii">
+				<option value="" selected>ALL</option>
+				<option value="NULL" ></option>
+				<option value="Y" >Y</option>
+				<option value="N" >N</option>
+				<option value="A" >A</option>
+				<option value="B" >B</option>
+				<option value="C" >C</option>
+			</select>
+		</td>
+		<td>航材状态：</td>
+		<td>
+			<select name="txtMatStatus">
+				<option value="" selected>ALL</option>
+				<option value="NULL" >不需</option>
+				<option value="Y" >有件</option>
+				<option value="N" >缺件</option>
+			</select>
+		</td>
+		<td>快速检索：</td>
+		<td>
+			<select name="txtFilterTrace" style="width:100%" onchange="document.form.submit()">
+				<option value="" selected></option>
+				<option value="neverTrace" >从未交接的非例卡</option>
+				<option value="modifyUnTrace" >修订后未交接的非例卡</option>
+				<option value="arrangedUnTrace" >已安排工作的未交接非例卡</option>
+				<option value="noPlanUnTrace" >无方案也未交接的非例卡</option>
+			</select>
+		</td>
+		<td>串件：</td>
+		<td>
+			<select id="txtJcRobId" name="txtJcRob">
+				<option value="">ALL</option>
+				<option value="N" >非串件</option>
+				<option value="Y" >串件</option>
+			</select>
+		</td>
+	</tr>
+	<tr bgcolor="#FFFFFF">
+		<td>预计收回日期：</td>
+		<td>
+			<input type="text" name="txtPrDateStart" onfocus="selectDate(this)" value="" style="width:35%">
+			至
+			<input type="text" name="txtPrDateEnd" onfocus="selectDate(this)" value="" style="width:35%">
+		</td>
+		<td>接卡工种：</td>
+		<td>
+			<select name="txtRTrade" style="width:100%">
+				<option value=""></option>
+			
+				<option value="">
+					
+				</option>
+			
+				<option value="--">
+					--
+				</option>
+			
+				<option value="COMP">
+					CRC复合材料
+				</option>
+			
+				<option value="MCH">
+					CRC机加工
+				</option>
+			
+				<option value="NAC">
+					CRC金工
+				</option>
+			
+				<option value="CRCPT">
+					CRC喷漆
+				</option>
+			
+				<option value="SPEC TR">
+					CRC特种处理
+				</option>
+			
+				<option value="CRCZP">
+					CRC装配
+				</option>
+			
+				<option value="PMC-3D">
+					PMC-3D打印
+				</option>
+			
+				<option value="PMC-CNC">
+					PMC-CNC下料
+				</option>
+			
+				<option value="PMC-CRC焊接">
+					PMC-CRC焊接
+				</option>
+			
+				<option value="PMC-SM">
+					PMC-钣金加工
+				</option>
+			
+				<option value="PMC-TAG">
+					PMC-标牌制作
+				</option>
+			
+				<option value="PMC-SEW">
+					PMC-缝纫
+				</option>
+			
+				<option value="PMC-COMP">
+					PMC-复合材料
+				</option>
+			
+				<option value="PMC-MCH">
+					PMC-机加工
+				</option>
+			
+				<option value="PMC-PT">
+					PMC-喷漆
+				</option>
+			
+				<option value="PMC-SPE">
+					PMC-特种处理
+				</option>
+			
+				<option value="PMC-EXA">
+					PMC-外协
+				</option>
+			
+				<option value="PMC-BLI">
+					PMC-吸塑
+				</option>
+			
+				<option value="PMC-INM">
+					PMC-注塑
+				</option>
+			
+				<option value="PMC-ASSE">
+					PMC-装配
+				</option>
+			
+				<option value="WIP">
+					WIP
+				</option>
+			
+				<option value="AKL">
+					奥克兰
+				</option>
+			
+				<option value="FAC">
+					厂房设施
+				</option>
+			
+				<option value="AVIO">
+					电子
+				</option>
+			
+				<option value="ENG">
+					发动机
+				</option>
+			
+				<option value="BSI">
+					发动机孔探
+				</option>
+			
+				<option value="ENGINEER">
+					工程师
+				</option>
+			
+				<option value="ENGINEER-AVIO">
+					工艺工程师-电子
+				</option>
+			
+				<option value="ENGINEER-AIRP">
+					工艺工程师-机电
+				</option>
+			
+				<option value="ENGINEER-TRIM">
+					工艺工程师-机上
+				</option>
+			
+				<option value="ENGINEER-STR">
+					工艺工程师-结构
+				</option>
+			
+				<option value="LM-AVIO">
+					航线电子
+				</option>
+			
+				<option value="LM-AIRP">
+					航线机电
+				</option>
+			
+				<option value="AIRP">
+					机电
+				</option>
+			
+				<option value="AIRP-WING">
+					机电-大翼
+				</option>
+			
+				<option value="AIRP-ENG">
+					机电-发动机
+				</option>
+			
+				<option value="AIRP-UPR">
+					机电-机上
+				</option>
+			
+				<option value="AIRP-LOW">
+					机电-机下
+				</option>
+			
+				<option value="AIRP-GEAR">
+					机电-起落架
+				</option>
+			
+				<option value="AIRP-TAIL">
+					机电-尾部
+				</option>
+			
+				<option value="TRIM">
+					机上
+				</option>
+			
+				<option value="PP">
+					计划
+				</option>
+			
+				<option value="INSP">
+					检验
+				</option>
+			
+				<option value="S/M">
+					金工
+				</option>
+			
+				<option value="CABIN_PNT">
+					客舱漆工
+				</option>
+			
+				<option value="PC">
+					控制
+				</option>
+			
+				<option value="MEL">
+					墨尔本
+				</option>
+			
+				<option value="DST">
+					配送
+				</option>
+			
+				<option value="PNT">
+					漆工
+				</option>
+			
+				<option value="CLN">
+					清洁
+				</option>
+			
+				<option value="HM3_S/M">
+					三部金工
+				</option>
+			
+				<option value="HM3_CABIN">
+					三部客舱
+				</option>
+			
+				<option value="NDT">
+					无损探伤
+				</option>
+			
+				<option value="SYD">
+					悉尼
+				</option>
+			
+				<option value="SYS">
+					系统
+				</option>
+			
+			</select>
+		</td>
+		<td>交接人：</td>
+		<td>
+			<input type="text" name="txtHoldBy" id="txtHoldBy" value="" style="width:100%" />
+		</td>
+		<td>交接时间：</td>
+		<td colspan="3">
+			<input type="text" name="txtJcTransferDateStart" onfocus="selectDate(this)" value="" style="width:35%">至<input type="text" name="txtJcTransferDateEnd" onfocus="selectDate(this)" value="" style="width:35%">
+		</td>
+	</tr>
+	<tr bgcolor="#FFFFFF">
+		<td>工卡指令号：</td>
+		<td>
+			<input type="text" name="txtJcWorkorder" id="txtJcWorkorder" value="" style="width:100%" />
+		</td>
+		<td>方案要求期限：</td>
+		<td colspan="3">
+			<input type="text" name="txtSlnReqDateStart" onfocus="selectDate(this)" value="" style="width:35%">至<input type="text" name="txtSlnReqDateEnd" onfocus="selectDate(this)" value="" style="width:35%">
+		</td>
+		<!-- update by 700683 MPD项目标记功能及相关报表 2019-04-22 start -->
+		<!-- <td colspan="5"></td> -->
+		<td>是否新增工卡：</td>
+		<td>
+			<select id="txtFlagMpd" name="txtFlagMpd">
+				<option value="">ALL</option>
+				<option value="Y" >Y</option>
+				<option value="N" >N</option>
+			</select>
+		</td>
+		<!-- update by 700683 特殊项目清单 2019-04-25 start -->
+		<!-- <td colspan="2"></td> -->
+		<td>特殊项目：</td>
+		<td>
+			<select id="txtFlagActive" name="txtFlagActive">
+				<option value="">ALL</option>
+				<option value="Y" >Y</option>
+				<option value="N" >N</option>
+			</select>
+		</td>
+		<!-- update by 700683 特殊项目清单 2019-04-25 end -->
+		<!-- update by 700683 MPD项目标记功能及相关报表 2019-04-22 end -->
+	</tr>
+	<tr bgcolor="#FFFFFF">
+		<td>外表修理：</td>
+		<td>
+			<select id="txtExternalId" name="txtExternal" style="width:50%">
+				<option value="">ALL</option>
+				<option value="N" >N</option>
+				<option value="Y" >Y</option>
+			</select>
+		</td>
+		<td>外表损伤</td>
+		<td>
+			<select name="txtExteriorDamage" style="width:100%">
+				<option value="">ALL</option>
+				<option value="Y" >Y</option>
+				<option value="N" >N</option>
+			</select>
+		</td>
+		<td>重要修理/改装：</td>
+		<td>
+			<select id="txtMajorMdoId" name="txtMajorMdo" style="width:100%">
+				<option value="">ALL</option>
+				<option value="N" >N</option>
+				<option value="Y" >Y</option>
+			</select>
+		</td>
+		<td>超规范：</td>
+		<td>
+			<select id="txtOutOfManualId" name="txtOutOfManual" style="width:100%">
+				<option value="">ALL</option>
+				<option value="N" >N</option>
+				<option value="Y" >Y</option>
+			</select>
+		</td>
+		<td>结构修理：</td>
+		<td>
+			<select id="txtStrRepairId" name="txtStrRepair" style="width:100%">
+				<option value="">ALL</option>
+				<option value="N" >N</option>
+				<option value="Y" >Y</option>
+			</select>
+		</td>
+	</tr>
+	<tr bgcolor="#FFFFFF">
+		<td>重要结构件：</td>
+		<td>
+			<select id="txtPseId" name="txtPse" style="width:50%">
+				<option value="">ALL</option>
+				<option value="N" >N</option>
+				<option value="Y" >Y</option>
+			</select>
+		</td>
+		<td>FCS：</td>
+		<td>
+			<select id="txtFcsId" name="txtFcs" style="width:100%">
+				<option value="">ALL</option>
+				<option value="N" >N</option>
+				<option value="Y" >Y</option>
+			</select>
+		</td>
+		<td>结构修理起因：</td>
+		<td>
+			<select id="txtCauseStrrId" name="txtCauseStrr" style="width:100%">
+				<option value="">ALL</option>
+				<option value="损伤" >损伤</option>
+				<option value="改装" >改装</option>
+				<option value="NA" >NA</option>
+			</select>
+		</td>
+		<td width="110px">涉及可更换结构件：</td>
+		<td>
+			<select id="txtRplStrPartId" name="txtRplStrPart" style="width:100%">
+				<option value="">ALL</option>
+				<option value="N" >N</option>
+				<option value="Y" >Y</option>
+			</select>
+		</td>
+		<td>QC章：</td>
+		<td>
+			<select name="txtQcStamp">
+				<option value="" ></option>
+				<option value="Y" >Y</option>
+				<option value="N" >N</option>
+			</select>
+			
+		</td>
+	</tr>
+	<tr id="GamEngTr" bgcolor="#FFFFFF" height="25px" style="display: none;">
+		<td>发动机件号：</td>
+		<td><span id="EngPnInfo"></span></td>
+		<td>发动机序号：</td>
+		<td><span id="EngSnInfo"></span></td>
+		<td>工作内容：</td>
+		<td><span id="EngSoDescInfo"></span></td>
+		<td>发动机客户：</td>
+		<td><span id="EngCutomerInfo"></span></td>
+		<td colspan="2"></td>
+	</tr>
+	<tr bgcolor="#FFFFFF">
+		<td>签封面工种：</td>
+		<td>
+			<select name="txtNmfTrade" style="width:50%">
+			
+					<option value="" SELECTED>
+						
+					</option>
+			
+					<option value="--" >
+						--
+					</option>
+			
+					<option value="COMP" >
+						CRC复合材料
+					</option>
+			
+					<option value="MCH" >
+						CRC机加工
+					</option>
+			
+					<option value="NAC" >
+						CRC金工
+					</option>
+			
+					<option value="CRCPT" >
+						CRC喷漆
+					</option>
+			
+					<option value="SPEC TR" >
+						CRC特种处理
+					</option>
+			
+					<option value="CRCZP" >
+						CRC装配
+					</option>
+			
+					<option value="PMC-3D" >
+						PMC-3D打印
+					</option>
+			
+					<option value="PMC-CNC" >
+						PMC-CNC下料
+					</option>
+			
+					<option value="PMC-CRC焊接" >
+						PMC-CRC焊接
+					</option>
+			
+					<option value="PMC-SM" >
+						PMC-钣金加工
+					</option>
+			
+					<option value="PMC-TAG" >
+						PMC-标牌制作
+					</option>
+			
+					<option value="PMC-SEW" >
+						PMC-缝纫
+					</option>
+			
+					<option value="PMC-COMP" >
+						PMC-复合材料
+					</option>
+			
+					<option value="PMC-MCH" >
+						PMC-机加工
+					</option>
+			
+					<option value="PMC-PT" >
+						PMC-喷漆
+					</option>
+			
+					<option value="PMC-SPE" >
+						PMC-特种处理
+					</option>
+			
+					<option value="PMC-EXA" >
+						PMC-外协
+					</option>
+			
+					<option value="PMC-BLI" >
+						PMC-吸塑
+					</option>
+			
+					<option value="PMC-INM" >
+						PMC-注塑
+					</option>
+			
+					<option value="PMC-ASSE" >
+						PMC-装配
+					</option>
+			
+					<option value="WIP" >
+						WIP
+					</option>
+			
+					<option value="AKL" >
+						奥克兰
+					</option>
+			
+					<option value="FAC" >
+						厂房设施
+					</option>
+			
+					<option value="AVIO" >
+						电子
+					</option>
+			
+					<option value="ENG" >
+						发动机
+					</option>
+			
+					<option value="BSI" >
+						发动机孔探
+					</option>
+			
+					<option value="ENGINEER" >
+						工程师
+					</option>
+			
+					<option value="ENGINEER-AVIO" >
+						工艺工程师-电子
+					</option>
+			
+					<option value="ENGINEER-AIRP" >
+						工艺工程师-机电
+					</option>
+			
+					<option value="ENGINEER-TRIM" >
+						工艺工程师-机上
+					</option>
+			
+					<option value="ENGINEER-STR" >
+						工艺工程师-结构
+					</option>
+			
+					<option value="LM-AVIO" >
+						航线电子
+					</option>
+			
+					<option value="LM-AIRP" >
+						航线机电
+					</option>
+			
+					<option value="AIRP" >
+						机电
+					</option>
+			
+					<option value="AIRP-WING" >
+						机电-大翼
+					</option>
+			
+					<option value="AIRP-ENG" >
+						机电-发动机
+					</option>
+			
+					<option value="AIRP-UPR" >
+						机电-机上
+					</option>
+			
+					<option value="AIRP-LOW" >
+						机电-机下
+					</option>
+			
+					<option value="AIRP-GEAR" >
+						机电-起落架
+					</option>
+			
+					<option value="AIRP-TAIL" >
+						机电-尾部
+					</option>
+			
+					<option value="TRIM" >
+						机上
+					</option>
+			
+					<option value="PP" >
+						计划
+					</option>
+			
+					<option value="INSP" >
+						检验
+					</option>
+			
+					<option value="S/M" >
+						金工
+					</option>
+			
+					<option value="CABIN_PNT" >
+						客舱漆工
+					</option>
+			
+					<option value="PC" >
+						控制
+					</option>
+			
+					<option value="MEL" >
+						墨尔本
+					</option>
+			
+					<option value="DST" >
+						配送
+					</option>
+			
+					<option value="PNT" >
+						漆工
+					</option>
+			
+					<option value="CLN" >
+						清洁
+					</option>
+			
+					<option value="HM3_S/M" >
+						三部金工
+					</option>
+			
+					<option value="HM3_CABIN" >
+						三部客舱
+					</option>
+			
+					<option value="NDT" >
+						无损探伤
+					</option>
+			
+					<option value="SYD" >
+						悉尼
+					</option>
+			
+					<option value="SYS" >
+						系统
+					</option>
+			
+			</select>
+		</td>
+		<td>禁止签署：</td>
+		<td>
+			<select name="txtForbidEsign" style="width:100%">
+				<option value=""></option>
+				<option value="Y" >Y</option>
+			</select>
+		</td>
+		<td>签封面：</td>
+		<td>
+			<select name="txtFedexAmtStamp" style="width:100%">
+				<option value=""></option>
+				<option value="Y" >Y</option>
+				<option value="N" >N</option>
+			</select>
+		</td>
+		<td>收费原因：</td>
+		<td>
+			<input type="text" name="txtFeeRemark" id="txtFeeRemark" value="" style="width:100%" />
+		</td>
+		<td>收费：</td>
+		<td>
+			<select name="txtFlagFee" id="txtFlagFee" style="width:100%">
+				<option value=""></option>
+				<option value="Y" >Y</option>
+				<option value="N" >N</option>
+			</select>
+		</td>
+	</tr>
+    <tr bgcolor="#FFFFFF">
+        <td>开卡人：</td>
+        <td>
+            <input type="text" name="txtInspector" id="txtInspector" value="" style="width:100%" />
+        </td>
+        <td colspan="8"></td>
+    </tr>
+	<!-- 三步客舱工艺 -->
+	
+	<tr bgcolor="#FFFFFF">
+		<td>子车间：</td>
+		<td>
+			<select name="txtSubShop" id="txtSubShop">
+				<option value=""></option>
+				
+					<option value="厨卫" >厨卫</option>
+				
+					<option value="内饰" >内饰</option>
+				
+					<option value="天行侧" >天行侧</option>
+				
+					<option value="座椅" >座椅</option>
+				
+			</select>
+		</td>
+		<td colspan="8"></td>
+	</tr>
+	
+</table>
+<div style="width:70%;float:left;">
+<table width="100%" border="0" align="center" cellpadding="2" cellspacing="1" height="">
+	<tr bgcolor="#FFFFFF">
+		<td align="left">
+			
+			<input type="submit" value="查&nbsp;&nbsp;询" id="btnSelId">&nbsp;
+			<input type="button" name="" value="入卡记录" onclick="showClockIn()">&nbsp;
+			
+		
+		
+			<input type="button" name="" value="重&nbsp;&nbsp;要" onclick="onImportJC()">&nbsp;
+			<input type="button" name="" value="不重要" onclick="onImportJCUN()">&nbsp;
+		
+		
+		
+            
+			<select name="batchExtType" id="batchExtType">
+				<option value=""></option>
+                
+                <option value="RFID">电子标签批量导入</option>
+                
+                <!-- 三部客舱车间 -->
+                <option value="markSubShop">标注子车间</option>
+                <option value="cancelMarkSubShop">取消标注子车间</option>
+                
+                
+                
+            </select>&nbsp;
+            <input type="button" value="批量处理" onclick="ppBatchExt()"/>&nbsp;
+                
+            
+			<select name="reportExport" id="reportExport">
+				<option value=""></option>
+				
+				
+				
+				
+				
+					<option value="nrcList">非例卡清单</option>
+					<option value="switchList">跳开关夹清点单</option>
+					
+				
+				
+				
+				
+					<option value="singleMachineWjcInfo">单机工卡技术资料</option>
+					<option value="singleMachineWjcPic">单机工卡图纸</option>
+					<option value="identificationTag">电子标签</option>
+				
+					<option value="taskList">任务清单</option>
+					<option value="unConfirmedPickingList">未确认的领料清单</option>
+					<option value="jobPkRepeatJobCardList">工包重复工卡清单</option>
+					<option value="collectFeeList">定检非卡收费工时单</option>
+					<option value="dlhNrcManhourReport">DLH NRC MANHOUR REPORT</option>
+					<option value="dlhNrcHm3Report">汉莎HM3非卡数据</option>
+					<option value="customerReturnStatus">客户退件填写状态</option>
+					<option value="cardReceiptAndDispatch">当日工卡收发清单</option>
+					<option value="majorList">MAJOR非卡清单</option>
+			</select>
+			<input type="button" value="导出报表" onclick="goReport()"/>
+		</td>
+	</tr>
+	<tr bgcolor="#FFFFFF">
+		<td align="left">
+		 	<input type="button" onclick="doExportMATList()" value="导出航材单">
+		 	
+			
+			
+			
+			
+		 	<input type="button" onclick="showLabelInfo()" value="工卡电子标签"/>&nbsp;
+			
+			<input type="button" name="boothInfoBt" value="机头纸信息" onclick="updateBooth()"/>&nbsp;
+			<input type="button" name="boothInfoBt" value="关键点信息" onclick="soMilestone()"/>&nbsp;
+			
+			
+			
+			
+			
+			
+			
+		 	
+		 	
+			
+				<select name="preCheckFinished" id="preCheckFinishedId">
+					<option value="Y">Y</option>
+					<option value="N">N</option>
+				</select>
+				<input type="button" value="预检状态" onclick="setPreCheckStatus()"/>
+			
+			
+			
+			
+		</td>
+	</tr>
+</table>
+</div>
+<div style="width:26%;float:right;">
+
+		<div id="printDetails" style="color:blue;border:1px solid orange;line-height:15px; 
+		font-size:12px; height:40px; width:310px;">
+			<table cellspacing="5px">
+				
+				<tr>
+					<td>工作池中总非卡数：<a href="#" onclick="showNrc()" style="text-decoration:underline;" title="点击查看"><label id="allNrcNum"></label></a></td>
+				</tr>
+				
+				<tr>
+					<td>方案超期：<a href="#" onclick="showTimeoutPlan()" style="text-decoration:underline;" title="点击查看"><label id="recNum"></label></a></td>
+					<td>未交接非例卡：<a href="#" onclick="showUnTrace()" style="text-decoration:underline;" title="点击查看"><label id="unTrace"></label></a></td>
+				</tr>
+			</table>
+		</div>
+		
+</div>
+<p>
+<div style="width:70%;float:left;">
+<table width="" border="0" align="center" cellpadding="0" cellspacing="0" height="">
+
+	<tr align="left">
+		<td align="left">
+		
+			<input type="button" onclick="onUpdWorkGroup()" value="移交工作组=>>>"/>
+			<select name="workGroup" style="width:100" id="workGroup">
+				<option value="">--</option>
+			
+				<option value=""></option>
+			
+				<option value="--">--</option>
+			
+				<option value="HM_TPG">机电工艺组</option>
+			
+				<option value="STR_TPG">结构车间工艺组</option>
+			
+				<option value="A_CHK_TPG">航三A检工艺组</option>
+			
+				<option value="ENG_SUP">工程支援</option>
+			
+				<option value="PP">生产计划</option>
+			
+				<option value="ENG_STR">工程结构</option>
+			
+				<option value="AV">AV</option>
+			
+				<option value="QC">检验</option>
+			
+				<option value="BOOTH">工卡站</option>
+			
+				<option value="ENG_AV">工程电子</option>
+			
+				<option value="ENG_ENG">工程发动机</option>
+			
+				<option value="ENG_SD">工程软件组</option>
+			
+				<option value="LM1 ME">空客窄体机电</option>
+			
+				<option value="LM2 ME">波音窄体机电</option>
+			
+				<option value="LM3 EMB ME">航三国产民机维护机电</option>
+			
+				<option value="LM3 CABIN">航三客舱</option>
+			
+				<option value="HM3_ENG">大修三发动机</option>
+			
+				<option value="PMA">PMA</option>
+			
+				<option value="DMDOR">DMDOR</option>
+			
+				<option value="LM2 AV">波音窄体电子</option>
+			
+				<option value="LM1 AV">空客窄体电子</option>
+			
+				<option value="LM3 EMB AV">航三国产民机维护电子</option>
+			
+				<option value="LM3 FAST ME">航三外航机电</option>
+			
+				<option value="3_CABIN_TPG">三部客舱工艺</option>
+			
+				<option value="3_STR_TPG">CRC复合材料</option>
+			
+				<option value="PAT_TPG">综合维修工艺</option>
+			
+				<option value="LM6 ME">航三A检机电</option>
+			
+				<option value="PVG ME">上海外站机电</option>
+			
+				<option value="PVG AV">上海外站电子</option>
+			
+				<option value="LM6 AV">航三A检电子</option>
+			
+				<option value="NDT">NDT</option>
+			
+				<option value="ENG_FTM">工程FTM</option>
+			
+				<option value="CQ_ENG_SUP">CQ MOCC工程</option>
+			
+				<option value="CQ_LM_G1">CQ维修一组</option>
+			
+				<option value="CQ_LM_G2">CQ维修二组</option>
+			
+				<option value="CQ_LM_G3">CQ维修三组</option>
+			
+				<option value="CQ_LM_G4">CQ维修四班</option>
+			
+				<option value="CQ_LM_G5">CQ维修五组</option>
+			
+				<option value="ENG_CABIN">工程客舱</option>
+			
+				<option value="LM4 ME">航三联邦机电</option>
+			
+				<option value="LM4 AV">航三联邦电子</option>
+			
+				<option value="LM8 ME">空客宽体机电</option>
+			
+				<option value="LM8 AV">空客宽体电子</option>
+			
+				<option value="DMPF">改装自制件</option>
+			
+				<option value="APF">飞机零部件加工</option>
+			
+				<option value="AUS MEL">墨尔本</option>
+			
+				<option value="AUS SYD">悉尼</option>
+			
+				<option value="ANZ AKL">奥克兰</option>
+			
+				<option value="LM7 AV">波音宽体电子</option>
+			
+				<option value="LM7 ME">波音宽体机电</option>
+			
+				<option value="NAC">CRC工程</option>
+			
+				<option value="ARJ_CNV">ARJ客改货项目组</option>
+			
+			</select>
+			移交备注&nbsp;<input type="text" name="txtTransferRemark" id="txtTransferRemark" value="" />
+			&nbsp;
+			<input type="checkbox" name="needBoothAssistant" id="needBoothAssistant" value="">
+			是否需要工卡站协助
+		
+		</td>
+		<td rowspan="2">
+		</td>
+	</tr>
+	<tr align="left">
+		<td align="left">
+		
+		</td>
+	</tr>
+	
+	<tr align="left">
+		<td align="left">
+			<input type="button" onclick="doRetakeJc()" value="取回工卡"/>
+			&nbsp;工卡序号
+			<input type="text" name="retakeJc" id="retakeJcId" maxlength="5" size="10"/>
+			<input type="hidden" name="retakeJcRid" id="retakeJcRidId"/>
+		</td>
+	</tr>
+	
+	
+</table>
+</div>
+<table width="100%" border="0" align="center" cellpadding="0" cellspacing="0">
+	<tr> 
+		<td width="36">
+			<img src="/trace/images/tableTitle1.gif" width="36" height="27">
+		</td>
+		<td width="800" background="/trace/images/tableTitle2.gif">
+			<strong>工卡信息</strong>&nbsp;&nbsp;
+			<!-- <button onclick="allChoose()">全选</button>
+			<button onclick="reverseChoose()">反选</button>&nbsp;
+			<button onclick="cancelChoose()">取消选择</button>&nbsp;&nbsp;&nbsp;&nbsp; -->
+			<input type="button" onclick="allChoose()" value="全选">&nbsp;
+			<input type="button" onclick="reverseChoose()" value="反选">&nbsp;
+			<input type="button" onclick="cancelChoose()" value="取消选择">&nbsp;&nbsp;&nbsp;&nbsp;
+			
+			
+
+				
+			
+						
+			
+		 	<input type="button" onclick="showChangeModel(this)" value="导入步骤"/>
+			
+		</td>
+		<td width="28">
+			<img src="/trace/images/tableTitle3.gif" width="28" height="27">
+		</td>
+		<td background="/trace/images/main_bt_4.gif">
+			&nbsp;<label color="red"></label>
+		</td>
+		<td width="5">
+			<img src="/trace/images/main_bt_5.gif" width="5" height="27">
+		</td>
+	</tr>
+</table>
+
+<table width="100%" border="0" align="center" cellpadding="2" cellspacing="1" bgcolor="#3366FF">
+	<tr bgcolor="#A4C2FE" align="center">
+		<td width="1%"></td>
+		<td width="4%"><b>工卡序号</b></td>
+		<td width="6%"><b>工卡号</b></td>
+		<td width="6%"><b>工卡指令号</b></td>
+		<td width="15%"><b>工卡描述</b></td>
+		<td width="4%"><b>工卡类型</b></td>
+		<td width="6%"><b>阶段</b></td>
+		<td width="6%"><b>当前工作组</b></td>
+		<td width="4%"><b>交接人</b></td>
+		<td width="4%"><b>工作者</b></td>
+		<td width="6%"><b>方案期限</b></td>
+		<td width="3%"><b>超规范</b></td>
+		<td width="4%"><b>外表损伤</b></td>
+		<td width="4%"><b>航材状态</b></td>
+		<td width="4%"><b>人力</b></td>
+		<td width="4%"><b>工时</b></td>
+		<td width="6%"><b>区域</b></td>
+		<td width="6%"><b>建立时间</b></td>
+		<td width="3%"><b>QC终检</b></td>
+		<td width="3%"><b>QC章</b></td>
+		<td width="2%"><b>状态</b></td>
+		<td width="2%"><b>重要</b></td>
+		<td width="4%"><b>开卡人</b></td>
+		<td width="4%"><b>交接记录</b></td>
+		<td width="2%"><b>检验级别</b></td>
+		<td width="2%"><b>打印</b></td>
+		<td width="2%"><b>协助</b></td>
+		
+		<td width=""><b>子车间</b></td>
+		
+		<td width="2%"><b>操作</b></td>
+	</tr>
+	
+	<tr bgcolor="#E8E8E2" align="center" onmouseover="OnOverItem()" onmouseout="OnOutItem()">
+		<td width="" class="checkboxTdClass">
+			<input type="checkbox" name="jcRid" class="jcRidClass" value="12988089" />
+			<input type="hidden" name="jcCheck" class="jcCheckClass" value="NR/000000352" />
+			<input type="hidden" name="jcWo" class="jcWoClass" value="500007945140" />
+			<input type="hidden" name="csnJcWo" class="csnJcWoClass" value="" />
+			<input type="hidden" class="trackingNoClass" value="">
+			<input type="hidden" class="deferredByClass" value="">
+			<input type="hidden" class="deferredDateClass" value="">
+			<input type="hidden" class="trnoFromClass" value="">
+			<input type="hidden" name="wipJcSeq" class="wipJcSeqClass" value="50352">
+			<input type="hidden" name="jcType" class="jcTypeClass" value="NR">
+			<input type="hidden" name="slnStatus" class="slnStatusClass" value="N"/>
+			<input type="hidden" name="qcFiBy" class="qcFiByClass" value="">
+			<input type="hidden" name="jcRii" class="jcRiiClass" value="">
+			<!-- Add by 700683 超规范非卡的接收提醒及关闭限制 2018-10-23 start -->
+			<input type="hidden" name="outOfManual" class="outOfManualClass" value="">
+			<input type="hidden" name="engSlnRcp" class="engSlnRcpClass" value="">
+			<!-- Add by 700683 超规范非卡的接收提醒及关闭限制 2018-10-23 end -->
+			<!--2019-12-17 700805 start  -->
+			<input type="hidden" name="jcStatus" class="jcStatusClass" value="N"/>
+			<input type="hidden" name="flagEu" class="flagEuClass" value="N"/>
+			<!--2019-12-17 700805 end  -->
+		</td>
+		<td>50352</td>
+		<td>
+			<input type="hidden" id="jobcardId" name="12988089_jobcard" value="NR/000000352"/>
+			<a href="#" onclick="alterJC('12988089','NR','50352','N','NR/000000352','500007945140');return false;">
+				NR/000000352
+			</a>
+			<input type="hidden" name="jcseq" value="50352"/>
+		</td>
+		<!-- update by 700683 MPD项目标记功能及相关报表 2019-04-22 start -->
+		<!-- <td> -->
+		<td bgcolor="">
+		<!-- update by 700683 MPD项目标记功能及相关报表 2019-04-22 end -->
+			500007945140<br>
+		</td>
+		<td onmouseover="showtip('')" onmouseout="hidetip()" align="left">
+			CABIN ATTENDANT SEAT HEADREST CABLE BROKEN,LOC:LH1# FWD,RH1# AFT,LH3# FWD,RH3# FWD.
+		</td>
+		<td>NR</td>
+		<td></td>
+		<td onmouseover="showtip('三部客舱工艺')" onmouseout="hidetip()">三部客舱.....</td>
+		<td onmouseover="showtip('--')" onmouseout="hidetip()">
+			<a href="#" onclick="onLogList(12988089);return false;">
+				-- 
+			</a>
+		</td>
+		<td>
+			<a href="#" onclick="onIRTLogList(12988089);return false;">
+				--
+			</a>
+		</td>
+		<td ></td>
+		<td></td>
+		<td></td>
+		<td>不需</td>
+		<td></td>
+		<td align="center">
+			
+			 		
+			 
+		</td>
+		<td></td>
+		<td class="createdDateTD">2025-12-29 09:46:10<font color="#de9494" size="8" style="font-size: xx-small;display: none;">***</font></td>
+		<td onmouseover="showtip('')" onmouseout="hidetip()"></td>
+		<td onmouseover="showtip('')" onmouseout="hidetip()"><a href="#" onclick="downloadReviewFile('12988089')" ></a></td>
+		<td onmouseover="showtip('')" onmouseout="hidetip()">N</td>
+		<td ></td>
+		<td>007928 LIU SHUEN</td>
+		<td>
+			<a href="#" onclick="showHlbMasterLog('NR/000000352');return false;" title="交接记录"></a>
+		</td>
+		<td bgcolor=""></td>
+		<td></td>
+		<td>N</td>
+		
+		<td class="subShopTd">
+			
+		</td>
+		
+		<td></td>
+	</tr>
+	
+</table>
+
+<table width="100%" border="0" align="center" cellpadding="2" cellspacing="1">
+	<tr>
+		<td>
+			<b>第1页&nbsp;共1页 . 共1条记录.</b>
+		</td>
+		<td align="right">
+			<b>
+			<a href="#" onclick="pageFirst()">第一页</a>
+			<a href="#" onclick="pagePrevious()">上一页</a>
+			<a href="#" onclick="pageNext()">下一页</a>
+			<a href="#" onclick="pageLast()">末尾页</a>
+			<select name="txtPage" onchange="pageGo()">
+				<option value="1">1</option>
+			
+				<option value="1">1</option>
+			
+			</select>
+			</b>
+		</td>
+	</tr>
+</table>
+	<div>
+		<a href="#" onclick="colorExplain()" style="color: red">页面颜色说明</a>
+	</div>
+<input type="hidden" name="txtMessage" id="txtMessageId" value=""/>
+</form>
+<P align="center">&nbsp;</P>
+<!-- 模态对话框 -->
+<div id="confirmModal" style="display:none; position:fixed; top:30%; left:40%; width:320px; background:#ffffff; border-radius:10px; box-shadow:0 4px 12px rgba(0, 0, 0, 0.2); z-index:1000; padding:25px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; transition: all 0.3s ease;">
+	<!-- 对话框标题 -->
+	<h3 style="margin-top:0; text-align:center; color:#333;">确认操作</h3>
+
+	<!-- 显示确认提示信息 -->
+	<p id="confirmMessage" style="text-align:center; font-size:15px; color:#555; margin:20px 0;">确定关闭选择的工卡?</p>
+
+	<!-- 按钮区域 -->
+	<div style="display:flex; justify-content:center; gap:20px; margin-top:20px;">
+		<!-- 确认按钮 -->
+		<button id="confirmYes" style="padding:10px 20px; background:#276cd2; color:#fff; border:none; border-radius:5px; cursor:pointer; font-size:14px; transition: background 0.2s;">确定</button>
+
+		<!-- 取消按钮 -->
+		<button id="confirmNo" style="padding:10px 20px; background:#f44336; color:#fff; border:none; border-radius:5px; cursor:pointer; font-size:14px; transition: background 0.2s;">取消</button>
+	</div>
+</div>
+<!-- 遮罩层 -->
+<div id="modalOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:999;"></div>
+
+</BODY>
+<script type="text/javascript">
+var BASE_URL = '/trace';
+document.write("<div id=\"tooltip\" style=\"position:absolute;visibility:hidden; "
+	+"padding:3px;border:1px solid #528AC6;\;background-color:#ffdfd0; height: 19px; left: 77px; top: 96px\"></div>"); 
+var msgObj = $("#txtMessageId");				//	提示信息
+var jcMode = $.trim($("#jcModeId").val());		//	中英文模式
+var wgp = $.trim($("#wgpId").val());			//	当前编写组
+var woRid = $.trim($("#woRidId").val());		//	销售指令主键
+var ownerCode = $.trim($("#ownerCodeId").val());//	客户代码
+var tailno = $.trim($("#tailnoId").val());		//	飞机号
+var needSearch = false;							//	查询条件变更标识
+var eventObj = null;							//	事件对象
+var timeout;
+// 在DOM加载完成时运行
+$(document).ready(function(){
+	// 显示提示栏
+	init();
+  	
+  	// 显示提示信息
+	if($.trim(msgObj.val())!="")
+	{
+		alert(msgObj.val());
+	}
+  	
+  	//显示发动机信息
+  	if(tailno=="GAM-ENG"){
+		$("#GamEngTr").css("display","");
+  	}else{
+  		$("#GamEngTr").css("display","none");
+  	}
+    transferMode();
+    createDateColorControl();//控制建立时间背景颜色
+    
+    parkingOver7dayPrompt();// 停场超7天工作包试车提醒
+});
+
+function colorExplain(){
+	window.open("/trace/fgm/workOrder/colorExplainForManage.jsp","","width=600px,height=250px,toolbar=no,menubar=no,scrollbars=yes,resizable=yes,status=no")
+}
+
+// add by 700683 MPD项目标记功能及相关报表 2019-04-22 start
+function remarkFlagMpd(flagMpd) {
+	var items = $("input[name='jcRid']:checked");
+	
+	if (items.length == 0) {
+		alert("至少选择1条记录！");
+		return;
+	} else if (items.length > 1000) {
+		alert("最多能选1000条记录！");
+		return;
+	}
+	
+	document.form.action = "/trace/fgm/fgm.do?method=remarkFlagMpd&flagMpd="+flagMpd;
+	document.form.submit();
+}
+// add by 700683 MPD项目标记功能及相关报表 2019-04-22 end
+
+
+
+//导出报表
+function goReport()
+{
+	var param = $("#reportExport");
+	var workorder = $("#qWorkorder");	// 销售指令号
+	var url = "";
+	
+	// 跳开关夹清点单
+	if($.trim(param.val()) == "switchList"){
+		
+		url = "/trace/fgm/fgm.do?method=jumpSwitchOrder";
+		document.form.action = url;
+		document.form.submit();
+		return;
+	}
+	
+	if("PCSE" == $.trim(param.val())){
+		goReportPCSE();
+		return;
+	}
+	
+	if("noPlanWorkList" == $.trim(param.val())){
+		goNoPlanWorkList(workorder.val());
+		return;
+	}
+	
+	if($.trim(workorder.val()) == "")
+	{
+		alert("您必须输入工作指令号！");
+		workorder.focus();
+		return;
+	}
+	if($.trim(param.val()) == "")
+	{
+		alert("您必须指定导出的报表类型！");
+		param.focus();
+		return;
+	}
+	if($.trim(param.val()) == "workorderList")
+	{
+		url="http://10.240.2.113:7778/reports/rwservlet?gameco_report&destype=cache&desformat=PDF&report=workhour_list.rdf"
+			+"&workorder='"+workorder.val()+"'";
+	
+		window.open(url,"工种刷卡工时","toolbar=0,menubar=0,location=0,directories=0,status=0,resizable=1");
+		return;
+	}
+	if($.trim(param.val()) == "identificationTag")
+	{
+		doElectricLabel();
+		return;
+	}
+	// 南航结构非卡清单
+	if($.trim(param.val())=="strnrcList")
+	{
+		url = "strnrcList.jsp?salesOrder="+workorder.val();
+		window.open(url,"_self");
+		return;
+	}
+	// 例行/EO派生非例卡清单
+	if($.trim(param.val())=="nrcListToWord")
+	{
+		//url = "http://10.240.2.251:8080/trace/fgm/workOrder/workOrder/nrcListToWord.jsp?salesOrder="+workorder.val();
+		url = "workOrder/nrcListToWord.jsp?salesOrder="+workorder.val();
+		window.open(url,"_blank");
+		return;
+	}
+	// Add by 700683 汉莎工卡管理的客户化要求-V4 2018-10-31 start
+	if ($.trim(param.val()) == "lhtJcList") {
+		url = "/trace/fgm/fgm.do?method=exportLhtJclist";
+		document.form.action = url;
+		document.form.submit();
+		return;
+	}
+	if ($.trim(param.val()) == "lhtNrcList") {
+		url = "/trace/fgm/fgm.do?method=exportLhtNrclist";
+		document.form.action = url;
+		document.form.submit();
+		return;
+	}
+	// Add by 700683 汉莎工卡管理的客户化要求-V4 2018-10-31 end
+	// add by 700683 盖板标签自动生成 2018-11-22 start
+	if ($.trim(param.val()) == "misLblPnlList") {
+		if (ownerCode != "CSN" && ownerCode != "CKG" && ownerCode != "FEDEX" && ownerCode != "CSG" && ownerCode != "CSL") {
+			alert("飞机[" + tailno + "]所属客户尚不在功能支持范围！");
+			return;
+		}
+		document.form.action = "/trace/fgm/fgm.do?method=exportMisLblPnlList";
+		document.form.submit();
+		return;
+	}
+	// add by 700683 盖板标签自动生成 2018-11-22 end
+	// add by 700683 MPD项目标记功能及相关报表 2019-04-22 start
+	if ($.trim(param.val()) == "mpdJcList") {
+		
+		document.form.action = "/trace/fgm/fgm.do?method=exportMpdJcList";
+		document.form.submit();
+		return;
+	}
+	if ($.trim(param.val()) == "mpdNrcList") {
+		
+		document.form.action = "/trace/fgm/fgm.do?method=exportMpdNrcList";
+		document.form.submit();
+		return;
+	}
+	if ($.trim(param.val()) == "cusRefNrcList") {
+		
+		document.form.action = "/trace/fgm/fgm.do?method=exportCusRefNrcList";
+		document.form.submit();
+		return;
+	}
+	// add by 700683 MPD项目标记功能及相关报表 2019-04-22 end
+	// add by 700683 特殊项目清单 2019-04-25 start
+	if ($.trim(param.val()) == "activeProList") {
+		
+		document.form.action = "/trace/fgm/fgm.do?method=exportActiveProList";
+		document.form.submit();
+		return;
+	}
+	// LHT NRC MANHOUR REPORT报表
+	if ($.trim(param.val()) == "lhtNrcManhourReport") {
+		document.form.action = "/trace/fgm/fgm.do?method=exportLhtNrcManhourReport";
+		document.form.submit();
+		return;
+	}
+	//单机EO重要改装能力情况
+	if ($.trim(param.val()) == "singleMachineEO") {
+		var workorder = $.trim($("#qWorkorder").val())
+		var re = new RegExp("^[0-9]{1,15}$");
+		if(!re.test(workorder)){
+			alert("请输入正确的销售指令号！");
+			return;
+		}
+		window.location.href ="/trace/fgm/functionGroup/plan.do?method=exportSingleMachineEO&workorder="+workorder+'&txtMenuID=22800';
+		return;
+	}
+	//单机EO重要改装能力情况(更换航站)
+	if ($.trim(param.val()) == "changeTheTerminal") {
+		var workorder = $.trim($("#qWorkorder").val())
+		var re = new RegExp("^[0-9]{1,15}$");
+		if(!re.test(workorder)){
+			alert("请输入正确的销售指令号！");
+			return;
+		}
+		url = "/trace/fgm/functionGroup/plan.do?method=toInputActPlace&txtMenuID=22800";
+		JqueryDialog.Open1("请录入变更航站!", url, 500, 200);
+		return;
+	}
+	//单机工卡技术资料
+	if ($.trim(param.val()) == "singleMachineWjcInfo") {
+		var workorder = $.trim($("#qWorkorder").val())
+		var re = new RegExp("^[0-9]{1,15}$");
+		if(!re.test(workorder)){
+			alert("请输入正确的销售指令号！");
+			return;
+		}
+		window.location.href ="/trace/fgm/functionGroup/plan.do?method=exportSingleMachineWjcInfo&workorder="+workorder+'&txtMenuID=22800';
+		return;
+	}
+	//单机工卡图纸
+	if ($.trim(param.val()) == "singleMachineWjcPic") {
+		var workorder = $.trim($("#qWorkorder").val())
+		var re = new RegExp("^[0-9]{1,15}$");
+		if(!re.test(workorder)){
+			alert("请输入正确的销售指令号！");
+			return;
+		}
+		window.location.href ="/trace/fgm/functionGroup/plan.do?method=exportSingleMachineWjcPic&workorder="+workorder+'&txtMenuID=22800';
+		return;
+	}
+	// add by 700683 特殊项目清单 2019-04-25 end
+	if($.trim(param.val()) == "thirdPartyNRC")
+	{
+		url = "exportJcStp.jsp";
+	}
+	else
+	{
+		url = "inputJobcard/report.jsp";
+	}
+	//2020-04-14 006008 start
+	if($.trim(param.val()) == "nrcListQianshu")
+	{
+		url="http://10.240.2.113:7778/reports/rwservlet?gameco_report&destype=cache&desformat=PDF&report=SIGN-OFF-SHEET.rdf"
+			+"&wo='"+workorder.val()+"'";
+	
+		window.open(url,"非例行工卡签署页","toolbar=0,menubar=0,location=0,directories=0,status=0,resizable=1");
+		return;
+	}
+
+	//2020-04-14 006008 END
+	
+	// 700824 南航结构化维修清单
+	if ($.trim(param.val()) == "repairList") {
+		var workorder = $.trim($("#qWorkorder").val())
+		var repairListFlag = true;
+		$.ajax({
+			type: "POST",
+			url: "/trace/fgm/fgmAuth.do?method=countNHRepairList&workorder="+workorder,
+			async: false,
+			dataType: "json",
+			success: function(data) {
+				if(data.cnt < 1){
+					alert("该销售指令号导出无数据");
+					repairListFlag = false;
+				}
+			}
+		});
+
+		if (!repairListFlag){
+			return;
+		}
+
+
+		document.form.action = "/trace/fgm/fgmAuth.do?method=exportNHRepairList";
+		document.form.submit();
+		return;
+	}
+	//任务清单
+	if ($.trim(param.val()) == "taskList") {
+		var workorder = $.trim($("#qWorkorder").val())
+		var re = new RegExp("^[0-9]{1,15}$");
+		if(!re.test(workorder)){
+			alert("请输入正确的销售指令号！");
+			return;
+		}
+		window.location.href ="/trace/fgm/fgm.do?method=exportTaskList&workorder="+workorder+'&txtMenuID=22800';
+		return;
+	}
+	
+	//未确认领料清单
+	if ($.trim(param.val()) == "unConfirmedPickingList") {
+		var workorder = $.trim($("#qWorkorder").val())
+		var woRid = $("#woRidId").val();
+		var re = new RegExp("^[0-9]{1,15}$");
+		if(!re.test(workorder)){
+			alert("请输入正确的销售指令号！");
+			return;
+		}
+		if("" == woRid){
+			alert("请查询后再继续操作!");
+			return;
+		}
+		window.location.href ="/trace/fgm/fgm.do?method=exportUnConfirmedPickingList&workorder="
+				+ workorder + "&woRid=" + woRid + '&txtMenuID=22800';
+		return;
+	}
+	
+	
+	// 阿联酋非卡清单
+	if ($.trim(param.val()) == "uaeNrcList") {
+		var workorder = '120000588375';
+		var acNo = 'A6-ENL';
+		
+		if(!workorder || !acNo){
+			alert("请查询后再继续操作!");
+			return;
+		}
+		if(!/^\d{10,15}$/.test(workorder)){
+			alert("请输入正确的销售指令号！");
+			return;
+		}
+		window.location.href ="/trace/fgm/fgm.do?method=exportUaeNrcList&workorder="
+				+ workorder + "&acNo=" + encodeURIComponent(acNo) + '&txtMenuID=22800';
+		return;
+	}
+
+	//工包重复工卡清单
+	if ($.trim(param.val()) === "jobPkRepeatJobCardList") {
+		var workorder = $.trim($("#qWorkorder").val())
+		var txtFullReg = $.trim($("#txtFullReg").val())
+		var woRid = $("#woRidId").val();
+		var re = new RegExp("^[0-9]{1,15}$");
+        var flag = true;
+        var urlPkRepeatSelect="/trace/fgm/fgm.do?method=selectJobPkRepeatJobCardList&workorder="+ workorder + "&txtMenuID=22800";
+        var urlPkRepeat="/trace/fgm/fgm.do?method=exportJobPkRepeatJobCardList&workorder="+ workorder + "&txtMenuID=22800";
+		if(!re.test(workorder)){
+			alert("请输入正确的销售指令号！");
+			return;
+		}
+		if("" === woRid){
+			alert("请查询后再继续操作!");
+			return;
+		}
+        $.ajax({
+            url: urlPkRepeatSelect,
+            type: 'post',
+            async: false,
+            data: {"workorder":workorder,"txtMenuID":22800},
+            dataType: 'json',
+            success: function(data) {
+                if(data.msg ==="0" ){
+                    alert("工包["+workorder+"]没有重复工卡!");
+                    flag = false;
+					return;
+                }
+            }
+        });
+        if(!flag) {
+            return;
+        }
+		window.location.href ="/trace/fgm/fgm.do?method=exportJobPkRepeatJobCardList&workorder="
+				+ workorder + '&txtMenuID=22800';
+		return;
+	}
+	
+	// 定检非卡收费工时单
+	if ($.trim(param.val()) === "collectFeeList") {
+		var workorder = $.trim($("#qWorkorder").val())
+		var re = new RegExp("^[0-9]{1,15}$");
+		if(!re.test(workorder)){
+			alert("请输入正确的销售指令号！");
+			return;
+		}
+		// 检查是否有清单
+		var checkRestult;
+			$.ajax({
+			url: '/trace/fgm/fgm.do?method=checkIsHascollectFeeByWo',
+			type: 'get',
+			async: false,
+			data: {"workorder":workorder, "txtMenuID":"22800"},
+			dataType: 'json',
+			cache: false,
+			success: function(data) {
+				checkRestult = data.flag;
+			},
+			error: function() {
+				alert("系统异常,操作失败!");
+				checkRestult = -1;
+			}
+		});
+		if(0 == checkRestult){
+			alert("没有数据！");
+			return;
+		}
+		window.location.href ="/trace/fgm/fgm.do?method=exportCollectFeeList&workorder="+workorder+'&txtMenuID=22800';
+		return;
+	}
+	
+	// DLH NRC MANHOUR REPORT
+	if("dlhNrcManhourReport" == $.trim(param.val())){
+		var workorder = $.trim($("#qWorkorder").val())
+		var re = new RegExp("^[0-9]{1,15}$");
+		if(!re.test(workorder)){
+			alert("请输入正确的销售指令号！");
+			return;
+		}
+		window.location.href ="/trace/fgm/fgm.do?method=dlhNrcManhourReport&workorder="+workorder+'&txtMenuID=22800';
+		return;
+	}
+	//汉莎HM3非卡数据
+	if("dlhNrcHm3Report" == $.trim(param.val())){
+		var workorder = $.trim($("#qWorkorder").val())
+		var re = new RegExp("^[0-9]{1,15}$");
+		if(!re.test(workorder)){
+			alert("请输入正确的销售指令号！");
+			return;
+		}
+		window.location.href ="/trace/fgm/fgm.do?method=dlhNrcHm3Report&workorder="+workorder+'&txtMenuID=22800';
+		return;
+	}
+
+    //客户退件填写状态
+    if ($.trim(param.val()) === "customerReturnStatus") {
+        var workorder = $.trim($("#qWorkorder").val())
+        var re = new RegExp("^[0-9]{1,15}$");
+        var flag = true;
+        var urlSelect="/trace/fgm/fgm.do?method=selectCustomerReturnStatus";
+        if(!re.test(workorder)){
+            alert("请输入正确的销售指令号！");
+            return;
+        }
+        if("" === woRid){
+            alert("请查询后再继续操作!");
+            return;
+        }
+        $.ajax({
+            url: urlSelect,
+            type: 'post',
+            async: false,
+            data: {"workorder":workorder,"txtMenuID":22800},
+            dataType: 'json',
+            success: function(data) {
+                if(data.msg ==="0" ){
+                    alert("未读取到数据！");
+                    flag = false;
+                    return;
+                }
+            }
+        });
+        if(!flag) {
+            return;
+        }
+        window.location.href ="/trace/fgm/fgm.do?method=customerReturnStatus&workorder="
+            + workorder + '&txtMenuID=22800';
+        return;
+    }
+    
+	// 其他报表, 转到js文件避免jsp文件过大
+	if(otherReport(param, workorder)){
+		return;
+	}
+    
+	document.form.action = url;
+	document.form.submit();
+	document.form.action = "";
+}
+
+//单机EO重要改装能力情况(更换航站)
+function exportChangeTheTerminal(actPlace){
+	JqueryDialog.Close();
+	
+	window.location.href ="/trace/fgm/functionGroup/plan.do?method=exportChangeTheTerminal&workorder="+
+			$.trim($("#qWorkorder").val())+'&actPlace='+encodeURI(actPlace)+'&txtMenuID=22800';
+	return;
+}
+
+// 导出PCSE TXT文件
+function goReportPCSE()
+{	
+	var fedexEmpId = "";
+	var fedexWriJc = "";
+	var workorder = $.trim($("#qWorkorder").val());			// 销售指令号
+	var checkNo = $.trim($("#txtFlight_Check_No").val());	// 定检级别
+	var url = "";
+	
+	url = "ajax/fedexCheck.jsp?woRid="+woRid+"&dt="+new Date().getTime();
+	$.ajax({
+		type : "post",
+		url : url,
+		async: false,					// 设置是否需要异步
+		dataType: "json",				// 返回的数据格式
+		success:function(data){
+			fedexEmpId = data.emp;
+			fedexWriJc = data.wri;
+		}
+	});
+	if(fedexEmpId=="" || fedexWriJc==""){
+		alert("请预留销售指令需使用的FEDEX员工号，及WRI/9999工卡对应的工卡序号");
+		return;
+	}
+	
+	url = "inputJobcard/pcseReport.jsp?woRid="+woRid;
+	var windowValue = window.open(url,"","width=800,height=500,toolbar=0,menubar=0,location=0,directories=0,status=0,resizable=1,scrollbars=1");
+	
+}
+
+//非例卡工时确认
+function mhConfirm()
+{
+	var checkboxArray = $(".jcRidClass");
+	var jc = $(".jcCheckClass");
+	
+	if(checkItem("jcRid")==false)
+	{
+		alert("请至少选择一项工卡!");
+		return;
+	}
+	if(!confirm("确定选择工卡的工时?"))
+	{
+		return;
+	}
+	
+	for(var i = 0;i < checkboxArray.length;i++)
+	{
+		var checkbox = $(checkboxArray[i]);
+			
+		if(checkbox.attr("checked"))
+		{
+			var jobcard = $(jc[i]);
+			if(!jobcard.attr("value").match("^NR/.*"))
+			{
+				alert("工时确认只针对非例卡!");
+				return;
+			} 
+		}
+	}
+	document.form.action = "updateJC.jsp?action=mhConfirm";	
+	document.form.submit();
+	document.form.action = "";
+}
+
+//非例卡实际工时
+function actualMH(jcRid,jcSeq,jobcard)
+{
+	var url = "alterActualMH.jsp?jcRid="+jcRid+"&jcSeq="+jcSeq+"&jobcard="+jobcard;
+	/*var value = window.open(url,"",
+	"dialogWidth:820px;dialogHeight:400px;help:no;status:no;resizable:yes;toolbar:no;menubar:no");*/
+	var win = window.open(url,"",
+			"width=820px,height=400px,toolbar=no,menubar=no,scrollbars=yes,resizable=yes,status=no");
+	var loop = setInterval(function(){
+		if(win.closed){
+			clearInterval(loop);
+			$("input[type='button']").attr("disabled",true);
+			document.form.action = "workOrderManage.jsp";
+			document.form.submit();
+			document.form.action = "";
+		}
+	}, 1);
+
+}
+
+//导出航材清单
+function doExportMATList()
+{
+	var workorder = $.trim($("#qWorkorder").val());	// 销售指令号
+	
+	if(checkItem("jcRid")==false)
+	{
+		alert("请选择一项工卡!");
+		return;
+	}
+	
+	var checkboxArray = $(".jcRidClass");
+	var jc = $(".jcCheckClass");
+	var j = 0;
+	var jobcard = "";
+	for(var i = 0;i < checkboxArray.length;i++)
+	{
+		var checkbox = $(checkboxArray[i]);
+		if(checkbox.attr("checked"))
+		{
+			jobcard = $(jc[i]).attr("value");
+			j++;
+		}
+	}
+	if(j >= 2)
+	{
+		alert("不能选择多份工卡进行导出!");
+		return;
+	}	
+	document.form.action = "jobcard/exportMATList.jsp?workorder="+workorder+"&jobcard="+jobcard;
+	document.form.submit();
+	document.form.action = "";
+}
+
+// 取消选择
+function cancelChoose()
+{
+	var checkboxArray = $(".jcRidClass");
+	for(var i = 0;i < checkboxArray.length;i++)
+	{
+		var checkbox = $(checkboxArray[i]);
+		checkbox.attr("checked",false);
+	}
+}
+// 反选
+function reverseChoose()
+{
+	var checkboxArray = $(".jcRidClass");
+	for(var i = 0;i < checkboxArray.length;i++)
+	{
+		var checkbox = $(checkboxArray[i]);
+		if(checkbox.attr("checked"))
+		{
+			checkbox.attr("checked",false);
+		}
+		else
+		{
+			//if(checkbox.attr("disabled"))
+			//{
+			//	continue;
+			//}
+			checkbox.attr("checked",true);
+		}
+	}
+}
+// 全选
+function allChoose()
+{
+	var checkboxArray = $(".jcRidClass");
+	for(var i = 0;i < checkboxArray.length;i++)
+	{
+		var checkbox = $(checkboxArray[i]);
+		//if(checkbox.attr("disabled"))
+		//{
+		//	continue;
+		//}
+		checkbox.attr("checked",true);
+	}
+}
+// 查询该信息的记录
+function onLogList(rid)
+{
+	var url = "trackLog/jcTrackLog.jsp?jcRid="+rid;
+	//各个参数，依次为：对话框宽，对话框高，帮助按钮，状态栏，是否调整窗口大小，工具栏，菜单栏
+	//  var value = window.open(url,"",
+	// "dialogWidth:900px;dialogHeight:500px;help:no;status:no;resizable:yes;toolbar:no;menubar:no");
+	/* "dialogWidth:1020px;dialogHeight:500px;help:no;status:no;resizable:yes;toolbar:no;menubar:no"); */
+
+	var value = window.open(url,"rcDetail",'width=900px,height=500px,toolbar=no,menubar=no,scrollbars=yes,resizable=yes,status=no');
+}
+// 显示收发卡记录
+function onIRTLogList(rid)
+{
+	var url = "trackLog/jcIRTLog.jsp?jcRid="+rid;
+	//var value = window.open(url,"","dialogWidth:850px;dialogHeight:400px;help:no;status:no;resizable:yes;toolbar:no;menubar:no");
+	var value = window.open(url,"","width=850px,height=400px,toolbar=no,menubar=no,scrollbars=yes,resizable=yes,status=no");
+}
+// 恢复工卡
+function goComeback(rid)
+{
+	var boolean = window.confirm("需要恢复此工卡号?");
+	if(boolean)
+	{
+		var url = "inputRemark.jsp?flag=goComeback&jcRid="+rid;
+		
+		//var remark = window.open(url,"","dialogWidth:500px;dialogHeight:200px;help:no;status:no;resizable:yes;toolbar:no;menubar:no");
+		var remark = window.open(url,"","width=500px,height=200px,toolbar=no,menubar=no,scrollbars=yes,resizable=yes,status=no");
+
+	}
+}
+function goComebackAfter(remark,rid) {
+	//lzq
+	if(remark!=undefined && remark!="")
+	{
+		document.form.action = "updateJC.jsp?action=comeback&primaryJC="+rid+"&remark="+remark;
+		document.form.submit();
+		document.form.action = "";
+	}
+}
+
+// 显示链接的说明
+function showtip(text){
+	
+	if(text==""){return false;}
+	
+	if((!!window.ActiveXObject || "ActiveXObject" in window) && document.readyState=="complete"){
+		document.all.tooltip.innerHTML="<div vAlign=center><font SIZE=2>"+text+"</font></div>";
+		document.all.tooltip.style.pixelLeft=event.clientX+document.body.scrollLeft+10;
+		document.all.tooltip.style.pixelTop=event.clientY+document.body.scrollTop+10;
+		document.all.tooltip.style.visibility="visible";
+ 	}else{
+ 		document.all.tooltip.innerHTML="<div vAlign=center><font SIZE=2>"+text+"</font></div>";
+		document.all.tooltip.style.left=event.clientX+document.body.scrollLeft+10;
+		document.all.tooltip.style.top=event.clientY+document.body.scrollTop+10;
+		document.all.tooltip.style.visibility="visible";
+		document.all.tooltip.style.height="auto";
+	} 
+	
+}
+function hidetip()  {
+	//if (document.all){
+		document.all.tooltip.style.visibility="hidden";
+		//$("#visibility").hide();
+	//}
+} 
+
+// 改变工卡的收发状态
+function onJcTransferMode()
+{
+	var holdByCodeObj = $("#codeId");
+	var holdByNameObj = $("#nameId");
+	var prDate = $("#prDateId");
+	var rTrade = $("#rTradeId");
+	var jcTransferMode = $("#jcTransferModeId");
+	
+	if(checkItem("jcRid")==false)
+	{
+		alert("请至少选择一项工卡!");
+		return;
+	}
+	if(!confirm("确定更改所选工卡的持卡人?"))
+	{
+		return;
+	}
+	if($.trim(holdByCodeObj.val())=="" || $.trim(holdByNameObj.val())=="")
+	{
+		alert("工号或姓名不能为空!");
+		holdByCodeObj.selected();
+		return;
+	}
+	if($(jcTransferMode).val()=="I") {
+		if($.trim(prDate.val())=="") {
+			alert("预计收回日期不能为空!");
+			prDate.focus();
+			return;
+		}
+		if($.trim(rTrade.val())=="") {
+			alert("接卡工种不能为空!");
+			rTrade.focus();
+			return;
+		}
+	}
+	
+	document.form.action = "updateJC.jsp?action=jcTransferMode";
+	document.form.submit();
+	document.form.action = "";
+	$(":button").attr("disabled","disabled");//设置所有的button不可用
+}
+// 取回非例行卡
+function doRetakeJc()
+{
+	var url = "";
+	var message = "";
+	var flag = true;
+	var retakeJcRidObj = $("#retakeJcRidId");	// 需要取回的工卡主键
+	var retakeJcObj = $("#retakeJcId");			// 需要取回的工卡序号
+	if($.trim(retakeJcObj.val())=="")
+	{
+		alert("请输入需要取回的非例卡序号!");
+		retakeJcObj.focus();
+		return;
+	}
+	if(!($.trim(retakeJcObj.val()).match("^5.*")))
+	{
+		alert("只能取回非例行卡!");
+		retakeJcObj.select();
+		return;
+	}
+	if(!confirm("确定取回["+retakeJcObj.val()+"]非例卡?"))
+	{
+		return;
+	}
+	// 获取该卡的信息
+	url = "ajax/getJobCardInfo.jsp?txtJcSeq="+retakeJcObj.val()+"&txtWoRid="+woRid+"&dt="+new Date().getTime();
+	// 需要使用同步的AJAX请求
+	$.ajax({
+		type: "POST",					// 请求方式
+		url: url,						// 请求地址
+		jsonp: "jsonpcallback",			// 回调函数名字
+		async: false,					// 设置是否需要异步 true=异步,false=同步
+		dataType: "jsonp",				// 返回的数据格式
+		success: function(data)			// 成功返回时，所调用的回调函数	
+		{
+			if(data.rid=="")
+			{
+				message = "该指令号不存在该卡!";
+				flag = false;
+			}
+			else if(data.jcType!="NR")
+			{
+				message = "只能取回非例行卡!";
+				flag = false;
+			}
+			else if(!(data.techPrcGrp==""||data.techPrcGrp=="BOOTH"||data.techPrcGrp=="MOCC PPC1"||data.techPrcGrp=="MOCC PPC2"))
+			{
+				message = "该工卡不在工卡站或MOCC!";
+				flag = false;
+			}
+			else if(data.transferMode=="R")
+			{
+				message = "该工卡已交接，请联系控制员取回!";
+				flag = false;
+			}
+			else
+			{
+				retakeJcRidObj.attr("value",data.rid);
+			}
+		}
+	});
+	
+	if(flag==false)
+	{
+		alert(message);
+		return;
+	}
+	
+	document.form.action = "updateJC.jsp?action=retakeJc";
+	document.form.submit();
+	document.form.action = "";
+	$(":button").attr("disabled","disabled");//设置所有的button不可用
+}
+// 修改工卡的工卡号
+function doEditJc()
+{
+	var checkboxArray = $(".jcRidClass:checked");
+	var editJobCardObj = $("#editJobCardId");			// 修改后的工卡号
+	var editJcWorkOrderObj = $("#editJcWorkOrderId");	// 需要修改的工卡指令号
+	var jcWorkOrder = "";
+	var jcType = "";
+	var workorder = $.trim($("#qWorkorder").val());		// 工作指令号
+
+	if(checkboxArray.length==0){
+		alert("请选一项需要修改的工卡!");
+		return;
+	}
+	if(checkboxArray.length>1){
+		alert("只能选择一项工卡!");
+		return;
+	} else {
+		jcWorkOrder = $(checkboxArray[0]).siblings(".jcWoClass").val();
+		jcType = $(checkboxArray[0]).siblings(".jcTypeClass").val();
+	}
+	
+	if(jcType == "NR") {
+		alert("非例行卡不允许修改工卡号!");
+		return;
+	}
+	if($.trim(editJobCardObj.val())==""){
+		alert("请输入工卡号!");
+		editJobCardObj.selected();
+		return;
+	} else {
+		var regx = new RegExp("^NR/");
+		if(regx.test($.trim(editJobCardObj.val()).toLocaleUpperCase())) {
+			alert("请输入正确例行卡号！");
+			editJobCardObj.select();
+			return;
+		}
+	}
+	
+	if($.trim(jcWorkOrder)==""){
+		alert("所选工卡缺少工卡指令号!");
+		return;
+	} else {
+		editJcWorkOrderObj.attr("value",jcWorkOrder);
+	}
+	
+	//在修改前查询相关记录
+	var chaUrl = "./ajax/xiuClosed.jsp?workorder="+workorder+"&editJobCardObj="+editJobCardObj.val()+"&dt="+new Date().getTime();
+	jQuery.ajax({
+		type: "POST",
+		async: true,	//控制同步=false 异步=true
+		url: chaUrl,
+		contentType: "application/json; charset=gbk",
+		dataType: "json",
+		cache: true,
+		success: function (data) {
+			if(data.flag=="true") {
+		   		window.open("xiuworkOrder.jsp?workorder="+workorder+"&editJobCardObj="+editJobCardObj.val(),null,
+				"height=500,width=1000,status=yes,toolbar=no,menubar=no,location=no,scrollbars=yes");
+			}
+		},
+		error: function (err) {
+			alert("error");
+		}
+	});
+	
+	document.form.action = "updateJC.jsp?action=editJc";
+	document.form.submit();
+	document.form.action = "";
+	$(":button").attr("disabled","disabled");//设置所有的button不可用
+}
+// 当为收状态时，设置员工号为空
+function transferMode()
+{
+	var mode = $("#jcTransferModeId");
+	var code = $("input[name='code']");
+	var name = $("input[name='name']");
+	var prDate = $("#prDateId");
+	var rTrade = $("#rTradeId");
+	//var today = (new Date().getFullYear())+"-"+(new Date().getMonth()+1)+"-"+(new Date().getDate());
+	
+	if(mode.val() == "R") {
+		name.attr("value","");
+		code.attr("value","");
+		prDate.attr("value","");
+		rTrade.attr("value",""); 
+	}
+	/* if(mode.val() == "I") {
+		prDate.attr("value", today);
+	} */
+}
+// 查找员工号和员工名
+function selectUser(obj,field,codeId,nameId)
+{
+	var input = $(obj);
+	var value = input.attr("value");
+	
+	var code = $("#"+codeId);
+	var name = $("#"+nameId);
+	
+	var url = "ajax/selectUser.jsp?info="+value+"&field="+field+"&jsonpcallback=?";
+	
+	$.ajax({
+		url: url,
+		async: false,
+		cache: false,
+		dataType: "jsonp",
+		success: function(data){
+			$.each(data,function(key,value){
+				if(key == "code")
+				{
+					code.attr("value",value);
+				}
+				if(key == "name")
+				{
+					name.attr("value",value);
+				}
+			});
+		}
+	});
+}
+// 设置select标签的默认选择
+function itemDefault(obj,value)
+{
+	var valObject = $(obj);
+	for(var i = 0;i < valObject.children().length;i++)
+	{
+		if(valObject.children().eq(i).attr("value") == value)
+		{
+			valObject.children().eq(i).attr("selected",true);
+		}
+		else
+		{
+			valObject.children().eq(i).attr("selected",false);
+		}
+	}
+}
+// 更新工艺组
+function onUpdWorkGroup()
+{
+	var checkboxArray = $(".jcRidClass"); 	// 复选框集合
+	var jt = $(".jcTypeClass");
+	var needBoothAss = "N";
+	var updWgp = $("#workGroup");
+	var isFedex = false;			// 是否Fedex工卡
+	
+	
+	if(checkItem("jcRid")==false)
+	{
+		alert("请至少选择一项工卡!");
+		return;
+	}
+	if(updWgp.val()=="")
+	{
+		alert("请选择工作组!");
+		updWgp.focus();
+		return;
+	}
+	if($.trim($("#txtTransferRemark").attr("value"))=="")
+	{
+		alert("移交备注不能为空!");
+		$("#txtTransferRemark").focus();
+		return;
+	}
+	
+	for(var i = 0;i < checkboxArray.length;i++)
+	{
+		var checkbox = $(checkboxArray[i]);
+		
+		if(checkbox.attr("checked"))// 勾选的复选框
+		{
+			if($("#needBoothAssistant").attr("checked"))
+			{
+				needBoothAss = "Y";
+			}
+			var jcType = $(jt[i]);
+			if(jcType.val() != "NR" && jcType.val() != "JCC")
+			{				
+				if(updWgp.val().indexOf("PP")==-1 && updWgp.val() != "BOOTH")	
+				{
+					alert("不能将例行卡转给除生产计划或工卡站以外的地方！");
+					return;
+				}
+			}
+			/* if("QC" == updWgp.val() && "NR" == jcType.val() && isFedex ){
+				alert("FEDEX客户飞机已禁止修改非卡描述！");
+				return;
+			} */
+		}
+	}
+	
+	document.form.action = "updateJC.jsp?action=updWorkGroup&needBoothAss="+needBoothAss;
+	document.form.submit();
+	document.form.action = "";
+	
+	$(":button").attr("disabled","disabled");
+}
+function pageFirst()
+{
+	document.form.action="workOrderManage.jsp?page=1";
+   	document.form.submit();
+}
+function pageNext()
+{
+	document.form.action="workOrderManage.jsp?page=2";
+   	document.form.submit();
+}
+function pagePrevious()
+{
+	document.form.action="workOrderManage.jsp?page=0";
+   	document.form.submit();
+}
+function pageLast()
+{
+	document.form.action="workOrderManage.jsp?page=1";
+   	document.form.submit();
+}
+function pageGo()
+{
+	document.form.action="workOrderManage.jsp?page="+document.form.txtPage.value;
+   	document.form.submit();
+}
+function inputCard()
+{
+	document.form.action = "alterJC.jsp?addJC=add";
+	document.form.submit();
+	document.form.action = "";
+}
+// 修改工卡、步骤
+function alterJC(jcRid,type,jcseq,flagEu,jobcard,txtJcWorkOrder)
+{
+	// ADD BY 700683 非卡打印功能的改进 2018-05-10 START
+	var flagEPrt = "";
+	// ADD BY 700683 非卡打印功能的改进 2018-05-10 END
+	var eSign = $("#eSign").val();
+	var url = "jobcard/alterJCSTP.jsp?wgp="+wgp+"&jcrid="+jcRid+"&woRid="+woRid+"&jcType="+type+"&eSign="+eSign+"&txtMenuID=22800";
+	// 非例行卡跳去的页面
+	if(type.toUpperCase() == "NR"){
+		url = "jobcard/alterJCSTPNRC.jsp?wgp="+wgp+"&jcrid="+jcRid+"&woRid="+woRid+"&jcType="+type+"&jcSeq="
+			+jcseq+"&jcmode="+jcMode+"&ownerCode="+ownerCode+"&eSign="+eSign+"&flagEPrt="+flagEPrt+"&txtMenuID=22800";
+		if (flagEu == "Y"){
+			var pn = "";
+			var sn = "";
+			var wo = "120000588375";
+			var refNo = "";
+			var refNoSeq = "";
+			var jcWorkorder = "";
+			var techPrcGrp = "HM3_ENG";
+			$.ajax({
+				url: 'ajax/getRRSInfo.jsp',
+				type: 'get',
+				async: false,
+				data: {"jcWorkOrder":txtJcWorkOrder,"txtMenuID":$("#txtMenuID").val()},
+				dataType: 'json',
+				success: function(data) {
+					refNo = data.refNo;
+					refNoSeq = data.refNoSeq;
+					jcWorkorder = data.jcWorkorder;
+				}
+			});
+			url = "/trace/fgm/fgm.do?method=showPhase" +
+					"&pn="+pn+"&sn="+sn+"&wo="+wo+"&jobcard="+refNo+"&workNo="+jcWorkorder
+					+ "&jcwo=" + txtJcWorkOrder + "&jcrid=" + jcRid + "&wgp=" + techPrcGrp + "&prsNo=" + jobcard
+					+ "&t=" + new Date().getTime();
+
+
+		}
+	}
+	
+	//700824 
+	if(type.toUpperCase() == "JCC"){
+		var pamar ="&jcRid="+jcRid+"&woRid="+woRid+"&tailnoId="+$("#tailnoId").val()+"&workorderId="+$("#qWorkorder").val();
+		pamar=pamar+"&txtMenuID=22800&myWorkingGroup=BOOTH&visitDesc="+$("#txtVisit_Desc").val()+"&source=workOrderManage&wgp=3_CABIN_TPG"
+		url = "/trace/fgm/arj.do?method=toAddJobCardChange"+pamar;
+	}
+
+	
+	JqueryDialog.Open1("工卡信息",url + '&_dt=' + new Date().getTime(), document.body.clientWidth-50,document.body.clientHeight-100);
+}
+// 修改阶段信息
+function alterPhase(isQRY)
+{
+	var url = "";
+	var flagFgmObj = $("#flagFgm");	// 功能组控制
+	var workorder = $.trim($("#qWorkorder").val());	// 销售指令号
+	
+	if(flagFgmObj.val()=="Y")
+	{
+		if(isQRY=="true")
+		{
+			url = "phase/readAlterPhaseV2.jsp?txtWorkOrder="+workorder;
+		}
+		else
+		{
+			url = "phase/alterPhaseV2.jsp?txtWorkOrder="+workorder;
+		}
+	}
+	else
+	{
+		/*
+		if(isQRY=="true")
+		{
+			url = "phase/readAlterPhase.jsp?txtWorkOrder="+workorder;
+		}
+		else
+		{
+			url = "phase/alterPhase.jsp?txtWorkOrder="+workorder;
+		}
+		*/
+		alert("该功能仅适用于功能组!");
+		return false;
+	}
+	
+	document.form.action = url;
+	document.form.submit();
+	document.form.action = "";
+}
+//工卡标签
+function doPrintLabel()
+{
+	var workorder = $.trim($("#qWorkorder").val());	// 销售指令号
+	
+	var url = "printLabel.jsp?workorder="+workorder+"&tailno="+tailno;
+
+	var top = (window.screen.height - 30 - 300) / 2; //获取窗口的垂直位置
+	var left = (window.screen.width - 10 - 600) / 2; //获取窗口的水平位置
+	//var value = window.open(url,"","dialogWidth:180px;dialogHeight:180px;help:no;status:no;resizable:yes");
+	var value = window.open(url,"","width=600px,height=300px,top=" + top + ",left=" + left +",scrollbars=yes,resizable=yes,status=no");
+	
+	
+}
+//电子标签
+function doElectricLabel()
+{
+	var workorder = $.trim($("#qWorkorder").val());	// 销售指令号
+	var url = "electricLabel.jsp?salesorder="+workorder;
+	
+	//var value = window.open(url,"","dialogWidth:180px;dialogHeight:180px;help:no;status:no;resizable:yes");
+	var value = window.open(url,"","width=180px,height=180px,scrollbars=yes,resizable=yes,status=no");
+}
+// 添加工卡
+function goAdd(param)
+{
+	var url = "jobcard/alterJCSTP.jsp";
+	if(param == "NR")
+	{
+		url = "jobcard/alterJCSTPNRC.jsp";
+	}
+	url += "?wgp="+wgp+"&addJC=add&woRid="+woRid;
+	
+	var width = screen.width <= 1024 ? "1010px" : 1300 + "px";
+	var height = "800px";
+	//var value = window.open(url,"","dialogTop:100px;dialogWidth:" + width + ";dialogHeight:" + height + ";help:no;status:no;resizable:yes;toolbar:no;menubar:no;center:yes");
+	var value = window.open(url,"","top=100px,width=" + width + ",height=" + height + ",status=no,resizable=yes,toolbar=no,menubar=no");
+
+}
+function goAddAfter(value) {
+	//lzq
+	if(value == "refurbish" || value == null)
+	{
+	document.form.action = "workOrderManage.jsp";
+	document.form.submit();
+	document.form.action = "";
+	}
+}
+// 将工卡状态设置为X
+function goDel(rid)
+{
+	var url;
+	var flag = true;
+	var msg = "";
+	
+	// 检查工卡是否可取消
+	url = "ajax/checkJcCanDel.jsp?jcRid="+rid+"&dt="+new Date().getTime();
+	$.ajax({
+		type: "POST",					// 请求方式
+		url: url,						// 请求地址
+		async: false,					// 设置是否需要异步 true=异步,false=同步
+		dataType: "json",				// 返回的数据格式
+		success: function(data)			// 成功返回时，所调用的回调函数	
+		{
+			if(data.flag=="false")
+			{
+				flag = false;
+				msg = data.msg;
+			}
+		}
+	});
+	
+	if(!flag)
+	{
+		alert(msg);
+		return false;
+	}
+	
+	if(window.confirm("需要删除此工卡?"))
+	{
+		url = "inputRemark.jsp?flag=del&jcRid="+rid;
+		
+		//var remark = window.open(url,"","dialogWidth:500px;dialogHeight:200px;help:no;status:no;resizable:yes;toolbar:no;menubar:no");
+		var remark = window.open(url,"","width=500px,height=200px,toolbar=no,menubar=no,scrollbars=yes,resizable=yes,status=no");
+
+	}
+}
+function goDelAfter(remark,rid) {
+	//lzq
+	if(remark!=undefined && remark!="")
+	{
+		document.form.action = "updateJC.jsp?action=del&primaryJC="+rid+"&remark="+remark;
+		document.form.submit();
+		document.form.action = "";
+	}
+}
+// 显示阶段信息
+function display(table_name,img)
+{
+	var table = document.getElementById(table_name);
+	var img = document.getElementById(img);
+	
+	if(table.style.display=="")
+	{
+		table.style.display="none";
+		img.src = "/trace/images/024.gif";
+	}
+	else
+	{
+		table.style.display="";
+		img.src = "/trace/images/027.gif";
+	}
+}
+// 查询
+function doSubmit()
+{
+	var workorder = $.trim($("#qWorkorder").val());	// 销售指令号
+	
+	var re = new RegExp("^[0-9]+$");
+	if(workorder=="")
+	{
+		alert("工作指令 不能为空!");
+		return false;
+	}
+	if(!re.test(workorder))
+	{
+		alert("工作指令 请输入数字!");
+		return false;
+	}
+	// update by 700683 MPD项目标记功能及相关报表 2019-04-22 start
+	//document.form.action = "checkData.jsp?from=manage";
+	document.form.action = "/trace/fgm/workOrder/checkData.jsp?from=manage";
+	// update by 700683 MPD项目标记功能及相关报表 2019-04-22 end
+	//document.form.submit();
+	//document.form.action = "";
+	
+	//$(":button").attr("disabled","disabled");
+	return true;
+}
+//关闭工卡
+function onCloseJC(){
+	var url = "";
+	var flag = true;
+	var jcRids = "";
+	var jcType = "";
+	var nrcCnt = 0;
+	var eoCnt = 0;
+	var delimiter = "";
+	var checkboxArray = $(".jcRidClass:checked");	// 多选框
+	var isFedex = false;				// 是否Fedex工卡
+	var workorder = $.trim($("#qWorkorder").val());	// 销售指令号
+	var soDept = $.trim($("#soDept").val());		// 指令责任部门
+	var customer = 'EK';
+	var csnJcWoArray = [];
+	var ridArray = [];
+	var typeArray = [];
+	var jcRiiArray = [];
+	var outOfManual = "";
+	var engSlnRcp = "";
+	var jcStatus = [];
+	var slnStatus = "";
+	var eSignFlag = false;	//是否为电子签
+	var planStartDate = $("#planStartDate").val();
+	
+	//700824 add
+	var jcWos = [];		//工卡指令号集合
+	var wipJcSeqs = [];	//序号集合
+	//700824 end
+	
+	if(checkboxArray.length==0) {
+		alert("请至少选择一项工卡!");
+		return;
+	} else {
+		$.each(checkboxArray, function(i, n){
+			jcRids += delimiter+$(n).val();
+			ridArray.push($(n).val());
+			csnJcWoArray.push($(n).siblings(".csnJcWoClass").val());	
+			typeArray.push($(n).siblings(".jcTypeClass").val());
+			jcRiiArray.push($(n).siblings(".jcRiiClass").val());
+			jcStatus.push($(n).siblings(".jcStatusClass").val());
+			jcWos.push($(n).siblings(".jcWoClass").val());
+			wipJcSeqs.push($(n).siblings(".wipJcSeqClass").val());
+			delimiter = ",";
+		});
+	}
+	
+	var enableMro = enableMroMat();// MRO启用查询
+	if(undefined == enableMro){
+		return;
+	}
+	if(true == enableMro){//MRO工卡的未确认领料
+		/* var mroUnConfirmeMat = getMroUnConfirmedPicking(jcRids);
+		if(undefined == mroUnConfirmeMat){
+			return;
+		}else if(false == mroUnConfirmeMat.flag){
+			alert("系统异常, 获取MRO未确认清单异常!")
+			return;
+		}else if(true == mroUnConfirmeMat.flag && mroUnConfirmeMat.list){
+			
+			return;
+		} */
+		if(!getMroUnConfirmedPicking(jcRids)){
+			return;
+		}
+	} else {//trace工卡的未确认领料
+		$.ajax({
+			url: '/trace/fgm/fgm.do?method=countUnConfirmedPicking',
+			type: 'post',
+			async: false,
+			data: {"jcRids":jcRids},
+			dataType: 'json',
+			contentType: 'application/x-www-form-urlencoded;charset=utf-8',
+			success: function(data) {
+				if(data.cnt > 0){
+					JqueryDialog.Open("存在以下未确认的航材领料：","/trace/fgm/fgm.do?method=listUnConfirmedPicking&jcRids=" +
+							jcRids,1011,461);
+					flag = false;
+				}
+			},
+			error: function() {
+				alert("系统异常,操作失败!");
+				flag = false;
+			}
+		});
+	}
+	
+	if(!flag) {
+		return;
+	}
+	// 检查工卡是否关闭
+	$.each(ridArray, function(i, n){
+		var getStatus = getJcStatusByRid(n);// 获取工卡状态
+		if(!getStatus){
+			flag = false;
+			return false;
+		}
+		if('N' != getStatus){
+			flag = false;
+			alert('工卡' + wipJcSeqs[i] + '已经是关闭状态！');
+			return false;
+		}
+	});
+	if(!flag) {
+		return;
+	}
+	
+	//判断是否填写审核记录 700824 2021-06-17
+	for(var i = 0;i<wipJcSeqs.length;i++){
+		var jcSeq = wipJcSeqs[i];	//工卡序号
+		var rid = ridArray[i];		//工卡ID
+		var type =typeArray[i];		//工卡类型
+		if(type=="NR"){
+			url = "ajax/existAuditCount.jsp?jcRid="+rid+"&jcSeq="+jcSeq;
+			jQuery.ajax({
+				type: "post",
+				async: false,	//控制同步=false 异步=true
+				url: url,
+				contentType: "application/json; charset=gbk",
+				dataType: "json",
+				cache: false,
+				success: function (data) {
+					if(data.msg !="") {
+						alert(data.msg);
+						flag = false;
+					}
+				}
+				
+			});
+		}
+	} 
+	
+	if(!flag) {
+		return;
+	}
+	
+	if(jcStatus.indexOf("X") >=0) {
+		alert("选择项含有被取消记录，不允许操作！");
+		return;
+	}
+	
+		
+	// 判断非例行卡的方案是否已完成 005245 2020-06-18 start
+	for(var i = 0;i<checkboxArray.length;i++){
+		slnStatus = $(checkboxArray[i]).siblings(".slnStatusClass").val();
+		jcType = $(checkboxArray[i]).siblings(".jcTypeClass").val();
+		if ($.trim(jcType) == "NR") {
+			if($.trim(slnStatus) != "Y"){
+				alert("方案未完成，不允许提交!");
+				flag = false;
+				break;
+			}
+		}
+	}
+	if(!flag) {
+		return;
+	}
+	// 判断非例行卡的方案是否已完成 005245 2020-06-18 end
+	if(soDept=="HM1" || soDept=="HM2" || soDept=="HM3" || soDept=="HM4") {
+		// 检查步骤是否未关闭
+		url = "ajax/getUnCloseStp.jsp?jcRid="+jcRids+"&dt="+new Date().getTime();
+		jQuery.ajax({
+			type: "post",
+			async: false,	//控制同步=false 异步=true
+			url: url,
+			contentType: "application/json; charset=gbk",
+			dataType: "json",
+			cache: false,
+			success: function (data) {
+				if(data.flag=="false") {
+					showWin(data.msg,"如下步骤未完成");
+					flag = false;
+				}
+			},
+			error: function (err) {
+				alert("error");
+				flag = false;
+			}
+		});
+		
+		// 检查步骤是否未审核
+		if (flag) {
+			url = "ajax/checkCloseJc.jsp?";
+			var j = 0;
+			for (var i = 0; i < ridArray.length; i++) {
+				j++;
+				if ("NR" == typeArray[i] && "Y" == jcRiiArray[i]) {
+					url += "jcRid="+ridArray[i]+"&dt="+new Date().getTime();
+					$.ajax({
+						type: "post",
+						async: false,	
+						url: url,
+						dataType: "json",
+						success: function(data) {
+							if (data.cnt == "0") {
+								flag = false;
+								alert("[第"+j+"份:]"+data.msg);
+							}
+						},
+						error: function() {
+							alert("必检非卡检验异常！");
+							flag = false;
+						}
+					});
+					if (!flag) {
+						break;
+					}
+				}
+			}
+		}
+		
+		if(!flag) {
+			return;
+		}
+	}
+	
+	// 检查SDRR是否已全部关闭
+	if("CSN" == ownerCode || "CKG" == ownerCode || "CSG" == ownerCode || "CSL" == ownerCode){
+		url = "ajax/checkSdrr.jsp?rids="+jcRids+"&dt="+new Date().getTime();
+		$.ajax({
+			type: "post",
+			async: false,	//控制同步=false 异步=true
+			url: url,
+			dataType: "json",
+			success:function(data){
+				if(data.flag == "success"){
+					flag = true;
+				}else if(data.flag == "fail"){
+					alert("工卡["+ $.trim(checkboxArray.eq(parseInt(data.index)).parent().next().text()) +"]"+data.jobcard);
+					flag = false;
+				}
+			},
+			error:function(){
+				alert("检查SDRR状态时异常");
+				flag = false;
+			}
+		});
+	}
+	if(!flag) {
+		return;
+	}
+	
+	//选中的check
+	var cbs = $("input[class='jcRidClass']:checked");
+	if(eSignFlag){
+		for(var i = 0;i<cbs.length;i++){
+			var jcRid = $(cbs[i]).val();
+			var jcType = $(cbs[i]).siblings(".jcTypeClass").val();
+				//处理FEDEX公司飞机  (临时增加处理)
+			var tailno = $.trim($("#tailnoId").val());
+			if(jcType == 'NR' && tailno!="N969FD"){
+				/* //增加检查销售指令号对应的进厂日期，大于等于“2021-11-01”时
+				if(dateCompare(planStartDate,'2021-11-01')){
+					// 查询步骤关闭情况
+					jQuery.ajax({
+						type: "post",
+						async: false,
+						url: "/trace/fgm/workOrder/ajax/checkStepClose.jsp?jcRid="+jcRid,
+						contentType: "application/json; charset=gbk",
+						dataType: "json",
+						cache: false,
+						success: function (data) {
+							if(data.defCnt==0 || data.defCnt==''){
+								alert("没有已保留的步骤！");
+								flag = false;
+								return;
+							}
+							if(data.opnCnt!='' && data.opnCnt>0){
+								alert("有未关闭的步骤！");
+								flag = false;
+								return;
+							}
+							
+						}	
+					});
+				}	 */
+					
+					//检验QC章是否存在
+					jQuery.ajax({
+						type: "post",
+						async: false,
+						url: "/trace/fgm/workOrder/ajax/checkWjcQcInfo.jsp?jcRid="+jcRid,
+						contentType: "application/json; charset=gbk",
+						dataType: "json",
+						cache: false,
+						success: function (data) {
+							if(data.qcStampBy.length<=0 || data.qcStampBy==''){
+								alert("QC未盖章 请检查");
+								flag = false;
+								return;
+							}
+						}	
+					});
+				
+			}	
+			if(!flag){
+				return;
+			}
+		}
+	}
+	if(!flag){
+		return;
+	}
+	
+	
+	// 电子签署判断
+	/*临时屏蔽
+	url = "ajax/checkESign.jsp?rids="+jcRids+"&dt="+new Date().getTime();
+	$.ajax({
+		type: "post",
+		async: false,	//控制同步=false 异步=true
+		url: url,
+		dataType: "json",
+		success:function(data){
+			if(data.flag == "true"){
+				flag = true;
+			}else{
+				alert("工卡:"+data.jobcard+" 并未终检,不允许关闭工卡!");
+				flag = false;
+			}
+		},error:function(){
+			alert("检验电子签署异常");
+			flag = false;
+		}
+	});
+	if(!flag)
+	{
+		return;
+	}
+	*/
+	$.each(checkboxArray, function(i, n){
+		jcType = $(n).siblings(".jcTypeClass").val();
+		if(jcType=="NR")
+			++nrcCnt;
+		else
+			++eoCnt;
+	});
+	if(isFedex && (eoCnt>0 || !eSignFlag)) {//对FEDEX电子签非卡，允许多选，在现有其它校验后，不再出现“FedEx纠正措施”录入页面,与非FEDEX非卡一致
+		if(nrcCnt>0 && eoCnt>0) {
+			alert("例卡与非例卡需分开操作");
+			return;
+		}
+		if(nrcCnt > 1){
+			alert("非例卡一次只能关闭一个");
+			return;
+		}
+		if(eoCnt==0) {
+			//lzq
+			var url = "jobcard/fedexJc.jsp?jcRid="+jcRids+"&dt="+new Date().getTime()
+					+"&isFedex="+isFedex+"&eoCnt="+eoCnt+"&nrcCnt="+nrcCnt
+					+"&eSignFlag="+eSignFlag+"&openerFlag=cjc";
+			//var resValue = window.open(url,window,"center:yes;dialogWidth:800px;dialogHeight=500px");//TODO FedEx纠正措施
+			var resValue = window.open(url,window,"width=800px,height=500px,scrollbars=yes,resizable=yes");//TODO FedEx纠正措施
+			/*if(!(typeof(resValue) == typeof(flag) && resValue == true)){
+				return;
+			}*/
+			return;
+		}
+		
+		
+	} else if(!isFedex || (isFedex && eoCnt==0 && nrcCnt>0 && eSignFlag)) { // 判断南航ME系统是否已关闭
+		/*临时屏蔽
+		var temp = "";
+		if(flag61 && ("CKG" == customer || "CSN" == customer))
+			flag = true;
+		else
+			flag = false;
+		
+		// 
+		if(flag){
+			
+			var temp = "";
+			var j = 0;
+			for(var i = 0; i < ridArray.length; i++){
+				j++;
+				var url = "ajax/closeCsnNrcCheck.jsp?";
+				
+				if("NR" == typeArray[i]){
+					url += "csnJcWo="+csnJcWoArray[i]+"&t="+new Date();
+					$.ajax({
+						type: "post",
+						async: false,	
+						url: url,
+						dataType: "json",
+						success:function(data){
+							if(data.flag == "false")
+								temp += j+",";
+						},error:function(){
+							alert("检查南航指令状态时异常");
+							flag = false;
+						}
+					});
+				}
+				if(!flag)
+					return;
+				
+			}
+			
+			if(temp != ""){
+				alert("第"+temp+"份非例行卡数据尚未同步到南航ME");
+				return;
+			}
+		}
+		*/
+		
+		// Add by 700683 超规范非卡的接收提醒及关闭限制 2018-10-23 start
+		$.each(checkboxArray, function(i, n) {
+			jcType = $(n).siblings(".jcTypeClass").val();
+			outOfManual = $(n).siblings(".outOfManualClass").val();
+			engSlnRcp = $(n).siblings(".engSlnRcpClass").val();
+			if (jcType == "NR" && outOfManual == "Y") {
+				if ($.trim(engSlnRcp) == "") {
+					flag = false;
+				}
+			}
+		});
+		if (!flag) {
+			alert("超规范非卡需要填写方案接收日期！");
+			return;
+		}
+		// Add by 700683 超规范非卡的接收提醒及关闭限制 2018-10-23 end
+	}
+	
+	//检查待关闭工卡有无未闭合跳开关
+	if(checkboxArray.length > 0) {
+		var rids = '';
+		//拼接rids,最后一位不加逗号
+		for(var i=0;i<checkboxArray.length;i++){
+			if(i != checkboxArray.length-1){
+				rids = rids + checkboxArray[i].value + ', ';
+			}else{
+				rids = rids + checkboxArray[i].value;
+			}
+		}
+		
+		jQuery.ajax({
+			type: "post",
+			async: false,	//控制同步=false 异步=true
+			url: "ajax/checkBAR.jsp?rids="+rids,
+			contentType: "application/json; charset=gbk",
+			dataType: "json",
+			cache: false,
+			success: function (data) {
+				if(data.flag=="false"){
+					//弹窗
+					JqueryDialog.Open("所选工卡有未闭合的跳开关记录，清单如下：","ajax/getBAR.jsp?rids="+rids,document.body.clientWidth-50,document.body.clientHeight-100);
+					flag = false;
+				}
+			},
+			error: function (err) {
+				alert("error");
+				flag = false;
+			}
+		});
+	}
+	if(!flag) {
+		return false;
+	}
+	// 打印状态 
+	if(!isFedex){
+		var getNrcHdPrtStatusResult = getNrcHdPrtStatus();
+		if(1==getNrcHdPrtStatusResult){
+			if("CSN"==customer || "CKG"==customer || "CSG"==customer || "CSL"==customer){
+				if(!confirm('独立页信息打印后有更新，请并复核！')){
+					return;
+				}
+			}else{
+				if(!confirm('首页信息打印后有更新，请并复核！')){
+					return;
+				}
+			}
+		}else if(-1==getNrcHdPrtStatusResult){
+			return false;
+		}
+	}
+	
+	if(!eSignFlag){
+		// 航材单有修订未打印
+		var matUnPrintCnt = checkMatUnPrint(checkboxArray, workorder);
+		if("undefined" == matUnPrintCnt){
+			alert("检查未打印航材单失败！");
+			return;
+		}else if(0 < matUnPrintCnt && !confirm("航材单有修订但未打印，是否关闭工卡？")){
+			return;
+		}
+		// 检验重新判定工卡或步骤的RII属性后未打印，是否关闭工卡？
+		var unPrintRejudgeCnt = countUnPrintRejudge(checkboxArray);
+		if("undefined" == unPrintRejudgeCnt){
+			alert("检查重新判定工卡或步骤的RII属性后未打印失败！");
+			return false;
+		}else if(0 != unPrintRejudgeCnt && !confirm("检验重新判定工卡或步骤的RII属性后未打印，是否关闭工卡？")){
+			return false;
+		}
+	}
+	
+	if(isFedex && (eoCnt==0&&nrcCnt>0) && eSignFlag){//FEDEX电子签非卡
+		var jcSeqs = "";
+		checkboxArray.each(function(i,n){
+			jcSeqs += $(n).parent().parent().find('td').eq(1).text();
+			if(i < checkboxArray.length - 1){
+				jcSeqs += ",";
+			}
+		});
+		if(!confirm("是否关闭非卡[序号:"+jcSeqs+"]?")){
+			return false;
+		}
+	}else if(!confirm("确定关闭选择的工卡?")) {
+		return false;
+	}
+	document.form.action = "updateJC.jsp?action=closeJC";
+	document.form.submit();
+	document.form.action = "";
+	$(":button").attr("disabled","disabled");
+}
+
+function onCloseJCAfter(resValue,isFedex,eoCnt,nrcCnt,eSignFlag) {
+	//lzq
+	var checkboxArray = $(".jcRidClass:checked");
+	var flag = true;
+	if(!(typeof(resValue) == typeof(flag) && resValue == true)){
+		return;
+	}
+	//检查待关闭工卡有无未闭合跳开关
+	if(checkboxArray.length > 0) {
+		var rids = '';
+		//拼接rids,最后一位不加逗号
+		for(var i=0;i<checkboxArray.length;i++){
+			if(i != checkboxArray.length-1){
+				rids = rids + checkboxArray[i].value + ', ';
+			}else{
+				rids = rids + checkboxArray[i].value;
+			}
+		}
+
+		jQuery.ajax({
+			type: "post",
+			async: false,	//控制同步=false 异步=true
+			url: "ajax/checkBAR.jsp?rids="+rids,
+			contentType: "application/json; charset=gbk",
+			dataType: "json",
+			cache: false,
+			success: function (data) {
+				if(data.flag=="false"){
+					//弹窗
+					JqueryDialog.Open("所选工卡有未闭合的跳开关记录，清单如下：","ajax/getBAR.jsp?rids="+rids,document.body.clientWidth-50,document.body.clientHeight-100);
+					flag = false;
+				}
+			},
+			error: function (err) {
+				alert("error");
+				flag = false;
+			}
+		});
+	}
+	if(!flag) {
+		return false;
+	}
+
+	if(isFedex && (eoCnt==0&&nrcCnt>0) && eSignFlag){//FEDEX电子签非卡
+		var jcSeqs = "";
+		checkboxArray.each(function(i,n){
+			jcSeqs += $(n).parent().parent().find('td').eq(1).text();
+			if(i < checkboxArray.length - 1){
+				jcSeqs += ",";
+			}
+		});
+		showConfirmDialog("是否关闭非卡[序号:"+jcSeqs+"]?", function () {
+			// 用户点击确定后的逻辑
+			// 在这里执行关闭工卡的逻辑
+			document.form.action = "updateJC.jsp?action=closeJC";
+			document.form.submit();
+			document.form.action = "";
+			$(":button").attr("disabled","disabled");
+		}, function () {
+			// 用户点击取消后的逻辑
+			return false;
+		});
+	}else{
+		showConfirmDialog("确定关闭选择的工卡?", function () {
+			// 用户点击确定后的逻辑
+			// 在这里执行关闭工卡的逻辑
+			document.form.action = "updateJC.jsp?action=closeJC";
+			document.form.submit();
+			document.form.action = "";
+			$(":button").attr("disabled","disabled");
+		}, function () {
+			// 用户点击取消后的逻辑
+			return false;
+		});
+	}
+}
+
+//打开工卡
+function onOpenJC()
+{
+	var checkboxArray = $(".jcRidClass:checked");	// 多选框
+	
+	if(checkboxArray.length==0) {
+		alert("请至少选择一项工卡!");
+		return;
+	} 
+	var flag = false;
+	$.each(checkboxArray, function(i, n){
+		var getStatus = getJcStatusByRid(n.value);// 获取工卡状态
+		var jcSeq = $(n).siblings('.wipJcSeqClass').val();
+		if(!getStatus){
+			flag = true;
+			return false;
+		}
+		if(/^[XN]$/.test(getStatus)){
+			flag = true;
+			alert('工卡' + jcSeq + '尚未关闭');
+			return false;
+		}
+	});
+	
+	if(flag) {
+		return;
+	}
+ 	
+	if(!confirm("确定打开选择的工卡?")) {
+		return;
+	}
+	
+	document.form.action = "updateJC.jsp?action=openJC";
+	document.form.submit();
+	document.form.action = "";
+	$(":button").attr("disabled","disabled");
+}
+//设为重要
+function onImportJC()
+{
+	if(checkItem("jcRid")==false)
+	{
+		alert("请至少选择一项工卡!");
+		return;
+	}
+	if(!confirm("确定将选择的工卡设为重要?"))
+	{
+		return;
+	}
+	document.form.action = "updateJC.jsp?action=importJC";
+	document.form.submit();
+	document.form.action = "";
+	$(":button").attr("disabled","disabled");
+}
+//设为不重要
+function onImportJCUN()
+{
+	if(checkItem("jcRid")==false)
+	{
+		alert("请至少选择一项工卡!");
+		return;
+	}
+	if(!confirm("确定将选择的工卡设为不重要?"))
+	{
+		return;
+	}
+	document.form.action = "updateJC.jsp?action=importJCUN";
+	document.form.submit();
+	document.form.action = "";
+	$(":button").attr("disabled","disabled");
+}
+//显示打印详细信息
+function init()
+{
+	var workorder = $.trim($("#qWorkorder").val());	// 销售指令号
+	var tailno = $.trim($("#tailnoId").val());		//	飞机号
+	var planStartDate ="2025-12-27" ; 		//	计划日期
+	var planFinishDate = "2026-01-19" ;   	//结束日期
+	var isESign = 'false';// 是否为电子签 
+	var url = "ajax/selectPRTDesc.jsp?wo="+workorder+"&format=json&wgp="+wgp
+			+"&tailno="+tailno+"&planStartDate="+planStartDate+"&jieshu="+planFinishDate+"&isESign="+isESign;
+	$.getJSON(url,{},function(data){
+		//$("#print").attr("innerHTML",data.print);				// 有新打印非例卡数
+		$("#fprint").attr("innerHTML",data.fprint);				// 打印完毕工卡数
+		//$("#rprint").attr("innerHTML",data.rprint);			// 需重打印非例卡数
+		$("#total").attr("innerHTML",data.total);				// 非例卡总数
+		$("#finish").attr("innerHTML",data.finish);				// 方案完成数
+		$("#partfinish").attr("innerHTML",data.partfinish);		// 部分方案数
+		$("#nosubmit").attr("innerHTML",data.nosubmit);			// 方案未提交数
+		$("#meUnupload").attr("innerHTML",data.meUnupload);		// ME未上传数
+		$("#recNum").attr("innerHTML",data.recNum);				// 方案超期数
+		$("#unTrace").attr("innerHTML",data.unTrace);			// 工卡站未交接数
+		$("#allNrcNum").attr("innerHTML",data.allTotal);		// 所有维修中飞机的总卡数
+		$("#neverTrace").attr("innerHTML",data.neverTrace);		// 从未交接过的非例卡数
+		$("#modifyUnTrace").attr("innerHTML",data.modifyUnTrace);		// 修订后未交接的非例卡数
+		$("#arrangedUnTrace").attr("innerHTML",data.arrangedUnTrace);	// 已安排工作未交接的非例卡数
+		$("#noPlanUnTrace").attr("innerHTML",data.noPlanUnTrace);		// 无方案也未交接的非例卡
+		$("#mhOut").attr("innerHTML",data.mhOut);				// 工时超限
+		$("#matOverPrice").attr("innerHTML",data.matOverPrice);	// 航材超价
+		$("#needFollowRii").attr("innerHTML",data.needFollowRii);// 需要跟进的RII卡数
+		// Add by 700683 超规范非卡的接收提醒及关闭限制 2018-10-23 start
+		$("#noOutofManual").attr("innerHTML", data.noOutofManual);// 未接收的超规范方案
+		// Add by 700683 超规范非卡的接收提醒及关闭限制 2018-10-23 end
+		$("#danka").attr("innerHTML", data.danka);// 航线单卡 
+		$("#matPrint").attr("innerHTML", data.matUnPrint);// 航材单有修订未打印
+		$("#riiNotPrint").attr("innerHTML", data.riiNotPrint);// RII判断后未打印
+	});
+	
+	setTimeout('init()',15*60000);
+}
+//显示超期方案清单
+function showTimeoutPlan()
+{
+	var workorder = $.trim($("#qWorkorder").val());	// 销售指令号
+	var flightCheckNoObj = $("input[name='flight_check_no']");
+	
+	if(workorder=="")
+	{
+		alert("工作指令号不存在!");
+		return;
+	}
+	
+	var url = "timeoutPlan/showTimeoutPlan.jsp?workOrder="+workorder+"&fullReg="+tailno+"&flightCheckNo="+flightCheckNoObj.val()+"&wgp="+wgp;
+	//var value = window.open(url,"","dialogWidth:820px;dialogHeight:400px;help:no;status:no;resizable:yes;toolbar:no;menubar:no");
+	var value = window.open(url,"","width=820px,height=400px,toolbar=no,menubar=no,scrollbars=yes,resizable=yes,status=no");
+}
+
+//显示未交接非例卡清单
+function showUnTrace()
+{
+	var workorder = $.trim($("#qWorkorder").val());	// 销售指令号
+	var flightCheckNoObj = $("input[name='flight_check_no']");
+	
+	if(workorder=="")
+	{
+		alert("工作指令号不存在!");
+		return;
+	}
+	var url = "unTrace/showUnTrace.jsp?workOrder="+workorder+"&fullReg="+tailno+"&flightCheckNo="+flightCheckNoObj.val()+"&wgp="+wgp;
+	//var value = window.open(url,"","dialogWidth:820px;dialogHeight:400px;help:no;status:no;resizable:yes;toolbar:no;menubar:no");
+	var value = window.open(url,"","width=820px,height=400px,toolbar=no,menubar=no,scrollbars=yes,resizable=yes,status=no");
+}
+//显示工作池中的总非卡清单
+function showNrc()
+{
+	var workorder = $.trim($("#qWorkorder").val());	// 销售指令号
+	var flightCheckNoObj = $("input[name='flight_check_no']");
+	
+	if(workorder=="")
+	{
+		alert("工作指令号不存在!");
+		return;
+	}
+	var url = "nrc/showNrc.jsp?workOrder="+workorder+"&fullReg="+tailno+"&flightCheckNo="+flightCheckNoObj.val()+"&wgp="+wgp;
+	//var value = window.open(url,"","dialogWidth:920px;dialogHeight:400px;help:no;status:no;resizable:yes;toolbar:no;menubar:no");
+	
+	var win = window.open(url,"_blank",'width=' + (screen.availWidth-100) + ',height='+(screen.availHeight-120)
+			+ ',top=30,left=50,toolbar=no,titlebar=0,directories=0,menubar=no,scrollbars=yes,resizable=yes,location=0,status=no');
+}
+//显示工作池中的从未交接的非例卡清单
+function showNeverTrace()
+{
+	var workorder = $.trim($("#qWorkorder").val());	// 销售指令号
+	var flightCheckNoObj = $("input[name='flight_check_no']");
+	
+	if(workorder=="")
+	{
+		alert("工作指令号不存在!");
+		return;
+	}
+	var url = "unTrace/showNeverTrace.jsp?workOrder="+workorder+"&fullReg="+tailno+"&flightCheckNo="+flightCheckNoObj.val()+"&wgp="+wgp;
+	//var value = window.open(url,"","dialogWidth:820px;dialogHeight:400px;help:no;status:no;resizable:yes;toolbar:no;menubar:no");
+	var value = window.open(url,"","width=820px,height=400px,toolbar=no,menubar=no,scrollbars=yes,resizable=yes,status=no");
+}
+//显示工作池中的修订后未交接的非例卡清单
+function showModifyUnTrace()
+{
+	var workorder = $.trim($("#qWorkorder").val());	// 销售指令号
+	var flightCheckNoObj = $("input[name='flight_check_no']");
+	
+	if(workorder=="")
+	{
+		alert("工作指令号不存在!");
+		return;
+	}
+	var url = "unTrace/showModifyUnTrace.jsp?workOrder="+workorder+"&fullReg="+tailno+"&flightCheckNo="+flightCheckNoObj.val()+"&wgp="+wgp;
+	//var value = window.open(url,"","dialogWidth:820px;dialogHeight:400px;help:no;status:no;resizable:yes;toolbar:no;menubar:no");
+	var value = window.open(url,"","width=820px,height=400px,toolbar=no,menubar=no,scrollbars=yes,resizable=yes,status=no");
+}
+//显示工作池中的已安排工作的未交接非例卡清单
+function showArrangedUnTrace()
+{
+	var workorder = $.trim($("#qWorkorder").val());	// 销售指令号
+	var flightCheckNoObj = $("input[name='flight_check_no']");
+	
+	if(workorder=="")
+	{
+		alert("工作指令号不存在!");
+		return;
+	}
+	var url = "unTrace/showArrangedUnTrace.jsp?workOrder="+workorder+"&fullReg="+tailno+"&flightCheckNo="+flightCheckNoObj.val()+"&wgp="+wgp;
+	//var value = window.open(url,"","dialogWidth:920px;dialogHeight:400px;help:no;status:no;resizable:yes;toolbar:no;menubar:no");
+	var value = window.open(url,"","width=920px,height=400px,toolbar=no,menubar=no,scrollbars=yes,resizable=yes,status=no");
+}
+//显示工作池中的已安排工作的未交接非例卡清单
+function showNoPlanUnTrace()
+{
+	var workorder = $.trim($("#qWorkorder").val());	// 销售指令号
+	var flightCheckNoObj = $("input[name='flight_check_no']");
+	
+	if(workorder=="")
+	{
+		alert("工作指令号不存在!");
+		return;
+	}
+	var url = "unTrace/showNoPlanUnTrace.jsp?workOrder="+workorder+"&fullReg="+tailno+"&flightCheckNo="+flightCheckNoObj.val()+"&wgp="+wgp;
+	//var value = window.open(url,"","dialogWidth:820px;dialogHeight:400px;help:no;status:no;resizable:yes;toolbar:no;menubar:no");
+	var value = window.open(url,"","width=820px,height=400px,toolbar=no,menubar=no,scrollbars=yes,resizable=yes,status=no");
+}
+//定检期间的航线卡
+function danka()
+{
+	var workorder = $.trim($("#qWorkorder").val());	// 销售指令号
+	var tailno = $.trim($("#tailnoId").val());		//	飞机号
+	var planStartDate ="2025-12-27" ; 		//	计划日期
+	var planFinishDate = "2026-01-19" ;   	//  结束日期
+	
+	var flightCheckNoObj = $("input[name='flight_check_no']");
+	
+	if(workorder=="")
+	{
+		alert("工作指令号不存在!");
+		return;
+	}
+	var url = "unTrace/lmWo.jsp?workOrder="+workorder+"&fullReg="+tailno+"&jieshu="+planFinishDate+"&planStartDate="+planStartDate;
+	//var value = window.open(url,"","dialogWidth:1126px;dialogHeight:720px;help:no;status:no;resizable:yes;toolbar:no;menubar:no");
+	var value = window.open(url,'','width='+(screen.availWidth-100)+',height='+(screen.availHeight-100)+',top=40,left=40,status:no;resizable:yes;toolbar:no;menubar:no,location=no,scrollbars=yes,help:no');
+}
+//显示工作池中工时超限的清单
+function showMhOut()
+{
+	var workorder = $.trim($("#qWorkorder").val());	// 销售指令号
+	var flightCheckNoObj = $("input[name='flight_check_no']");
+	
+	if(workorder=="")
+	{
+		alert("工作指令号不存在!");
+		return;
+	}
+	var url = "unTrace/showMhOut.jsp?workOrder="+workorder+"&fullReg="+tailno+"&flightCheckNo="+flightCheckNoObj.val()+"&wgp="+wgp;
+	//var value = window.open(url,"","dialogWidth:920px;dialogHeight:400px;help:no;status:no;resizable:yes;toolbar:no;menubar:no");
+	var value = window.open(url,"","width=920px,height=400px,toolbar=no,menubar=no,scrollbars=yes,resizable=yes,status=no");
+}
+//显示工作池中航材超价的清单
+function showMatOverPrice()
+{
+	var workorder = $.trim($("#qWorkorder").val());	// 销售指令号
+	var flightCheckNoObj = $("input[name='flight_check_no']");
+	
+	if(workorder=="")
+	{
+		alert("工作指令号不存在!");
+		return;
+	}
+	var url = "unTrace/showMatOverPrice.jsp?workOrder="+workorder+"&fullReg="+tailno+"&flightCheckNo="+flightCheckNoObj.val()+"&wgp="+wgp;
+	//var value = window.open(url,"","dialogWidth:920px;dialogHeight:400px;help:no;status:no;resizable:yes;toolbar:no;menubar:no");
+	var value = window.open(url,"","width=920px,height=400px,toolbar=no,menubar=no,scrollbars=yes,resizable=yes,status=no");
+}
+//待跟进的RII卡
+function showNeedFollowRii()
+{
+	var workorder = $.trim($("#qWorkorder").val());	// 销售指令号
+	var flightCheckNoObj = $("input[name='flight_check_no']");
+	
+	if(workorder=="")
+	{
+		alert("工作指令号不存在!");
+		return;
+	}
+	var url = "unTrace/showNeedFollowRii.jsp?workOrder="+workorder+"&fullReg="+tailno+"&flightCheckNo="+flightCheckNoObj.val()+"&wgp="+wgp;
+	//var value = window.open(url,"","dialogWidth:920px;dialogHeight:400px;help:no;status:no;resizable:yes;toolbar:no;menubar:no");
+	var value = window.open(url,"","width=920px,height=400px,toolbar=no,menubar=no,scrollbars=yes,resizable=yes,status=no");
+}
+// 航材单有修订未打印
+function showMatUnPrint(){
+	var workorder = $.trim($("#qWorkorder").val());	// 销售指令号
+	
+	if("" == workorder){
+		alert("工作指令号不存在!");
+		return;
+	}
+	var left = (screen.availWidth - 1000)/2;
+	var top = (screen.availHeight - 460)/2;
+	var url = "unTrace/matUnPrint.jsp?workOrder=" + workorder;
+	var value = window.open(url,'matUnPrint','width=1000px,height=460px,toolbar=no,menubar=no,scrollbars=yes,resizable=yes,status=no,left='+left+',top='+top);
+}
+// RII判断后未打印
+function showRiiNotPrint(){
+	var workorder = $.trim($("#qWorkorder").val());	// 销售指令号
+	if("" == workorder){
+		alert("工作指令号不存在!");
+		return;
+	}
+	var left = (screen.availWidth - 1000)/2;
+	var top = (screen.availHeight - 460)/2;
+	var url = "unTrace/riiNotPrint.jsp?workOrder=" + workorder;
+	var value = window.open(url,'riiNotPrint','width=1000px,height=460px,toolbar=no,menubar=no,scrollbars=yes,resizable=yes,status=no,left='+left+',top='+top);
+}
+//快速检索
+function onPriStatus(val)
+{
+	onSubmit();
+}
+
+// 工卡打印
+function onPrint()
+{
+	var printer = $("#printerId");
+	if(printer.attr("value")==null || printer.attr("value")=="")
+	{
+		alert("请指定打印机!");
+		printer.focus();
+		return;
+	}
+	var j = 0;
+	var jobcard = "";
+	var jc = $(".jcCheckClass");
+	var checkboxArray = $(".jcRidClass");
+	for(var i = 0;i < checkboxArray.length;i++)
+	{
+		var checkbox = $(checkboxArray[i]);
+		if(checkbox.attr("checked"))
+		{
+			jobcard = $(jc[i]).attr("value");
+			j++;
+		}
+	}
+	if(j >= 2)
+	{
+		alert("不能选择多份工卡进行打印!");
+		return;
+	}
+	if(!jobcard.match("^NR/.*"))
+	{
+		alert("不能打印除非例行卡以外的工卡!");
+		return;
+	}	
+	/*
+	var url = "ajax/selectPrintCheck.jsp?wo=%=qWorkorder %>&jobcard="+jobcard+"&format=json&jsonpcallback=?";
+	$.getJSON(url,{},function(data){
+		
+	});
+	*/
+	document.form.action = "printJCNRC.jsp?action=printJC";
+	document.form.submit();
+	document.form.action = "";
+	$(":button").attr("disabled","disabled");
+}
+// 放行证打印
+function doPrintRelease()
+{
+	var url = "printRelease.jsp";
+	var releaseType = $("#txtReleaseTypeId");			// 放行证类型
+	var printer = $("#printerId");						// 打印机
+	var visitDetailDesc = $("#visitDetailDescId");		// 定检详细描述(中英文)
+	var visitDetailDescEn = $("#visitDetailDescEnId");	// 定检详细描述(纯英文)
+	if(releaseType.val()==null || releaseType.val()=="")
+	{
+		alert("请选择证件类型!");
+		releaseType.focus();
+		return;
+	}
+	if(printer.val()==null || printer.val()=="")
+	{
+		alert("请指定打印机!");
+		printer.focus();
+		return;
+	}
+	if(releaseType.val()=="CCAR 145" && visitDetailDesc.val()=="")
+	{
+		alert("请在指令信息中补填放行证工作说明(中英文放行)后打印!");
+		return;
+	}
+	// FAR145放行证变更为"14CFR PART 145" 005245 2019/02/28 start
+	//if((releaseType.val()=="EASA PART 145" || releaseType.val()=="FAR 145") && visitDetailDescEn.val()=="")
+	if((releaseType.val()=="EASA PART 145" || releaseType.val()=="14CFR PART 145") && visitDetailDescEn.val()=="")
+	// FAR145放行证变更为"14CFR PART 145" 005245 2019/02/28 end
+	{
+		alert("请在指令信息中补填放行证工作说明(纯英文放行)后打印!");
+		return;
+	}
+	
+	document.form.action = url;
+	document.form.submit();
+	document.form.action = "";
+	$(":button").attr("disabled","disabled");
+}
+// 工卡重打印
+function onrPrint()
+{
+	var printer = $("#printerId");
+	if(printer.attr("value")==null || printer.attr("value")=="")
+	{
+		alert("请指定打印机!");
+		printer.focus();
+		return;
+	}
+	document.form.action = "printJCNRC.jsp?action=rprintJC";
+	document.form.submit();
+	document.form.action = "";
+	$(":button").attr("disabled","disabled");
+}
+// 非例卡导出
+function goExport()
+{
+	var workorder = $.trim($("#qWorkorder").val());	// 销售指令号
+	// 非例卡导出
+	var url = "jobcard/exportJCNRC.jsp?workorder="+workorder;
+	var objForm = document.forms[0];
+   	objForm.action=url;
+   	objForm.submit();
+}
+// 显示交接班记录
+function showHlbMasterLog(jobcard)
+{
+	var workorder = $.trim($("#qWorkorder").val());	// 销售指令号
+	var url = "showHlbMasterLog.jsp?meWorkOrder="+workorder+"&jobcard="+jobcard;
+	//window.open(url,"","dialogWidth:800px;dialogHeight:400px;help:no;status:no;resizable:yes;toolbar:no;menubar:no");
+	window.open(url,"","width=800px,height=400px,toolbar=no,menubar=no,scrollbars=yes,resizable=yes,status=no");
+}
+//根据机尾号获取指令
+function getWorkorder(obj)
+{
+	var fullReg = $(obj);				// 飞机号
+	
+	if ($.trim(fullReg.val()).length<4)
+	{
+		return false;
+	}
+	
+	$.getJSON("ajax/getWorkorderInfo.jsp?txtFullReg="+encodeURI(encodeURI(fullReg.val()))+"&jsoncallback=?", function(data)
+	{
+		// 有值显示指令号列表
+		if(data.length>0)
+		{
+			showWOMessage(data);
+		}
+		// 没值清空相关信息
+		else
+		{
+			clearValue(obj);
+			//setValue("","","","",fullReg.val());
+		}
+	});
+}
+
+//清理旧的查询信息
+function clearValue(obj)
+{
+	var fullReg = $(obj);				// 飞机号
+	$("#txtFullReg").attr("value",fullReg.val());
+	$("#qWorkorder").attr("value","");
+	$("#txtActual_TailNo").attr("value","");
+	$("#txtVisit_Desc").attr("value","");
+	$("#txtFlight_Check_No").attr("value","");
+	$("#EngPnInfo").html("");
+	$("#EngSnInfo").html("");
+	$("#EngCutomerInfo").html("");
+	$("#EngSoDescInfo").html("");
+}
+
+function setValue(workorder,actual_no,visit_desc,flight_check_no,tail_no,engPn,engSn,engCustomer,engSoDesc)
+{
+	$("#txtFullReg").attr("value",tail_no);
+	$("#qWorkorder").attr("value",workorder);
+	$("#txtActual_TailNo").attr("value",actual_no);
+	$("#txtVisit_Desc").attr("value",visit_desc);
+	$("#txtFlight_Check_No").attr("value",flight_check_no);
+	$("#EngPnInfo").html(engPn);
+	$("#EngSnInfo").html(engSn);
+	$("#EngCutomerInfo").html(engCustomer);
+	$("#EngSoDescInfo").html(engSoDesc);
+	
+	$('.uniq_win').window('close');							//关闭工作指令号提示框
+	
+	document.form.action = "workOrderManage.jsp";
+	document.form.submit();
+	document.form.action = "";
+}
+//弹出选择多个指令的对话框
+function showWOMessage(data)
+{
+	var addTable='<div class=\"uniq_win\"><br><table align=\"center\" valign=\"middle\"><tr><td><b>'+"机尾号"+
+				 '</b>&nbsp;&nbsp;</td><td><b>'+"工作指令号"+'</b>&nbsp;&nbsp;</td><td><b>'+"定检级别"+'</b></td></tr>';
+	var addTr = "";
+	
+	var tailNo = "";
+	$.each(data, function(i, n)
+	{
+	tailNo = n.reg;
+	addTr += '<tr><td colspan=\"3\"><a href=\"#\" onclick=\"setValue('+n.wo+',\''+n.act+'\',\''+n.des+'\',\''+n.ml+'\',\''+n.reg+'\',\''+n.engPn+'\',\''+n.engSn+'\',\''+n.engCustomer+'\',\''+n.engSoDesc+'\')\">'+n.reg+'&nbsp;&nbsp;&nbsp;'+n.wo+
+		 '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'+n.ml+'</a></td></tr>';
+	
+	});
+	
+	addTable = addTable + addTr +'</table><br></div>';
+	
+	if("GAM-ENG"==tailNo){
+	var addTableEng = '<div class=\"uniq_win\"><br><table align=\"center\" valign=\"middle\"><tr><td width="16%"><b>'+"机尾号"+
+	'</b></td><td width="26%"><b>'+"工作指令号"+'</b></td><td width="17%"><b>'+"定检级别"+'</b></td><td width="20%">&nbsp;&nbsp;<b>'+"发动机序号"+'</b></td><td>&nbsp;&nbsp;<b>'+"工作内容"+'</b></td></tr>';
+	var addTrEng = "";
+	$.each(data, function(i, n)
+	{
+	addTrEng += '<tr><td colspan=\"7\"><a href=\"#\" onclick=\"setValue('+n.wo+',\''+n.act+'\',\''+n.des+'\',\''+n.ml+'\',\''+n.reg+'\',\''+n.engPn+'\',\''+n.engSn+'\',\''+n.engCustomer+'\',\''+n.engSoDesc+'\')\">'+n.reg+'&nbsp;&nbsp;&nbsp;&nbsp;'+n.wo+
+			 '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'+n.ml+'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="width:15%;text-decoration: none;cursor: pointer;">'+n.engSn+'</span>&nbsp;&nbsp;&nbsp;'+n.engSoDesc+'</a></td></tr>';
+	
+	});
+	addTableEng = addTableEng + addTrEng +'</table><br></div>';
+		$("#GamEngTr").css("display","");
+		showWin(addTableEng,"请选择工作指令号",550);
+	}else{
+	$("#GamEngTr").css("display","none");
+		showWin(addTable,"请选择工作指令号",300);
+	}
+}
+// 弹出窗体
+function showWin(obj,title,winWidth)
+{
+	$(obj).window
+	({
+		width:winWidth,					//窗口宽度
+		top:($(window).height()/2)*0.5,	//高居中
+		left:($(window).width()/2)*0.5,	//宽居中
+		collapsible:false,				//不显示折叠按钮
+		minimizable:false,				//不显示最小化按钮
+		maximizable:false,				//不显示最大化按钮
+		resizable:true,					//窗口可否调整尺寸
+		title:title,					//窗口标题
+		modal:true						//模态窗口即背后页面不可操作
+	});
+}
+
+// 查看入卡记录
+function showClockIn()
+{
+	var cb = $(".jcRidClass:checked");
+	var workorder = $.trim($("#qWorkorder").val());	// 销售指令号
+	var flightCheckNoObj = $("#txtFlight_Check_No");
+	var jcWorkOrder = "";
+	var temp = "";
+	
+	if(cb.length==0)
+	{
+		alert("请至少选择一项工卡!");
+		return;
+	}
+	// 整理工卡指令号
+	$.each( cb, function(i, n){
+		jcWorkOrder += temp + $(n).siblings(".jcWoClass").val();
+		temp = ",";
+	});
+	//alert(jcWorkOrder);
+	
+	var url = "clockInOut/showClockIn.jsp?workOrder="+workorder+"&fullReg="+tailno+"&flightCheckNo="+flightCheckNoObj.val()+"&jcWorkOrder="+jcWorkOrder;
+	//var value = window.open(url,"","dialogWidth:1080px;dialogHeight:400px;help:no;status:no;resizable:yes;toolbar:no;menubar:no");
+	var value = window.open(url,"","width=1080px,height=400px,toolbar=no,menubar=no,scrollbars=yes,resizable=yes,status=no");
+}
+
+// 保留工卡
+function doHold(isMel){
+	var url = "updateJC.jsp?action=hold&isMel="+isMel;
+	var checkboxArray = $(".jcRidClass");
+	var cbs = $("input[class='jcRidClass']:checked");
+	var msg = "";
+	var slnStatus = "";
+	var jcType = "";
+	var isFedex = false;			// 是否Fedex工卡
+	var customer = 'EK';
+	//var planStartDate ="2025-12-27" ;  //开始日期
+	var eSignFlag = false;// 是否为电子签
+	var planStartDate = $("#planStartDate").val()
+	if(checkItem("jcRid")==false) {
+		alert("请至少选择一项工卡!");
+		return;
+	}
+	var jcStatus;
+	var flag = false;
+	//选中的check
+	for(var i = 0;i<cbs.length;i++){
+		var jcRid = $(cbs[i]).val();
+		var jcType = $(cbs[i]).siblings(".jcTypeClass").val();
+		var jcSeq = $(cbs[i]).siblings(".wipJcSeqClass").val();
+		if(jcType == 'NR'){
+			if(eSignFlag){
+				//增加检查销售指令号对应的进厂日期，大于等于“2021-11-01”时
+				if(dateCompare(planStartDate,'2021-11-01')){
+					// 查询步骤关闭情况
+					jQuery.ajax({
+						type: "post",
+						async: false,
+						url: "/trace/fgm/workOrder/ajax/checkStepClose.jsp?jcRid="+jcRid,
+						contentType: "application/json; charset=gbk",
+						dataType: "json",
+						cache: false,
+						success: function (data) {
+							if(data.defCnt==0 || data.defCnt==''){
+								alert("没有已保留的步骤！");
+								flag = true;
+								return;
+							}
+							if(data.opnCnt!='' && data.opnCnt>0){
+								alert("有未关闭的步骤！");
+								flag = true;
+								return;
+							}
+							
+						}	
+					});
+					
+					//检验QC章是否存在
+					jQuery.ajax({
+						type: "post",
+						async: false,
+						url: "/trace/fgm/workOrder/ajax/checkWjcQcInfo.jsp?jcRid="+jcRid,
+						contentType: "application/json; charset=gbk",
+						dataType: "json",
+						cache: false,
+						success: function (data) {
+							if(data.qcStampBy.length<=0 || data.qcStampBy==''){
+								alert("QC未盖章 请检查");
+								flag = true;
+								return;
+							}
+						}	
+					});
+				}
+			}
+		}
+		jcStatus = getJcStatusByRid(jcRid);// 获取工卡状态
+		if(!jcStatus){
+			flag = true;
+			return;
+		}
+		if('N' != jcStatus){
+			flag = true;
+			alert('工卡' + jcSeq + '已经是关闭状态！');
+			return;
+		}
+		if(flag){
+			return;
+		}
+	}
+	
+	if(flag){
+		return;
+	}
+	
+	for(var i = 0;i<cbs.length;i++){
+		slnStatus = $(cbs[i]).siblings(".slnStatusClass").val();
+		jcType = $(cbs[i]).siblings(".jcTypeClass").val();
+		if ($.trim(jcType) == "NR") {
+			if($.trim(slnStatus) != "Y"){
+				alert("方案未完成，不允许提交!");
+				flag = true;
+				break;
+			}
+		}
+	}
+	if(flag){
+		return;
+	}
+	
+	// 打印状态 
+	if(!isFedex){
+		var getNrcHdPrtStatusResult = getNrcHdPrtStatus();
+		if(1==getNrcHdPrtStatusResult){
+			if("CSN"==customer || "CKG"==customer || "CSG"==customer || "CSL"==customer){
+				if(!confirm('独立页信息打印后有更新，请并复核！')){
+					return;
+				}
+			}else{
+				if(!confirm('首页信息打印后有更新，请并复核！')){
+					return;
+				}
+			}
+		}else if(-1==getNrcHdPrtStatusResult){
+			return false;
+		}
+		
+	}
+	if(isMel=="M") {
+		msg = "\"MEL/CDL保留\"";	
+	} else if(isMel=="D") {
+		msg = "\"非MEL/CDL保留\"";
+	} else if(isMel=="S") {
+		msg = "\"方案性保留\"";
+	} else {
+		return false;
+	}
+	
+	if(!confirm("确定将选择的工卡设为"+msg+"?")) {
+		return false;
+	}
+	
+	// 南航和重航保留需要登记跟踪号
+	if(ownerCode=="CSN" || ownerCode=="CKG" || ownerCode=="CSG" || "CSL" == ownerCode) {
+		for(var i = 0;i<cbs.length;i++){
+			var trackingNo = $.trim($(cbs[i]).siblings(".trackingNoClass").val());
+			if (!trackingNo) {//南航ME保留跟踪号不存在
+				alert("工卡序号" + $.trim($(cbs[i]).siblings(".wipJcSeqClass").val()) 
+						+ "南航ME保留跟踪号不存在, 请点击页面按钮“保留控制号录入”进行完善。");
+				flag = true;
+				return false;
+				
+			}
+		}
+	}
+	if(flag){
+		return;
+	}
+	
+	submitForm(url);
+}
+
+function submitForm(url){
+	document.form.action = url;
+	document.form.submit();
+	$(":button").attr("disabled","disabled");
+}
+
+//比较两个日期大小
+function dateCompare(date1,date2){
+	var time1 = new Date(date1.replace("-", "/").replace("-", "/"));
+	var time2 = new Date(date2.replace("-", "/").replace("-", "/"));
+	if(time1 < time2){
+		return false;
+	}else{
+		return true;
+	}
+}
+
+// 航材领用单
+function matUseList()
+{
+	var jcRids = "";
+	var printer = "007928 刘树恩 LIU SHUEN";
+	var temp = "";
+	var cb = $(".jcRidClass:checked");
+	
+	//if(cb.length==0 || cb.length>1)
+	if(cb.length==0)
+	{
+		alert("请选择一项工卡!");
+		return;
+	}
+	
+	// 整理工卡主键
+	$.each( cb, function(i, n){
+		jcRids += temp + $(n).val();
+		temp = ",";
+	});
+
+	var url="http://10.240.2.113:7778/reports/rwservlet?gameco_report&destype=cache&desformat=PDF&report=NRCardMatUsed.rdf"
+		+"&jc_rids="+jcRids+"&printed_by="+printer;
+	window.open(url,"航材领用单","toolbar=0,menubar=0,location=0,directories=0,status=0,resizable=1");
+}
+// 韩亚非卡录入
+function aarJcUpdate()
+{
+	var checkboxArray = $(".jcRidClass:checked");
+	
+	if(checkboxArray.length!=1)
+	{
+		alert("请选一项需要修改的工卡!");
+		return;
+	}
+	
+	var jcRid = $(checkboxArray[0]).val();
+	
+//	disabledAllButtons(); //使页面所有按钮失效，防止重复点击
+	$(":button").attr("disabled","disabled");
+	url = "/trace/nrc/nrcMaster.do?method=goUpdateAar&jcRid=" + jcRid;
+	
+	//window.open(url,"韩亚非卡录入","toolbar=0,menubar=0,location=0,directories=0,status=0,resizable=1");
+	window.location.href = url;
+}
+
+// M&E工卡上传准备
+function readyUpload()
+{
+	var url = "updateJC.jsp?action=readyUpload";
+	var workorder = $.trim($("#qWorkorder").val());	// 销售指令号
+	
+	// 避免异常操作
+	if(needSearch)
+	{
+		alert("查询条件有变更，请点击查询后操作");
+		return false;
+	}
+	if(workorder=="")
+	{
+		alert("工作指令号不存在!");
+		return;
+	}
+	
+	document.form.action = url;
+	document.form.submit();
+	document.form.action = "";
+	$(":button").attr("disabled","disabled");
+}
+
+// 设置预检状态
+function setPreCheckStatus()
+{
+	var preCheckObj = $("#preCheckId");
+	var preCheckFinishedObj = $("#preCheckFinishedId");
+	var flag = false;
+	
+	if(preCheckFinishedObj.val()=="")
+		return false;
+	
+	if(preCheckObj.val()!="Y")
+	{
+		alert("不属于预检包不允许修改预检状态");
+		return false;
+	}
+	
+	if(!confirm("确定变更该指令的预检状态?"))
+	{
+		return false;
+	}
+	
+	var url = "ajax/setPreCheckFinished.jsp?woRid="+woRid+"&preCheckFinished="+preCheckFinishedObj.val();
+	$(":button").attr("disabled","disabled");
+	
+	jQuery.ajax({
+		type: "post",
+		async: false,	//控制同步=false 异步=true
+		url: url,
+		contentType: "application/json; charset=gbk",
+		dataType: "json",
+		cache: false,
+		success: function (data) {
+			if(data.flag=="true")
+			{
+				flag = true;
+			}
+		},
+		error: function (err) {
+			alert("error");
+		}
+	});
+	
+	if(flag)
+	{
+		alert("操作成功!");
+	}
+	else
+	{
+		alert("操作失败!");
+	}
+	
+	$(":button").removeAttr("disabled");
+}
+
+// 显示模板列表
+function showWophsTemplate()
+{
+	var flagFgmObj = $("#flagFgm");			// 功能组控制
+	var url = "ajax/getWophsTemplet.jsp?dt="+new Date().getTime();
+	
+	if(flagFgmObj.val()!="Y")
+	{
+		alert("该功能仅适用于功能组!");
+		return false;
+	}
+	
+	$.getJSON(url, function(data)
+	{
+		// 有值显示模板列表
+		if(data.length>0)
+		{
+			showWophsTemplet(data);
+		}
+		// 没值清空相关信息
+		else
+		{
+			alert("没有相关模板");
+			return false;
+		}
+	});
+}
+
+// 显示模板列表
+function showWophsTemplet(data)
+{
+	var addTable='<div class=\"uniq_win\"><br><table align=\"center\" valign=\"middle\"><tr><td><b>'+"名称"+
+				 '</b>&nbsp;&nbsp;</td><td><b>'+"描述"+'</b>&nbsp;&nbsp;</td></tr>';
+	var addTr = "";
+	
+	$.each(data, function(i, n)
+	{
+		addTr += '<tr><td><a href=\"#\" onclick=\"inputWophsTemplate(\''+n.rid+'\')\">'+n.name+'</a>&nbsp;&nbsp;</td><td>'+n.desc+'&nbsp;&nbsp;</td></tr>';
+		
+	});
+	
+	addTable = addTable + addTr +'</table><br></div>';
+	showWin(addTable,"请选择需要导入的模板",300);
+}
+
+// 模板导入
+function inputWophsTemplate(templateRid)
+{
+	$('.uniq_win').window('close');							//关闭工作指令号提示框
+	
+	var workorder = $.trim($("#qWorkorder").val());	// 销售指令号
+	var url1 = "ajax/checkWophsExist.jsp";
+	var url2 = "ajax/importWophsTemplate.jsp";
+	var input = false;
+	
+	if(templateRid=="")
+	{
+		return false;
+	}
+	if (workorder=="")
+	{
+		return false;
+	}
+	
+	url1 += "?workOrder="+workorder+"&dt="+new Date().getTime();
+	url2 += "?templateRid="+templateRid+"&workOrder="+workorder+"&dt="+new Date().getTime();
+	
+	$.getJSON(url1, function(data1)
+	{
+		if(data1.flag=="true")
+		{
+			if(confirm("已存在阶段信息，继续将覆盖原有信息!"))
+			{
+				input = true;
+			}
+			else
+			{
+				input = false;
+			}
+		}
+		else
+		{
+			input = true;
+		}
+		
+		if(input)
+		{
+			$.getJSON(url2, function(data2)
+			{
+				//alert(data2.success);
+				if(data2.success=="true")
+				{
+					alert("导入成功!");
+				}
+				else
+				{
+					alert("导入失败!");
+				}
+			});
+		}
+	});
+}
+
+// 打印工卡控制页
+function prtJcControlPage()
+{
+	var startPrtJcSeqObj = $("#startPrtJcSeq");	// 开始序号
+	var endPrtJcSeqObj = $("#endPrtJcSeq");		// 结束序号
+	var salesOrderObj = $("#qWorkorder");		// 销售指令号
+	var visitDescObj = $("#txtVisit_Desc");		// 定检级别
+	var hsPlanStartDate = $("#hsPlanStartDate");// 维修计划开始日期
+	var soDept = $("#soDept");                  // 主体工作部门
+	
+	// add by 700683  工卡控制页打印范围超出工卡总数的问题纠正 2019-02-13 start
+	//var tolNum = "%=recordCount%>";
+	var tolNum = "1163";
+	// add by 700683  工卡控制页打印范围超出工卡总数的问题纠正 2019-02-13 end
+	var url1 = "ajax/checkPrtJcControlPage.jsp";
+	var url2 = "ajax/prtJcControlPage.jsp";
+	var pass = true;
+	
+	if($.trim(salesOrderObj.val())=="")
+	{
+		alert("销售指令号不能为空");
+		salesOrderObj.select();
+		return false;
+	}
+	if($.trim(startPrtJcSeqObj.val())=="")
+	{
+		alert("请输入打印的起始工卡序号");
+		startPrtJcSeqObj.focus();
+		return false;
+	}
+	else if($.trim(endPrtJcSeqObj.val())=="")
+	{
+		alert("请输入打印的起始工卡序号");
+		endPrtJcSeqObj.focus();
+		return false;
+	}
+	else
+	{
+		// 开始序号不能大于结束序号
+		if($.trim(startPrtJcSeqObj.val())*1 > $.trim(endPrtJcSeqObj.val())*1)
+		{
+			alert("开始序号不能大于结束序号");
+			startPrtJcSeqObj.select();
+			return false;
+		}
+	}
+	// add by 700683  工卡控制页打印范围超出工卡总数的问题纠正 2019-02-13 start
+	/*
+	if ($.trim(startPrtJcSeqObj.val())*1 > tolNum*1) {
+		alert("开始序号不能大于总记录");
+		startPrtJcSeqObj.select();
+		return false;
+	}
+	if ($.trim(endPrtJcSeqObj.val())*1 > tolNum*1) {
+		alert("结束序号不能大于总记录");
+		endPrtJcSeqObj.select();
+		return false;
+	}*/
+	// add by 700683  工卡控制页打印范围超出工卡总数的问题纠正 2019-02-13 end
+
+	//2022-02-22 不进行数量校验 进行工卡序号是否存在校验
+	var startFlage = false;
+	var checkSeqUrl="ajax/checkJcSeqExist.jsp?startPrtJcSeq="+startPrtJcSeqObj.val()+"&endPrtJcSeqObj="+endPrtJcSeqObj.val()+"&Workorder="+$("#qWorkorder").val();
+
+	$.ajax({
+		type: "post",
+		url:checkSeqUrl,
+		async: false,
+		dataType: "json",
+		cache: false,
+		success : function(data2){
+			if(data2.status=="false")
+			{
+				alert("开始序号/结束序号不存在请检查!");
+				startFlage= true;
+			}
+		
+		}
+	});
+
+	if(startFlage){
+		return false;
+	}
+	
+	url1 += "?salesOrder="+salesOrderObj.val()+"&dt="+new Date().getTime();
+	url2 += "?salesOrder="+salesOrderObj.val()+"&startPrtJcSeq="+startPrtJcSeqObj.val()+"&endPrtJcSeq="+endPrtJcSeqObj.val()+"&dt="+new Date().getTime()
+			+"&hsPlanStartDate="+hsPlanStartDate.val()+"&soDept="+soDept.val();
+	
+	// 检查打印的状态
+	$.getJSON(url1, function(data1)
+	{
+		if(data1.status=="1")
+		{
+			alert("同一销售指令["+salesOrderObj.val()+"]有正在处理的记录，请稍后提交!")
+			pass = false;
+		}
+		else if(data1.status=="2")
+		{
+			if(!confirm("同一销售指令["+salesOrderObj.val()+"]已有打印记录，确认打印?"))
+			{
+				pass = false;
+			}
+		}
+		else
+		{
+			if(!confirm("确认打印["+salesOrderObj.val()+"，"+tailno+"， "+visitDescObj.val()+"]的控制页?"))
+			{
+				pass = false;
+			}
+		}
+		
+		// 提交打印
+		if(pass)
+		{
+			$.getJSON(url2, function(data2)
+			{
+				if(data2.success=="true")
+				{
+					alert("提交成功!");
+				}
+				else
+				{
+					alert("提交失败!");
+				}
+			});
+		}
+	});
+}
+
+// 查询条件变更
+function changeSearch()
+{
+	needSearch = true;
+}
+
+// 计划批处理
+function ppBatchExt(){
+	var batchExtTypeObj = $("#batchExtType");				// 批量处理的类型
+	var batchExtType = $.trim($("#batchExtType").val());	// 批量处理的类型值
+	
+	if("markSubShop" == batchExtType){
+		// 标注电子车间
+		return markSubShop();
+	}else if("cancelMarkSubShop" == batchExtType){
+		// 取消标注电子车间
+		return cancelMarkSubShop();
+	}else if("mhCusConfirm" == batchExtType){
+		// 阿联酋航空非卡工时确认
+		return mhCusConfirm();
+	}
+	// 避免异常操作
+	if(needSearch)
+	{
+		alert("查询条件有变更，请点击查询后操作");
+		return false;
+	}
+	
+	if(batchExtType=="")
+	{
+		alert("请选择需要处理的类型");
+		batchExtTypeObj.focus();
+		return false;
+	}
+	
+	// CSN工卡导入
+	if(batchExtType=="csnJcImport")
+	{
+		this.inputCSNJobCard();
+	}
+	// 模板导入
+	else if(batchExtType=="templetImport")
+	{
+		this.showWophsTemplate();
+	}
+	// FEDEX工卡导入
+	else if(batchExtType=="fedexJcImport")
+	{
+		this.fedexJcImport();
+	}
+	// AAR模式工卡导入
+	else if(batchExtType=="aarJcImport")
+	{
+		this.aarJcImport();
+	}
+	// 第三方工卡导入
+	else if(batchExtType=="3partyJcImport")
+	{
+		this.input3partyJobCard();
+	}
+	// 第三方工时导入
+	else if(batchExtType=="3partyJcMhImport")
+	{
+		this.input3partyJobCardMh();
+	}
+	// 第三方航材导入
+	else if(batchExtType=="3partyJcMatImport")
+	{
+		this.input3partyJobCardMat();
+	}
+	// 采用工作包的阶段安排
+	else if(batchExtType=="phasePlan")
+	{
+		this.inputPhasePlan('0');
+	}
+	// 采用工作包的阶段安排（AAR模式）
+	else if('arrPhasePlan' == batchExtType){
+		this.inputPhasePlan('1');
+	}
+	// 非例行工时上传
+	else if(batchExtType=="roMhImport")
+	{
+		this.roMhImport();
+	}
+	//第三方工具导入
+	else if(batchExtType=="3ToolImport"){
+		this.input3ToolImport();
+	}
+	// 盖板卡标签生成
+	else if(batchExtType=="panelLabel"){
+		this.panelLabel();
+	}
+	// Add by 700683 工卡管理增加客户化信息 2018-10-09 start
+	// 汉莎CRI-REF-WP信息导入
+	else if(batchExtType=="lhtCriRefWpImport") {
+		this.lhtCriRefWpImport();
+	}
+	// Add by 700683 工卡管理增加客户化信息 2018-10-09 end
+	//任务清单
+	else if(batchExtType=="taskList") {
+		this.taskListImport();
+	}
+	//电子标签批量导入
+	else if(batchExtType=="RFID") {
+		this.electronicTagImport();
+	}
+	// 技术资料与图纸
+	else if(batchExtType=="infoPic") {
+		this.infoAndPicImport();
+	}
+	else
+	{
+		alert("该类型暂时未开放");
+		return false;
+	}
+}
+// 盖板卡标签生成
+function panelLabel()
+{
+	var woRid = $("#woRidId").val();
+    var workorder = $("#qWorkorder").val();		// 销售指令号
+	var flag = true;
+	
+	var url = "fgmLabel.do?method=checkDesc&woRid="+woRid+"&workorder="+workorder+"&d="+new Date();
+	$.ajax({
+		type: "post",
+		url:url,
+		async: false,
+		dataType: "json",
+		contentType: "application/json; charset=gbk",
+		cache: false,
+		success : function(data){
+			// update by 700683 盖板标签自动生成 2018-11-22 start
+			/* if(data.flag == "fail"){
+				flag = false;
+			}else if(data.flag == "fail2"){
+				alert("该指令号不存在电子标签不允许处理！");
+			}else if(data.flag == "success"){
+				alert("生成成功!");
+			}else{
+				alert(data.flag);
+			} */
+			if(data.flag == "success"){
+				alert("生成成功!");
+			}else if(data.flag == "lack"){
+				alert("该指令号[" + workorder + "]缺位置/描述的标签数大于5%，请在标签信息页面补齐!");
+				url = "/trace/fgm//workOrder/fgmLabel.do?method=queryLackLabel&workorder="+workorder;
+				//window.open(url,"","dialogWidth:1200px;dialogHeight:500px;help:no;status:no;resizable:yes;toolbar:no;menubar:no");
+				window.open(url,"","width=1200px,height=500px,toolbar=no,menubar=no,scrollbars=yes,resizable=yes,status=no");
+			}else{
+				alert(data.flag);
+			}
+			// update by 700683 盖板标签自动生成 2018-11-22 end
+		},
+		error:function(data){
+			alert("通讯失败,请重新尝试");
+		}
+	});
+	
+	// delete by 700683 盖板标签自动生成 2018-11-22 start
+	/* if(!flag){
+		url = "/trace/fgm/workOrder/fgmLabel.do?method=showNoPanelInfo&woRid="+woRid;	
+		JqueryDialog.Open1("缺少标签信息的记录",url,document.body.clientWidth-200,document.body.clientHeight-150);
+	} */
+	// delete by 700683 盖板标签自动生成 2018-11-22 end
+}
+
+// Add by 700683 工卡管理增加客户化信息 2018-10-09 start
+// 汉莎CRI-REF-WP信息导入
+function lhtCriRefWpImport() {
+	document.form.action = "/trace/fgm/fgm3rd.do?method=uploadLhtCriRefWpFile";
+	document.form.submit();
+}
+// Add by 700683 工卡管理增加客户化信息 2018-10-09 end
+
+// FEDEX工卡导入
+function fedexJcImport()
+{
+	document.form.action = "/trace/fgm/fgm3rd.do?method=uploadFEDEXFile&woRid="+woRid;
+	document.form.submit();
+	document.form.action = "";
+}
+
+// AAR模式工卡导入
+function aarJcImport() {
+	document.form.action = "/trace/fgm/fgm3rd.do?method=uploadAarJcFile&woRid="+woRid;
+	document.form.submit();
+}
+
+// 任务清单导入
+function taskListImport() {
+	document.form.action = "/trace/fgm/fgm3rd.do?method=taskListImport";
+	document.form.submit();
+}
+
+// 电子标签导入
+function electronicTagImport() {
+	document.form.action = "/trace/fgm/fgm3rd.do?method=electronicTagImport";
+	document.form.submit();
+}
+
+// 技术资料与图纸批量导入
+function infoAndPicImport() {
+	window.location.href = "/trace/fgm/functionGroup/plan.do?method=toInfoAndPicImport&workorder=" 
+			+ $("#qWorkorder").val() + "&wgp=3_CABIN_TPG&txtMenuID=22800";
+}
+
+// 采用工作包的阶段安排	mode=='0':采用工作包的阶段安排   mode='1':采用工作包的阶段安排(AAR模式)
+function inputPhasePlan(mode)
+{
+	if('1' === mode && !confirm('此功能仅适用于AAR模式的工作包，请慎用！')){
+		return false;
+	}
+	var workorder = $.trim($("#qWorkorder").val());	// 销售指令号
+	var flagFgmObj = $("#flagFgm");					// 功能组控制
+	
+	if(flagFgmObj.val()!="Y")
+	{
+		alert("该功能仅适用于功能组!");
+		return false;
+	}
+	
+	var url = "inputPhasePlan.jsp?workOrder=" + workorder + '&mode=' + mode;
+	var value = window.open(url,'','width='+(screen.availWidth-600)+',height='+(screen.availHeight-600)+',top=80,left=100,toolbar=no,menubar=no,scrollbars=yes,resizable=yes,location=no,status=no');
+}
+
+// 非例行工时上传
+function roMhImport()
+{
+	document.form.action = "/trace/fgm/fgm3rd.do?method=uploadNrcMhFile&woRid="+woRid;
+	document.form.submit();
+	document.form.action = "";
+}
+
+// 校验南航ME保留跟踪号
+/* function trackingNoCheck()
+{
+	var l=(screen.availWidth-500)/2;// windwon.open窗口居中
+	var t=(screen.availHeight-300)/2;// windwon.open窗口居中
+	var checkboxArray = $(".jcRidClass:checked");
+	if(checkboxArray.length >1){
+		alert("一次只能保留一份工卡");
+		return resFlag;
+	}
+	var checkboxArrayParent = checkboxArray.parent();
+	var trackNo = checkboxArrayParent.find(".trackingNoClass").val();
+	var pass = false;
+	var trackingNo = prompt("请输入南航ME保留跟踪号",trackNo);
+	if(trackingNo===null){
+		return false;
+	}else if ($.trim(trackingNo)==="undefined"||$.trim(trackingNo)===""){
+		alert("输入的南航ME保留跟踪号有误");
+		return false;
+	}else if(trackingNo.length>0){
+		document.getElementById('trackingNo').value = trackingNo;
+		pass = true;
+	}
+
+	if (!pass){
+		return false;
+	}
+	return check();
+} */
+
+/* function check(){
+	//var inputVal = prompt("请输入南航ME保留跟踪号","");
+	var checkboxArray = $(".jcRidClass:checked");
+	
+	var resFlag = false;
+	var inputVal = $("#trackingNo").val();
+	if(inputVal == ""){
+		return resFlag;
+	}
+	*//*
+	if(checkboxArray.length >1){
+		alert("一次只能保留一份工卡");
+		return resFlag;
+	}
+	*//*
+	var jcRid = "";
+	$.each(checkboxArray, function(i, n){
+		jcRid += $(n).val();
+	});
+	
+	var url = "./ajax/trackingNoCheck.jsp?dt="+new Date().getTime();
+	$.ajax({
+		type : "post",
+		url : url,
+		async : false,
+		dataType : "json",
+		data : {
+			trackingNo : inputVal,
+			jcRid : jcRid 
+		},
+		success : function(flag){
+			//0:通过/1:南航没登记/2:跟踪单号已绑定别的卡/9:异常
+			if(flag.info == "1"){
+				alert("南航ME保留跟踪号不存在");
+			}else if(flag.info == "2"){
+				alert("一个保留跟踪号只能关联一份工卡");
+			}else if(flag.info == "9"){
+				alert("执行异常");
+			}else{
+				resFlag = true;
+			}
+		}
+	});	
+	return resFlag;
+} */
+
+// 显示步骤导入方式
+function showChangeModel(obj)
+{
+	eventObj = $(obj);
+	
+	var addTable='<div class=\"uniq_win\"><br><table align=\"center\" valign=\"middle\">';
+	var addTr = '<tr><td><a href=\"#\" onclick=\"changeMoel(\'1\')\">使用模板导入</a></td></tr>';
+	addTr += '<tr><td><a href=\"#\" onclick=\"changeMoel(\'2\')\">使用工作包工卡导入</a></td></tr>';
+	
+	addTable = addTable + addTr +'</table><br></div>';
+	showWin(addTable,"请选择导入方式",300);
+}
+
+// 跳转步骤导入界面
+function changeMoel(op)
+{
+	/*
+	alert($(eventObj).html());
+	alert(op);
+	*/
+	// 关闭提示框
+	$('.uniq_win').window('close');
+	
+	// 模板导入
+	if(op == "1")
+	{
+		importTemplatJcStp();
+	}
+	// 工作包工卡导入
+	else if(op == "2")
+	{
+		importJcStp();
+	}
+}
+
+// 从模板导入步骤
+function importTemplatJcStp()
+{
+	//alert("模板导入步骤!");
+	var jcRids = $("input[name='jcRid']");	//	获取checkbox值(工卡主键)
+	var jcSeqs = $("input[name='jcseq']");	//	获取工卡序号
+	var jcRidArray = new Array();
+	var width = screen.width <= 1024 ? "950px" : 1000 + "px";
+	var height = "600px";
+	
+	if(checkItem("jcRid")==false)
+	{
+		alert("请至少选择一项工卡!");
+		return;
+	}
+	
+	// 遍历工卡
+	for(var i=0,j=0;i<jcRids.length;i++)
+	{
+		if($(jcRids[i]).attr("checked"))
+		{
+			//	验证是否是非例行卡
+			if(!$(jcSeqs[i]).val().match("^[56789].*"))
+			{
+				alert("只适用于非例行卡");
+				return;
+			}
+			else
+			{
+				jcRidArray[j] = $(jcRids[i]).val();
+				j++;
+			}
+		}
+	}
+	
+	var url = "jobcard/copy/importJCStep.jsp?jcRidArr="+jcRidArray+"&jcMode="+jcMode+"&workGroup="+wgp;
+	//var value = window.open(url,"","dialogWidth:" + width + " ;dialogHeight:" + height + ";help:no;status:no;resizable:yes;location=no");
+	var value = window.open(url,"","width=" + width + " ,height=" + height + ",toolbar=no,menubar=no,scrollbars=yes,resizable=yes,location=no,status=no");
+}
+
+// 从工作包导入步骤
+function importJcStp()
+{
+	//alert("工作包导入步骤!");
+	var jcRids = $("input[name='jcRid']");	//	获取checkbox值(工卡主键)
+	var jcSeqs = $("input[name='jcseq']");	//	获取工卡序号
+	var jcRidArray = new Array();
+	var width = (screen.width-220) + "px";
+	var height = "500px";
+	
+	if(checkItem("jcRid")==false)
+	{
+		alert("请至少选择一项工卡!");
+		return;
+	}
+	
+	// 遍历工卡
+	for(var i=0,j=0;i<jcRids.length;i++)
+	{
+		if($(jcRids[i]).attr("checked"))
+		{
+			//	验证是否是非例行卡
+			if(!$(jcSeqs[i]).val().match("^[56789].*"))
+			{
+				alert("只适用于非例行卡");
+				return;
+			}
+			else
+			{
+				jcRidArray[j] = $(jcRids[i]).val();
+				j++;
+			}
+		}
+	}
+	//alert(jcRidArray);
+	var url = "jobcard/copy/bathImportNrcStep.jsp?jcRidArr="+jcRidArray;
+	//alert(url);
+	//var value = window.open(url,"","dialogWidth:" + width + ";dialogHeight:" + height + ";help:no;status:no;resizable:yes");
+	var value = window.open(url,"","width=" + width + ",height=" + height + ",scrollbars=yes,resizable=yes,status=no");
+}
+
+// 显示打印信息
+function showPrintInfo()
+{
+	var flightCheckNo = $.trim($("#txtFlight_Check_No").val());	// 定检级别
+	 if(flightCheckNo == "2-LNEMNT"){
+		alert("该指令不支持批量打印功能！");
+		 return;
+	 }
+	  var tailno = $.trim($("#tailnoId").val());		//	飞机号
+	 if(tailno == "GAM-ENG"){
+		 alert("飞机["+tailno+"]不支持批量打印功能！");
+		 return;
+	 } 
+	var ownerCode = $.trim($("#ownerCodeId").val());//	客户代码
+	var planStartDate ="2025-12-27" ; //计划日期
+	//var a = planStartDate >="2019-12-01";//false <
+
+	var flag41 = "true";
+	var workorder = $.trim($("#qWorkorder").val());	// 销售指令号
+	// Add by 700683 限制打印没有英文的非卡 2018-10-29 start
+
+	// Add by 700683 限制打印没有英文的非卡 2018-10-29 end
+	var url = "jobcard/batchRprintListInfo.jsp?qWorkorder="+workorder+"&wgp="+wgp+"&flag41="+flag41+"&ownerCode1="+ownerCode+"&planStartDate="
+			+planStartDate;
+	// Add by 700683 限制打印没有英文的非卡 2018-10-29 start
+	url += "&flightCheckNo="+flightCheckNo;
+	// Add by 700683 限制打印没有英文的非卡 2018-10-29 end
+	var width = "940px";
+	var height = "640px";
+	// ADD BY 700683 非卡打印功能的改进 2018-05-10 START
+	var flagEPrt = "";
+	if (flagEPrt == "Y" && wgp != "") {
+		alert("电子签署飞机不使用此功能！");
+		return;
+	}
+	// ADD BY 700683 非卡打印功能的改进 2018-05-10 END
+	//window.open(url,window,"dialogTop:100px;dialogWidth:"+ width + ";dialogHeight:" + height + ";help:no;status:no;resizable:yes;toolbar:no;menubar:no;center:yes");
+	window.open(url,window,"top=100px,width="+ width + ",height=" + height + ",toolbar=no,menubar=no,scrollbars=yes,resizable=yes,status=no");
+}
+
+//工卡电子标签
+function showLabelInfo()
+{
+	var checkboxArray = $(".jcRidClass:checked");
+	if(checkboxArray.length >1){
+		alert("只能查看一份工卡的电子标签信息");
+		return false;
+	}
+	if(checkItem("jcRid")==false)
+	{
+		alert("请至少选择一项工卡!");
+		return false;
+	}
+	var jcRid = $(checkboxArray[0]).val();
+	//var jcWorkorder = $(checkboxArray[0]).siblings(".jcWoClass").val();
+	//var jcSeq = $(checkboxArray[0]).siblings(".wipJcSeqClass").val();
+	//var url = "/trace/wipLabel/wipLabel.do?method=toWipLabelList&jcRid="+jcRid+"&jcWorkorder="+jcWorkorder+"&jcSeq="+jcSeq+"&txtFullReg="+tailno;
+	var url = "/trace/wipLabel/wipLabel.do?method=toWipLabelList&jcRid="+jcRid+"&wgp=3_CABIN_TPG";
+	JqueryDialog.Open1("电子标签",url,document.body.clientWidth-200,document.body.clientHeight-150);
+	//var width = "1200px";
+	//var height = "700px";
+	//window.open(url,window,"dialogTop:100px;dialogWidth:" 
+//		+ width + ";dialogHeight:" + height + ";help:no;status:no;resizable:yes;toolbar:no;menubar:no;center:yes");
+	
+	timeout = setTimeout("checkTimeOut()",1);
+}
+
+function checkTimeOut()
+{
+	timeout = setTimeout("checkTimeOut()",1);
+	console.info(typeof($("#jd_dialog")[0]));
+	if(typeof($("#jd_dialog")[0]) == "undefined"){
+		clearTimeout(timeout);
+		doSubmit();
+	}
+	
+
+}
+
+function dialogClose()
+{
+	JqueryDialog.Close();
+}
+
+// 打印工卡
+function printJc()
+{
+	var checkboxArray = $(".jcRidClass:checked");
+	var workorder = $.trim($("#qWorkorder").val());	// 销售指令号
+	var jcRid = "";
+	var temp = "";
+	var jobcard = "";
+	var nrJobcard = "";
+	
+	if(checkboxArray.length == 0 ){
+		alert("至少选择一份例行卡");
+		return;
+	}
+	$.each(checkboxArray, function(i, n){
+		var tr = $(n).parent().parent();
+		jobcard = tr.find("input[id='jobcardId']").attr("value");
+		if(jobcard.indexOf("NR") > -1){
+			nrJobcard += jobcard + ",";
+		}
+		jcRid += temp + $(n).val();
+		temp = ",";
+	});
+	
+	if("" != nrJobcard){
+		alert("工卡"+nrJobcard+"为非例行卡，不支持该功能。请重新选择！");
+		return;
+	}
+	
+	var url = "printJcManage.jsp?woNum="+workorder+"&jcRid="+jcRid;
+	var height = screen.height - 700 + "px";		// 弹出窗口的高度
+	var width = screen.width - 600 + "px";		// 弹出窗口的宽度
+	//var value = window.open(url,"","dialogWidth:"+width+";dialogHeight:"+height+";help:no;status:no;resizable:yes;toolbar:no;menubar:yes");
+	var value = window.open(url,"","width="+width+",height="+height+",toolbar=no,menubar=yes,scrollbars=yes,resizable=yes,status=no");
+}
+function modified(){
+	var checkboxArray = $(".jcRidClass:checked");	// 多选框
+	var jcRid = "";
+	var jcType = "";
+	
+	if(checkboxArray.length==0)
+	{
+		alert("请至少选择一项工卡!");
+		return;
+	}else if(checkboxArray.length > 1){
+		alert("一次只能修改一份卡!");
+		return;
+	}else{
+		jcType = checkboxArray.siblings(".jcTypeClass").val();
+		if("NR" != jcType){
+			alert("该功能只适用于非例行卡!");
+			return;
+		}
+	}
+	jcRid = checkboxArray.val();
+	
+	var url = "jobcard/fedexJc.jsp?jcRid="+jcRid+"&openerFlag=ref";
+	//var resValue = window.open(url,window,"center:yes;dialogWidth:800px;dialogHeight=500px");
+	var resValue = window.open(url,window,"width=800px,height=500px,scrollbars=yes,resizable=yes");
+	//refreshPage();
+}
+
+//子窗口返回，刷新页面为防止出现重试按钮，父窗口通过重新提交表单刷新页面，非reload()
+function refreshPage(){
+	document.form.action = "checkData.jsp?from=manage";
+	document.form.submit();
+	document.form.action = "";
+	$(":button").attr("disabled","disabled");
+}
+
+//电子看板 electronic display board
+function showDisplayboard() {
+	var workorder = $.trim($("#qWorkorder").val());			// 工作指令号
+	var url = "/trace/public/queryMatStatus.do?method=readyDisplay&workorder="+workorder;
+	/*var a = $("<a href='"+url+"' target='_blank'>电子看板</a>").get(0);
+	var e = document.createEvent('MouseEvents');
+	e.initEvent('click', true, true);
+	a.dispatchEvent(e);*/
+	window.open(url, "_blank", "toolbar=yes,menubar=yes,scrollbars=yes,resizable=yes,location=yes,status=yes");
+}
+
+function updateBooth() {
+	var workorder = $.trim($("#qWorkorder").val());			// 工作指令号
+	var url = "displayBoard.do?method=toUpdateBooth&workorder="+workorder+"&isBOOTH=false";
+	//window.open(url, "机头纸信息", "dialogHeight:680px;dialogWidth:1120px;status:no;resizable:yes;toolbar:no;menubar:no;scroll:no");
+	window.open(url, "机头纸信息", "width=1120px,height=680px,toolbar=no,menubar=no,scrollbars=yes,resizable=yes,status=no");
+	//window.open(url,"机头纸","width=1120,height=680,toolbar=0,menubar=0,location=0,directories=0,status=0,resizable=1,scrollbars=1");
+}
+
+function soMilestone() {
+	var so = $.trim($("#qWorkorder").val());				// 销售(工作)指令号
+	var woStatus = "N";						// 指令状态
+	var url = "displayBoard.do?method=showMilestone&so="+so+"&woStatus="+woStatus+"&isBOOTH=false&isPP=false";
+	//window.open(url, "关键点信息", "dialogHeight:700px;dialogWidth:1220px;status:no;resizable:yes;toolbar:no;menubar:no;scroll:no");
+	window.open(url, "关键点信息", "width=1120px,height=700px,toolbar=no,menubar=no,scrollbars=yes,resizable=yes,status=no");
+}
+
+function goNoPlanWorkList(wo){
+	
+	var url = "noPlanWork.do?method=showList&wo="+wo;
+	window.open(url,"计划未排班的工卡明细","width=1020,height=600,toolbar=0,menubar=0,location=0,directories=0,status=0,resizable=1,scrollbars=1");
+}
+
+function goEsignPrint(){
+	var workorder = $.trim($("#qWorkorder").val());	// 工作指令号
+	var checkboxArray = $(".jcRidClass:checked");	// 多选框
+	// ADD BY 700683 非卡打印功能的改进 2018-05-10 START
+	var flagEPrt = "";
+	// ADD BY 700683 非卡打印功能的改进 2018-05-10 END
+	if(checkboxArray.length==0)
+	{
+		alert("请至少选择一项工卡!");
+		return;
+	}else{
+		var rids = "";
+		var comma = "";
+		var jcType;
+		var qcFiBy;
+		// ADD BY 700683 非卡打印功能的改进 2018-05-10 START
+		var jcSeq;
+		// ADD BY 700683 非卡打印功能的改进 2018-05-10 END
+		for(var i = 0;i < checkboxArray.length;i++){
+			jcType = $(checkboxArray[i]).siblings(".jcTypeClass").val();
+			if("NR" != jcType){
+				alert("该功能只适用于非例行卡!");
+				return;
+			}
+			qcFiBy = $(checkboxArray[i]).siblings(".qcFiByClass").val();
+			if($.trim(qcFiBy).length == 0){
+				alert("该功能只适用于QC已终检非例行卡!");
+				return;
+			}
+			// ADD BY 700683 非卡打印功能的改进 2018-05-10 START
+			jcseq = $(checkboxArray[i]).siblings(".wipJcSeqClass").val();
+			if (flagEPrt == "Y" && qcFiBy != "Y" && wgp != "") {
+				alert("非卡[" + jcseq + "]QC未终检，不允许打印！");
+				return;
+			}
+			// ADD BY 700683 非卡打印功能的改进 2018-05-10 END
+			rids += comma + $(checkboxArray[i]).val();
+			comma = ",";
+		}
+	}
+	var flag = true;
+	var url = "ajax/checkEsignPrint.jsp?workorder="+workorder+"&rids="+rids;
+	$.ajax({
+		type : "post",
+		url : url,
+		async : false,
+		dataType : "json",
+		success : function(data){
+			if(data.flag == "false"){
+				
+				if(data.msg == "fail"){
+					alert("打印通讯失败！");
+				}else{
+					alert("工卡:"+data.jobcard+" 步骤 "+data.msg+"未审核,请联系检验员处理!");
+				}
+				flag = false;
+			}
+		},error:function(flag){
+			alert("打印通讯失败！");
+		}
+	});
+	
+	if(!flag){
+		return false;
+	}
+	url = "choosePrint.jsp?workorder="+workorder+"&rids="+rids;
+	//var value = window.open(url,"","dialogWidth:450px;dialogHeight:300px;help:no;status:no;resizable:yes;toolbar:no;menubar:no");
+	var value = window.open(url,"","width=450px,height=300px,toolbar=no,menubar=no,scrollbars=yes,resizable=yes,status=no");
+
+
+}
+function goEsignPrintAfter(value,rids) {
+	//lzq
+	if(typeof(value) == "undefined" || value.length == 0){
+		return false;
+	}else{
+		var str = value.split(",");
+		var printId = str[0];
+		var matFlag = str[1];
+
+		url = "printEsignNrc.jsp?printId="+printId+"&matFlag="+matFlag+"&rids="+rids;
+		$.ajax({
+			type : "post",
+			url : url,
+			async : false,
+			dataType : "json",
+			success : function(data){
+				if(data.flag == "true"){
+					alert("送打印成功");
+				}else{
+					alert("送打印失败");
+				}
+			},error:function(flag){
+				alert("打印通讯失败！");
+			}
+		});
+
+	}
+	document.form.action = "checkData.jsp?from=manage";
+	document.form.submit();
+	//return false;
+}
+// add by 700683 2018-03-22 Start 
+// 电子工卡
+function goEjcDetail() {
+	var ckbArray = $(".jcRidClass:checked");	// 多选框
+	var jcType = "";
+	var pass = true;
+	var customer = 'EK';
+	var tempRid = "";
+	var jcRids = "";
+	var sp = "";
+	if (!pass) {
+		return;
+	}
+	
+	if (ckbArray.length == 0) {
+		alert("请至少选择一项工卡！");
+		pass = false;
+	}
+	if (!pass) {
+		return;
+	}
+	$.each(ckbArray, function(i, n){
+		jcType = $(n).siblings(".jcTypeClass").val();
+		jcRid = $(ckbArray[i]).val();
+		if (jcType != "NR") {
+			pass = false;
+		}
+		if (tempRid != jcRid) {
+			jcRids += sp + jcRid;
+			sp = ",";
+		}
+		tempRid = jcRid;
+	});
+	if (!pass) {
+		alert("请选择非例行卡！");
+		return;
+	}
+	
+	if (customer == "FEDEX") {
+		var workorder = $("#qWorkorder").val(); //销售指令号
+		var jcWorkorder = $(ckbArray[0]).parent().parent().find("input[class='jcWoClass']").val(); //工卡指令号
+		var jobcard = $(ckbArray[0]).parent().parent().find("input[class='jcCheckClass']").val(); //工卡号
+		var jcRid = $(ckbArray[0]).parent().parent().find("input[class='jcRidClass']").val(); //工卡记录Rid
+		var param = "&workorder="+workorder+"&jcWorkorder="+jcWorkorder+"&jobcard="+jobcard+"&jcRid="+jcRid;
+		var url = "/trace/public/queryMatStatus.do?method=getFedexEsignIndex"+param;
+		var iHeight =window.screen.height  * 0.65
+		var iWidth =window.screen.width  * 0.85
+		
+		//获取屏幕的宽高
+		var iTop = (window.screen.height - 30 - iHeight) / 2; //获取窗口的垂直位置
+		var iLeft = (window.screen.width - 10 - iWidth) / 2; //获取窗口的水平位置
+		window.open(url, "_blank", 'height=' + iHeight + ',,innerHeight=' + iHeight + ',width=' + iWidth + ',innerWidth=' +
+			iWidth + ',top=' + iTop + ',left=' + iLeft +
+			',toolbar=no,menubar=no,scrollbars=yes,resizeable=yes,location=no,status=no,alwaysRaised=yes');
+	}else{
+		document.form.action = "/trace/fgm/fgmEsign.do?method=showEjcDetail&manageFlag=1&jcRids="+jcRids;
+		document.form.submit();
+	}
+}
+//add by 700683 2018-03-22 End
+// 收费
+function collectFee(){
+	// 指令状态
+	if("N" != "N"){
+		alert("工作包已关闭，不允许操作！");
+		return;
+	}
+	// 勾选jc
+	var jcItemArr = $("input[type='checkbox'][name='jcRid']:checked");
+	if(0 == jcItemArr.length){
+		alert("请至少选择一条记录！");
+		return;
+	}
+	// 遍历jcItemArr
+	var flag = true;
+	var jcRids = "";
+	$.each(jcItemArr, function(i, n){
+		if("NR" != $(n).parent().find("input[name='jcType']").val()){
+			alert("请选择工卡类型为NR的记录！");
+			flag = false;
+			return false;
+		}
+		if(0 != i){
+			jcRids += ",";
+		}
+		jcRids += $(n).val();
+	});
+	if(!flag){
+		return;
+	}
+	// 是否收费
+	var flagFee = $("#txtFlagFee").val();
+	if("" == flagFee){
+		alert("请选择查询条栏的收费选项！");
+		$("#txtFlagFee").focus();
+		return;
+	}
+	//收费原因
+	var feeRemark = ("Y"==flagFee?$.trim($("#txtFeeRemark").val()):"");
+	
+	if(!confirm("确认将所选记录标注为[" + ("Y"==flagFee?"收费":"不收费") + "]?")){
+		return;
+	}
+	
+	$.ajax({
+		url: '/trace/fgm/fgm.do?method=collectFee',
+		type: 'post',
+		async: false,
+		data: {"jcRids":jcRids, "flagFee":flagFee, "feeRemark":encodeURIComponent(feeRemark), "txtMenuID":"22800"},
+		dataType: 'json',
+		contentType: 'application/x-www-form-urlencoded;charset=utf-8',
+		cache: false,
+		success: function(data) {
+			if(data.flag){
+				alert("标注成功！");
+				$("#txtFlagFee").val("");
+				$("#txtFeeRemark").val("");
+				document.form.action="workOrderManage.jsp";
+			   	document.form.submit();
+			}
+		},
+		error: function() {
+			alert("系统异常,操作失败！");
+			flag = false;
+		}
+	});
+	
+}
+
+// 阿联酋航空非卡工时确认
+function mhCusConfirm(){
+	var workorder = $.trim($("#qWorkorder").val());	// 销售指令号
+	if(!workorder){
+		alert("请输入工作指令号!");
+		$("#qWorkorder").focus();
+		return;
+	}
+	var qWorkorder = '120000588375';
+	if(qWorkorder != workorder){
+		alert("输入的工作指令号与页面查询的工作指令号不一致，请查询后重试！");
+		return;
+	}
+	var width = screen.availWidth - 50;
+	var height = screen.availHeight - 100;
+	var left = (screen.availWidth - width)/2;
+	var top = (screen.availHeight - height)/3;
+	
+	var url = "/trace/fgm/fgm.do?method=mhCusConfirm&workOrder=" 
+			+ workorder + "&tailno="+ $("#tailnoId").val() + "&txtMenuID=" + $("#txtMenuID").val();
+	var value = window.open(url,'mhCusConfirm','width='+width+'px,height='
+			+ height + 'px,toolbar=no,menubar=no,scrollbars=yes,resizable=yes,status=no,left=' + left + ',top=' + top);	
+}
+
+
+// 停场超7天工包的试车提醒信息的功能
+function parkingOver7dayPrompt(){
+	if(-1 == document.referrer.indexOf('manageIndex.jsp')){
+		return false;
+	}
+	var start = '2025-12-27'; 		//计划日期
+	var finish = '2026-01-19';   	//结束日期
+	if(wgp){// 仅控制员使用页面
+		return false;
+	}
+	if(!start || !finish) {
+		return false;
+	}
+	if(start.length > 10){
+		start = start.substr(0, 10);
+	}
+	if(finish.length > 10){
+		finish = finish.substr(0, 10);
+	}
+	var dateRegex = /^[1-9]\d{3}(-|\/)(0?[1-9]|1[0-2])(-|\/)(0?[1-9]|[12][0-9]|3[01])$/;
+	if(!dateRegex.test(start) || !dateRegex.test(finish)){
+		return false;
+	}
+	// 当停场周期（TAT：出场日期-进场日期+1）大于7的工作包，在倒数第3天（出场日期-当前日期+1=3）,
+	// 查询数据时,弹窗提示:提醒信息：对于停场超过7天且中间没有试车的飞机在调机或航班或试飞前执行一次慢车测试确保电源、引气、液压系统正常。
+	var startDate = new Date(start.replace(/-/g,'/'));
+	var finishDate = new Date(finish.replace(/-/g,'/'));
+	/* var today = new Date(); // 用户时间
+	today.setHours(0);
+	today.setMinutes(0);
+	today.setSeconds(0);
+	today.setMilliseconds(0); */
+	var today = new Date('2025-12-29'.replace(/-/g, '/')); // 服务器时间
+	
+	if(finishDate.getTime() - startDate.getTime() > 6*24*60*60*1000 // 第七天开始提醒
+			&& finishDate.getTime() - today.getTime() == 2*24*60*60*1000){// 第三天提醒
+		alert('对于停场超过7天且中间没有试车的飞机在调机或航班或试飞前执行一次慢车测试确保电源、引气、液压系统正常。');
+		return false;
+	}
+	
+}
+</script>
+<script type="text/javascript" src="/trace/common/js/fgm/workOrderManage.js?v=1.5"></script>
+
+</HTML>

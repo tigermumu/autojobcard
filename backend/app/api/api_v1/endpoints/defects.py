@@ -116,6 +116,26 @@ class UpdateIssuedWorkcardNumberRequest(BaseModel):
     issued_workcard_number: str
 
 
+def format_workcard_number_to_short(original: str) -> str:
+    """
+    将 NR/000000324 格式转换为 50324 格式
+    规则：去掉 NR/ 前缀和前5个字符(00000)，保留后4位数字，然后在前面加上 5
+    例如：NR/000000324 → 0324 → 50324
+    """
+    if not original:
+        return ""
+    # 如果已经是短格式（以5开头且全是数字），直接返回
+    if original.isdigit() or (original.startswith("5") and original[1:].isdigit()):
+        return original
+    # 如果不是 NR/ 格式，直接返回原值
+    if not original.startswith("NR/"):
+        return original
+    # 去掉 NR/ 前缀，保留后4位数字
+    num_part = original.replace("NR/", "")
+    last_4_digits = num_part[-4:].zfill(4)
+    return "5" + last_4_digits
+
+
 @router.put("/records/{defect_record_id}/select-workcard")
 def select_workcard(
     defect_record_id: int,
@@ -151,11 +171,13 @@ def update_issued_workcard_number(
             logger.warning(f"缺陷记录表缺少 issued_workcard_number 字段，请运行数据库迁移: alembic upgrade head")
             raise HTTPException(status_code=500, detail="数据库字段不存在，请运行数据库迁移")
         
-        defect_record.issued_workcard_number = payload.issued_workcard_number
+        # 将工卡号转换为短格式存储（如 50324）
+        short_format = format_workcard_number_to_short(payload.issued_workcard_number)
+        defect_record.issued_workcard_number = short_format
         db.commit()
         db.refresh(defect_record)
         
-        logger.info(f"成功更新缺陷记录 {defect_record_id} 的工卡号为: {payload.issued_workcard_number}")
+        logger.info(f"成功更新缺陷记录 {defect_record_id} 的工卡号为: {short_format}")
         return {
             "message": "工卡号更新成功",
             "issued_workcard_number": defect_record.issued_workcard_number

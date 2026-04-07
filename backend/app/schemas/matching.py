@@ -41,17 +41,18 @@ class CandidateWorkCardResponse(CandidateWorkCardBase):
 
 class MatchingConfig(BaseModel):
     """匹配算法配置"""
-    similarity_threshold: float = 75.0
+    similarity_threshold: float = 85.0
     field_weights: Dict[str, float] = {
-        "main_area": 0.05,
-        "main_component": 0.20,
-        "first_level_subcomponent": 0.35,  # 一级子部件权重最高
-        "second_level_subcomponent": 0.20,
-        "orientation": 0.05,
-        "defect_subject": 0.10,
-        "defect_description": 0.05
+        "main_area": 0.04,
+        "main_component": 0.19,
+        "first_level_subcomponent": 0.34,  # 一级子部件权重最高
+        "second_level_subcomponent": 0.19,
+        "orientation": 0.04,
+        "defect_subject": 0.09,
+        "defect_description": 0.04,
+        "keyword_match_bonus": 0.07  # 新增：关键词匹配奖分维度
     }
-    algorithm_version: str = "1.0"
+    algorithm_version: str = "2.0"
     max_candidates: int = 10
 
 class MatchingRequest(BaseModel):

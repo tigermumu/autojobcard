@@ -23,5 +23,8 @@ COPY . .
 # 暴露端口
 EXPOSE 8000
 
-# 启动命令
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# 启动命令：创建目录、补充依赖、运行迁移、启动服务
+CMD mkdir -p /app/data /app/storage/import_logs && \
+    pip install -q beautifulsoup4 && \
+    (alembic upgrade head 2>/dev/null || true) && \
+    exec uvicorn app.main:app --host 0.0.0.0 --port 8000

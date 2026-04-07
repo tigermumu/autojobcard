@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react'
-import { Card, Button, Input, Space, Typography, Empty, Modal, Form, InputNumber, Tag } from 'antd'
-import { PlusOutlined, EditOutlined, DeleteOutlined, CheckOutlined, CloseOutlined, SettingOutlined, CloseCircleOutlined } from '@ant-design/icons'
+import { Button, Input, Space, Typography, Empty, Modal, Form } from 'antd'
+import { PlusOutlined, EditOutlined, DeleteOutlined, CheckOutlined, CloseOutlined } from '@ant-design/icons'
 
-const { Title } = Typography
 
 interface TreeNode {
   id: string
@@ -155,10 +154,10 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
                       node.type === '主区域'
                         ? '#1890ff'
                         : node.type === '主部件'
-                        ? '#52c41a'
-                        : node.type === '一级子部件'
-                        ? '#fa8c16'
-                        : '#722ed1',
+                          ? '#52c41a'
+                          : node.type === '一级子部件'
+                            ? '#fa8c16'
+                            : '#722ed1',
                     color: 'white',
                     borderRadius: '4px',
                     fontSize: '12px',
@@ -237,7 +236,7 @@ interface IndexDataTreeEditorProps {
   readOnly?: boolean
 }
 
-const IndexDataTreeEditor: React.FC<IndexDataTreeEditorProps> = ({ 
+const IndexDataTreeEditor: React.FC<IndexDataTreeEditorProps> = ({
   initialData = [],
   onDataChange,
   readOnly = false
@@ -332,6 +331,7 @@ const IndexDataTreeEditor: React.FC<IndexDataTreeEditorProps> = ({
       id: `${Date.now()}`,
       name: '新节点',
       type: type,
+      isExpanded: false,
       isEditing: true,
       children: [],  // 明确初始化children数组
     }
@@ -426,6 +426,7 @@ const IndexDataTreeEditor: React.FC<IndexDataTreeEditorProps> = ({
       id: `${Date.now()}`,
       name: '新主区域',
       type: '主区域',
+      isExpanded: false,
       isEditing: true,
       children: [],  // 明确初始化children数组
     }
@@ -452,7 +453,7 @@ const IndexDataTreeEditor: React.FC<IndexDataTreeEditorProps> = ({
             </Button>
           </div>
         )}
-        
+
         {treeData.length === 0 ? (
           <Empty description="暂无数据，点击上方'添加主区域'按钮开始" />
         ) : (
@@ -506,8 +507,8 @@ const IndexDataTreeEditor: React.FC<IndexDataTreeEditorProps> = ({
             name="defectDescription"
             label="缺陷描述"
           >
-            <Input.TextArea 
-              placeholder="例如：出现裂纹" 
+            <Input.TextArea
+              placeholder="例如：出现裂纹"
               rows={3}
             />
           </Form.Item>

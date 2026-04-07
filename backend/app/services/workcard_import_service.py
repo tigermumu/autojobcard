@@ -18,6 +18,51 @@ if not settings.WORKCARD_IMPORT_VERIFY_SSL:
     urllib3.disable_warnings()
 
 
+def format_workcard_number_to_short(original: str) -> str:
+    """
+    将 NR/000000324 格式转换为 50324 格式（txtSeq 格式）
+    规则：去掉 NR/ 前缀和前5个字符(00000)，保留后4位数字，然后在前面加上 5
+    例如：NR/000000324 → 0324 → 50324
+    """
+    if not original:
+        return ""
+    # 如果已经是短格式（以5开头且全是数字），直接返回
+    if original.isdigit() or (original.startswith("5") and original[1:].isdigit()):
+        return original
+    # 如果不是 NR/ 格式，直接返回原值
+    if not original.startswith("NR/"):
+        return original
+    # 去掉 NR/ 前缀，保留后4位数字
+    num_part = original.replace("NR/", "")
+    last_4_digits = num_part[-4:].zfill(4)
+    return "5" + last_4_digits
+
+
+def format_seq_to_jobcard(seq: str) -> str:
+    """
+    将 50324 格式（txtSeq）转换为 NR/000000324 格式（txtJobcard）
+    规则：去掉开头的5，取剩余数字，补齐到9位前导零，加上 NR/ 前缀
+    例如：50324 → 324 → 000000324 → NR/000000324
+    """
+    if not seq:
+        return ""
+    # 如果已经是 NR/ 格式，直接返回
+    if seq.startswith("NR/"):
+        return seq
+    # 如果是短格式（以5开头），去掉5，转换为长格式
+    if seq.startswith("5") and seq[1:].isdigit():
+        num_part = seq[1:]  # 去掉开头的5，得到 0324
+        # 补齐到9位数字
+        padded = num_part.zfill(9)
+        return f"NR/{padded}"
+    # 如果是纯数字，尝试转换
+    if seq.isdigit():
+        padded = seq.zfill(9)
+        return f"NR/{padded}"
+    # 其他格式，直接返回原值
+    return seq
+
+
 @dataclass
 class WorkcardInfo:
     rid: str
@@ -1012,9 +1057,11 @@ class WorkCardImportService:
             
             if response.status_code == 200:
                 if workcard_number:
-                    message = f"导入成功，工卡号: {workcard_number}"
+                    # 将工卡号转换为短格式存储（如 50324）
+                    short_format = format_workcard_number_to_short(workcard_number)
+                    message = f"导入成功，工卡号: {short_format}"
                     self._log(logs, "import_defect", message)
-                    return True, message, workcard_number, logs, artifacts
+                    return True, message, short_format, logs, artifacts
                 elif "成功" in html or "保存" in html:
                     message = "导入成功，但未能提取工卡号"
                     self._log(logs, "import_defect", message)
@@ -1077,6 +1124,23 @@ class WorkCardImportService:
         Returns:
             工卡ID (jcRid)，如果未找到则返回 None
         """
+        # 根据输入格式，同时生成 txtJobcard (NR/000000324) 和 txtSeq (50324) 格式
+        # 确保两个参数都正确提交，既不影响 updateSteps 功能，也不影响导入功能
+        if jobcard_number.startswith("NR/"):
+            # 输入是 NR/ 格式，转换为短格式
+            txt_jobcard = jobcard_number
+            txt_seq = format_workcard_number_to_short(jobcard_number)
+        elif jobcard_number.startswith("5") and jobcard_number[1:].isdigit():
+            # 输入是 5xxxx 短格式，转换为 NR/ 格式
+            txt_seq = jobcard_number
+            txt_jobcard = format_seq_to_jobcard(jobcard_number)
+        else:
+            # 其他格式，尝试两种方式
+            txt_jobcard = jobcard_number
+            txt_seq = jobcard_number
+        
+        self.logger.info(f"工卡号格式转换: 输入={jobcard_number}, txtJobcard={txt_jobcard}, txtSeq={txt_seq}")
+        
         # 构建查询参数，使用工卡号进行查询
         # 参考 _step_query_workorder 方法，需要包含更多参数才能正确查询
         post_data = {
@@ -1085,7 +1149,8 @@ class WorkCardImportService:
             "txtMenuID": "22800",
             "txtFullReg": tail_no,
             "qWorkorder": work_order,
-            "txtJobcard": jobcard_number,  # 关键：使用工卡号查询
+            "txtJobcard": txt_jobcard,  # 关键：NR/000000324 格式
+            "txtSeq": txt_seq,  # 关键：50324 格式
             "txtPage": "1",
             "from": "manage",
             # 添加其他可能需要的空字段，保持与标准查询一致
@@ -1094,7 +1159,6 @@ class WorkCardImportService:
             "txtIPC_Num": "",
             "txtMpd": "",
             "txtType": "",
-            "txtSeq": "",
             "txtJcDesc": "",
             "txtQcFinal": "",
             "txtJcStatus": "",
@@ -1577,18 +1641,20 @@ class WorkCardImportService:
         work_group: str,
         step_rids: Optional[List[str]] = None,
         cookies: Optional[str] = None,
+        ref_manual: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         完整的步骤导入工作流
         
         Args:
-            jobcard_number: 工卡号（如 NR/000000300）
+            jobcard_number: 工卡号（如 NR/000000300 或 50300）
             target_work_order: 目标工单号（候选工卡的工卡指令号，用于 qJcWorkOrder）
             source_work_order: 源工单号（导入参数配置的工作指令号 txtWO，用于 qWorkorder）
             tail_no: 飞机号
             work_group: 工作组
             step_rids: 要导入的步骤ID列表（如果为None，则导入所有步骤）
             cookies: Cookie字符串
+            ref_manual: 参考手册 (CMM_REFER)，如果提供则在导入步骤后执行 updateSteps
             
         Returns:
             包含导入结果的字典
@@ -1726,6 +1792,45 @@ class WorkCardImportService:
             if failed_steps:
                 message += f"，失败 {len(failed_steps)} 个步骤"
             
+            # 如果导入成功且提供了参考手册，执行 updateSteps 更新步骤描述
+            update_steps_result = None
+            if total_success and ref_manual and ref_manual.strip():
+                # 将工卡号转换为短格式（50324格式），用于 updateSteps
+                jc_seq_short = format_workcard_number_to_short(jobcard_number)
+                
+                self._log(logs, "update_steps", f"开始执行 updateSteps，参考手册: {ref_manual}")
+                self.logger.info("=" * 80)
+                self.logger.info("[import_steps_workflow] 步骤导入成功，开始执行 updateSteps")
+                self.logger.info(f"参数: SaleWo={source_work_order}, ACNo={tail_no}, jcSeq={jc_seq_short}, CMM_REFER={ref_manual}")
+                self.logger.info("=" * 80)
+                
+                try:
+                    from app.services.updateSteps import run_update_steps
+                    update_steps_result = run_update_steps(
+                        sale_wo=source_work_order,  # 工作指令号
+                        ac_no=tail_no,
+                        jc_seq=jc_seq_short,  # 使用短格式工卡号
+                        cmm_refer=ref_manual,
+                        cookies=cookies
+                    )
+                    
+                    if update_steps_result.get("success"):
+                        self._log(logs, "update_steps", f"updateSteps 执行成功: {update_steps_result.get('message')}")
+                        message += f"，步骤描述更新成功"
+                    else:
+                        self._log(logs, "update_steps", f"updateSteps 执行失败: {update_steps_result.get('message')}")
+                        message += f"，但步骤描述更新失败: {update_steps_result.get('message')}"
+                        
+                    # 将 updateSteps 的日志添加到主日志
+                    for log_msg in update_steps_result.get("logs", []):
+                        self._log(logs, "update_steps_detail", log_msg)
+                        
+                except Exception as e:
+                    error_msg = f"执行 updateSteps 时发生异常: {str(e)}"
+                    self._log(logs, "update_steps", error_msg)
+                    self.logger.exception(error_msg)
+                    message += f"，但步骤描述更新失败: {str(e)}"
+            
             return {
                 "success": total_success,
                 "message": message,
@@ -1739,6 +1844,7 @@ class WorkCardImportService:
                 "all_steps": [asdict(step) for step in steps],
                 "logs": [asdict(log) for log in logs],
                 "artifacts": [asdict(artifact) for artifact in artifacts],
+                "update_steps_result": update_steps_result,
             }
             
         except Exception as exc:
@@ -1791,16 +1897,59 @@ class WorkCardImportService:
         self,
         params: Dict[str, Any],
         cookies: Optional[str] = None,
+        enable_crn_check: bool = False,
     ) -> Tuple[bool, str, Optional[str], List[LogEntry], List[Artifact]]:
         """
         导入英文工卡到NRC系统
         URL: http://10.240.2.131:9080/trace/nrc/eng/engAddSend.jsp
+        
+        注意：txtZoneName 必须是 '%BB%FA%C9%CF'（URL编码的"机上"），否则跳过该记录
         """
         logs: List[LogEntry] = []
         artifacts: List[Artifact] = []
         
+        # 验证 txtZoneName 必须是 '%BB%FA%C9%CF'（机上）或中文"机上"
+        # 如果传入的是中文"机上"，则转换为 URL 编码
+        REQUIRED_ZONE_NAME = '%BB%FA%C9%CF'
+        txt_zone_name = params.get('txtZoneName', '')
+        
+        # 如果传入的是中文"机上"，转换为 URL 编码
+        if txt_zone_name == '机上':
+            txt_zone_name = REQUIRED_ZONE_NAME
+        # 如果已经是 URL 编码，直接使用
+        elif txt_zone_name == REQUIRED_ZONE_NAME:
+            pass  # 已经是正确的值
+        # 其他值不符合要求
+        else:
+            error_msg = f"txtZoneName 必须是 '{REQUIRED_ZONE_NAME}'（URL编码）或 '机上'（中文），当前值为: '{txt_zone_name}'，跳过该记录的开卡请求"
+            logs.append({
+                "step": "验证",
+                "message": error_msg,
+                "detail": None
+            })
+            self.logger.warning(error_msg)
+            return False, error_msg, None, logs, artifacts
+        
         session = self._create_session(cookies)
         
+        # 校验 CRN 一致性 (新增逻辑)
+        # 如果校验失败（返回False），则直接返回失败，跳过后续开卡请求
+        # 仅当 enable_crn_check 为 True 时才执行校验
+        if enable_crn_check:
+            self.logger.info(f"准备调用 CRN 校验，refNo={params.get('refNo')}, txtCRN={params.get('txtCRN')}, txtWO={params.get('txtWO')}")
+            if not self._check_crn_consistency(
+                session=session,
+                logs=logs,
+                txt_wo=params.get('txtWO', ''),
+                ref_no=params.get('refNo', ''),
+                user_crn=params.get('txtCRN', '')
+            ):
+                error_msg = f"CRN校验失败: refNo {params.get('refNo')} 对应的系统记录与提供的 txtCRN 不一致或未找到"
+                self.logger.warning(error_msg)
+                return False, error_msg, None, logs, artifacts
+        else:
+            self.logger.info("CRN校验已跳过 (enable_crn_check=False)")
+
         # 构建请求URL
         url = f"{settings.WORKCARD_IMPORT_BASE_URL}/trace/nrc/eng/engAddSend.jsp"
         
@@ -1815,7 +1964,7 @@ class WorkCardImportService:
             'txtWO': params.get('txtWO', ''),
             'txtML': params.get('txtML', '6C+6000D'),
             'txtACType': params.get('txtACType', 'B777-300'),
-            'txtZoneName': params.get('txtZoneName', '%BB%FA%C9%CF'), # 默认机上
+            'txtZoneName': txt_zone_name,  # 使用已验证的值（必须是 '%BB%FA%C9%CF'）
             'txtZoneTen': params.get('txtZoneTen', '240'),
             'txtRII': params.get('txtRII', ''),
             'txtCJC': params.get('txtCJC', ''),
@@ -1957,8 +2106,10 @@ class WorkCardImportService:
             
             if response.status_code == 200:
                 if workcard_number:
-                    message = f"导入成功，工卡号: {workcard_number}"
-                    return True, message, workcard_number, logs, artifacts
+                    # 将工卡号转换为短格式存储（如 50324）
+                    short_format = format_workcard_number_to_short(workcard_number)
+                    message = f"导入成功，工卡号: {short_format}"
+                    return True, message, short_format, logs, artifacts
                 else:
                     # 检查是否有成功提示但没提取到工卡号
                     if "成功" in html or "Success" in html or "saved" in html.lower():
@@ -2072,3 +2223,102 @@ class WorkCardImportService:
         except Exception as exc:
             self.logger.exception(f"获取飞机信息失败: {exc}")
             raise
+
+    def _check_crn_consistency(
+        self,
+        session: requests.Session,
+        logs: List[LogEntry],
+        txt_wo: str,
+        ref_no: str,
+        user_crn: str
+    ) -> bool:
+        """
+        校验 refNo 对应的 txtCRN 是否与用户提供的一致
+        """
+        self._log(logs, "validate_crn", f"开始CRN校验: refNo={ref_no} txtWO={txt_wo}")
+        if not ref_no:
+            error_msg = f"refNo 不能为空，无法进行 CRN 校验"
+            self._log(logs, "validate_crn", error_msg)
+            return False
+        if not txt_wo:
+            error_msg = f"txtWO 不能为空，无法进行 CRN 校验"
+            self._log(logs, "validate_crn", error_msg)
+            return False
+
+        try:
+            # 提取 refNo 后4位，并添加 + 前缀
+            # 例如: refNo="00967" -> q="+0967"
+            ref_suffix = ref_no[-4:] if len(ref_no) >= 4 else ref_no
+            q = f"+{ref_suffix}"
+            
+            url = f"{settings.WORKCARD_IMPORT_BASE_URL}/trace/nrc/eng/getJCEng.jsp"
+            payload = {
+                'q': q,
+                'limit': 20,
+                'timestamp': int(time.time() * 1000),
+                'txtWO': txt_wo
+            }
+            
+            self.logger.info(f"开始调用 getJCEng.jsp 进行 CRN 校验，url={url}, payload={payload}")
+            
+            # 使用 POST 请求
+            response = session.post(url, data=payload, timeout=10)
+            
+            self.logger.info(f"getJCEng.jsp 返回状态码: {response.status_code}")
+            
+            if response.status_code != 200:
+                error_msg = f"获取工卡参考信息失败，状态码: {response.status_code}"
+                self.logger.warning(error_msg)
+                self._log(logs, "validate_crn", error_msg)
+                return False
+                
+            # 解析响应 - getJCEng.jsp 返回纯字符串格式
+            response_text = response.text.strip()
+            self.logger.info(f"getJCEng.jsp 返回数据: {response_text}")
+            
+            # 响应格式为: "refNo(5位) + 空格 + txtCRN"
+            # 例如: "00110 388-324500-00001-01/210"
+            parts = response_text.split(' ', 1)
+            if len(parts) != 2:
+                error_msg = f"响应格式错误，期望格式为 'refNo txtCRN'，实际: {response_text}"
+                self.logger.warning(error_msg)
+                self._log(logs, "validate_crn", error_msg)
+                return False
+            
+            system_ref_no = parts[0].strip()
+            system_crn = parts[1].strip()
+            
+            # 检查 refNo 是否匹配
+            if str(system_ref_no).strip() != str(ref_no).strip():
+                error_msg = f"refNo 不匹配! 系统值: {system_ref_no}, 用户提交值: {ref_no}"
+                self._log(logs, "validate_crn", error_msg)
+                return False
+            
+            # 校验 txtCRN 是否一致
+            user_crn_clean = str(user_crn).strip()
+            
+            if system_crn and user_crn_clean:
+                if system_crn != user_crn_clean:
+                    error_msg = f"CRN校验不一致! 系统值: {system_crn}, 用户提交值: {user_crn_clean} (refNo: {ref_no})"
+                    self._log(logs, "validate_crn", error_msg)
+                    return False
+                else:
+                    self._log(logs, "validate_crn", f"CRN校验通过: {system_crn}")
+                    return True
+            elif system_crn and not user_crn_clean:
+                # 用户未提供但系统有值，记录日志，视为通过
+                self._log(logs, "validate_crn", f"用户未提供CRN，系统存在值: {system_crn}")
+                return True
+            else:
+                # 系统没有返回CRN值
+                error_msg = f"系统未返回有效的CRN值: {response_text}"
+                self._log(logs, "validate_crn", error_msg)
+                return False
+
+        except Exception as e:
+            error_msg = f"校验过程发生异常: {str(e)}"
+            self.logger.warning(error_msg)
+            self._log(logs, "validate_crn", error_msg)
+            return False # 校验异常时阻断开卡
+
+        return True

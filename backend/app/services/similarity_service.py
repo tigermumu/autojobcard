@@ -100,18 +100,66 @@ class SimilarityService:
             defect_description, workcard.description or ""
         )
         
-        # 加权计算总相似度
+        # 新增：智能关键词匹配奖励 (Recall + Precision)
+        keyword_match_bonus_score = self._calculate_keyword_match_bonus(
+            defect_description, workcard.description or ""
+        )
+        
+        # 加权计算总相似度 (权重已从 1.0 版本各扣除 0.01)
         total_score = (
-            main_area_score * field_weights.get("main_area", 0.05) +
-            main_component_score * field_weights.get("main_component", 0.20) +
-            first_level_subcomponent_score * field_weights.get("first_level_subcomponent", 0.35) +
-            second_level_subcomponent_score * field_weights.get("second_level_subcomponent", 0.20) +
-            orientation_score * field_weights.get("orientation", 0.05) +
-            defect_subject_score * field_weights.get("defect_subject", 0.10) +
-            defect_description_score * field_weights.get("defect_description", 0.05)
+            main_area_score * field_weights.get("main_area", 0.04) +
+            main_component_score * field_weights.get("main_component", 0.19) +
+            first_level_subcomponent_score * field_weights.get("first_level_subcomponent", 0.34) +
+            second_level_subcomponent_score * field_weights.get("second_level_subcomponent", 0.19) +
+            orientation_score * field_weights.get("orientation", 0.04) +
+            defect_subject_score * field_weights.get("defect_subject", 0.09) +
+            defect_description_score * field_weights.get("defect_description", 0.04) +
+            keyword_match_bonus_score * field_weights.get("keyword_match_bonus", 0.07)
         )
         
         return round(total_score * 100, 2)
+
+    def _calculate_keyword_match_bonus(self, target_text: str, candidate_text: str) -> float:
+        """
+        计算智能关键词匹配奖分 (算法 2.0)
+        1. 关键词覆盖率 (Recall): 目标词在候选词中的占比 (5分池)
+        2. 描述紧凑度 (Precision): 匹配词在候选词中的比例 (2分池)
+        """
+        if not target_text or not candidate_text:
+            return 0.0
+            
+        def get_tokens(text):
+            # 改进正则：保留单字母单词 (如 P, L, R)
+            return set(re.findall(r'\b\w+\b', text.lower()))
+
+        target_tokens = get_tokens(target_text)
+        candidate_tokens = get_tokens(candidate_text)
+        
+        if not target_tokens:
+            return 0.0
+            
+        # 计算交集
+        intersection = target_tokens.intersection(candidate_tokens)
+        
+        # A. 覆盖率 (Recall) - 目标词被命中了多少
+        recall_ratio = len(intersection) / len(target_tokens)
+        coverage_score = 0.0
+        if recall_ratio >= 0.8:
+            coverage_score = 5.0
+        elif recall_ratio >= 0.7:
+            coverage_score = 3.0
+            
+        # B. 紧凑度 (Precision) - 候选词里有多少是多余的
+        # 这里使用 2 分池，按比例分配
+        precision_ratio = len(intersection) / len(candidate_tokens) if candidate_tokens else 0
+        compactness_score = precision_ratio * 2.0
+        
+        # 总分为 7 分 (对应 0.07 的权重)
+        # 将其归一化为 0-1 范围，乘以权重后即为最终得分贡献
+        # 注意：这里返回的是 0-1 的比例，外部会乘以 0.07 的权重
+        # 为了保证 100% 匹配时这部分拿满 7 分，返回 (5+2)/7 = 1.0
+        total_bonus_points = coverage_score + compactness_score
+        return total_bonus_points / 7.0
 
     def _calculate_field_similarity(self, field1: str, field2: str) -> float:
         """计算字段相似度"""

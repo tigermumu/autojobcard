@@ -1,5 +1,7 @@
 // API配置和服务工具类
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  (import.meta.env.DEV ? 'http://localhost:8000/api/v1' : '/api/v1')
 
 export interface ApiResponse<T> {
   data: T
@@ -29,8 +31,9 @@ class ApiClient {
 
     if (!response.ok) {
       let errorDetail = response.statusText
+      let errorData: any = null
       try {
-        const errorData = await response.json()
+        errorData = await response.json()
         if (errorData.detail) {
           if (Array.isArray(errorData.detail)) {
             errorDetail = errorData.detail.map((err: any) =>
@@ -59,7 +62,10 @@ class ApiClient {
       }
       const error = new Error(errorDetail || `HTTP error! status: ${response.status}`)
         // 附加响应信息以便调试
-        ; (error as any).response = { status: response.status }
+        ; (error as any).response = { 
+          status: response.status,
+          data: errorData // 保存完整的错误数据
+        }
       throw error
     }
 
@@ -115,6 +121,27 @@ class ApiClient {
       url = `${endpoint}?${searchParams.toString()}`
     }
     return this.request<T>(url, { method: 'DELETE' })
+  }
+
+  // 下载文件
+  async download(endpoint: string, params?: Record<string, any>): Promise<Blob> {
+    let url = `${this.baseUrl}${endpoint}`
+    if (params) {
+      const searchParams = new URLSearchParams()
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== null && value !== undefined && value !== '') {
+          searchParams.append(key, String(value))
+        }
+      })
+      url = `${url}${url.includes('?') ? '&' : '?'}${searchParams.toString()}`
+    }
+    const response = await fetch(url, {
+      method: 'GET',
+    })
+    if (!response.ok) {
+      throw new Error(`Download failed: ${response.statusText}`)
+    }
+    return response.blob()
   }
 
   // 文件上传
@@ -234,6 +261,4 @@ class ApiClient {
 }
 
 export const apiClient = new ApiClient(API_BASE_URL)
-
-
 

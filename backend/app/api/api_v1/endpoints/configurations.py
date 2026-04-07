@@ -35,7 +35,11 @@ def create_configuration(
 ):
     """创建新的构型配置"""
     service = ConfigurationService(db)
-    return service.create_configuration(configuration)
+    try:
+        return service.create_configuration(configuration)
+    except ValueError as e:
+        # 业务校验错误（例如名称重复）
+        raise HTTPException(status_code=409, detail=str(e))
 
 @router.put("/{configuration_id}", response_model=ConfigurationResponse)
 def update_configuration(

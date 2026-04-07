@@ -20,7 +20,8 @@ import {
   Row,
   Col,
   Modal,
-  Popconfirm
+  Popconfirm,
+  Upload
 } from 'antd'
 import {
   LeftOutlined,
@@ -33,13 +34,13 @@ import {
 } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import type { UploadProps } from 'antd'
-import { Upload } from 'antd'
 import * as XLSX from 'xlsx'
 import { defectApi, CandidateWorkCard } from '../services/defectApi'
 import { workcardImportApi, PreviewResponse, RunResponse } from '../services/workcardImportApi'
 import { matchingApi } from '../services/matchingApi'
 import { WorkCardGroup } from '../services/workcardApi'
 import { importBatchApi, ImportBatchSummary } from '../services/importBatchApi'
+import { formatWorkcardNumberToShort } from '../utils/errorHandler'
 
 const { Title, Paragraph } = Typography
 const { Option } = Select
@@ -57,6 +58,7 @@ interface MatchResult {
   candidates: CandidateWorkCard[]
   selected_workcard_id?: number
   issued_workcard_number?: string  // 已开出的工卡号
+  ref_manual?: string // 参考手册 (CMM_REFER)
 }
 
 interface LocationState {
@@ -91,9 +93,9 @@ const BulkOpenWorkcards: React.FC = () => {
         aircraft_type: aircraftTypeFromQuery || undefined,
         msn: msnFromQuery || undefined,
         amm_ipc_eff: ammIpcEffFromQuery || undefined,
-        count: locationState.workcardGroup?.count ?? 0,
-        min_id: locationState.workcardGroup?.min_id ?? 0
-      }
+        count: (locationState.workcardGroup as any)?.count ?? 0,
+        min_id: (locationState.workcardGroup as any)?.min_id ?? 0
+      } as WorkCardGroup
       : undefined)
 
   const [importForm] = Form.useForm()
@@ -219,11 +221,16 @@ const BulkOpenWorkcards: React.FC = () => {
 
           // 关键字段：已开出工卡号
           // 根据用户指定的对应关系：Excel列名 '已开工卡号' 对应数据库字段 issued_workcard_number
-          const issuedWorkcardNumber = row['已开工卡号'] || row['已开出工卡号'] || row['Issued Workcard'] || 'NR/000'
+          // 格式：50324（短格式）
+          const rawIssuedNumber = row['已开工卡号'] || row['已开出工卡号'] || row['Issued Workcard'] || ''
+          const issuedWorkcardNumber = rawIssuedNumber ? formatWorkcardNumberToShort(rawIssuedNumber) : ''
 
           // 关键字段：候选工卡指令号
           // 根据用户指定的对应关系：Excel列名 '候选工卡' 对应数据库字段 workcard_number
           const candidateWorkOrder = row['候选工卡'] || row['候选工卡指令号'] || row['Candidate Workcard'] || row['工卡指令号'] || ''
+
+          // 参考手册 (CMM_REFER)
+          const refManual = row['参考手册'] || row['Reference Manual'] || row['REF_MANUAL'] || row['CMM_REFER'] || row['CMM'] || ''
 
           // 如果有候选工卡指令号，构建一个虚拟的候选工卡对象
           const candidates: CandidateWorkCard[] = []
@@ -252,7 +259,8 @@ const BulkOpenWorkcards: React.FC = () => {
             zone_ten: zoneTen,
             candidates: candidates,
             selected_workcard_id: selectedWorkcardId,
-            issued_workcard_number: issuedWorkcardNumber
+            issued_workcard_number: issuedWorkcardNumber,
+            ref_manual: refManual // 参考手册 (CMM_REFER)
           }
         })
 
@@ -283,7 +291,6 @@ const BulkOpenWorkcards: React.FC = () => {
     if (initialMatchResults.length > 0) {
       autoLoadTriggeredRef.current = true
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const fetchImportBatches = async () => {
@@ -315,7 +322,6 @@ const BulkOpenWorkcards: React.FC = () => {
     return () => {
       cancelled = true
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
@@ -376,7 +382,7 @@ const BulkOpenWorkcards: React.FC = () => {
           similarity_score: candidate.similarity_score
         })),
         selected_workcard_id: item.selected_workcard_id || undefined,
-        issued_workcard_number: (item as any).issued_workcard_number || 'NR/000'  // 默认值
+        issued_workcard_number: formatWorkcardNumberToShort((item as any).issued_workcard_number) || ''  // 短格式
       }))
       if (formatted.length === 0) {
         message.warning('未找到已保存的匹配结果，请先执行缺陷匹配流程')
@@ -424,7 +430,7 @@ const BulkOpenWorkcards: React.FC = () => {
       const formatted: MatchResult[] = detail.items.map((item, index) => {
         const candidates: CandidateWorkCard[] = []
         let selectedWorkcardId: number | undefined = undefined
-        
+
         // 如果数据库中有候选工卡号，创建候选工卡对象
         if (item.workcard_number) {
           const candidateId =
@@ -442,7 +448,7 @@ const BulkOpenWorkcards: React.FC = () => {
           // 这可能是之前保存的数据，虽然候选工卡号被清空了，但选择状态还在
           selectedWorkcardId = item.selected_workcard_id
         }
-        
+
         return {
           defect_record_id: item.defect_record_id ?? -(index + 1),
           defect_number: item.defect_number,
@@ -450,12 +456,13 @@ const BulkOpenWorkcards: React.FC = () => {
           description_en: item.description_en || '',
           candidates: candidates,
           selected_workcard_id: selectedWorkcardId,
-          issued_workcard_number: (item as any).issued_workcard_number || 'NR/000',  // 默认值
+          issued_workcard_number: formatWorkcardNumberToShort((item as any).issued_workcard_number) || '',  // 短格式
           // Map newly added fields
           zone: (item as any).area || (item as any).zone || '',
           zone_ten: (item as any).zone_number || (item as any).txtZoneTen || '',
           relative_jobcard_number: (item as any).reference_workcard_number || (item as any).txtCRN || '',
-          relative_jobcard_sequence: (item as any).reference_workcard_item || (item as any).refNo || ''
+          relative_jobcard_sequence: (item as any).reference_workcard_item || (item as any).refNo || '',
+          ref_manual: (item as any).ref_manual || '' // 参考手册 (CMM_REFER)
         }
       })
 
@@ -660,13 +667,32 @@ const BulkOpenWorkcards: React.FC = () => {
   const handleUpdateWorkcardNumber = async (defect_record_id: number, workcard_number: string) => {
     try {
       setUpdatingWorkcardNumber((prev) => [...prev, defect_record_id])
-      await defectApi.updateIssuedWorkcardNumber(defect_record_id, workcard_number)
+      
+      // 统一转换为短格式存储（如 50324）
+      const shortFormat = formatWorkcardNumberToShort(workcard_number)
+      
+      // 如果 defect_record_id 是负数，说明这是未保存到数据库的记录，只更新本地状态
+      if (defect_record_id < 0) {
+        setMatchResults((prev) =>
+          prev.map((item) =>
+            item.defect_record_id === defect_record_id
+              ? { ...item, issued_workcard_number: shortFormat }
+              : item
+          )
+        )
+        message.success('工卡号更新成功（本地更新，请先保存到数据库）')
+        setEditingWorkcardNumber(null)
+        return
+      }
+
+      // 如果 defect_record_id 是正数，说明这是已保存的记录，调用后端API更新
+      await defectApi.updateIssuedWorkcardNumber(defect_record_id, shortFormat)
 
       // 更新本地状态
       setMatchResults((prev) =>
         prev.map((item) =>
           item.defect_record_id === defect_record_id
-            ? { ...item, issued_workcard_number: workcard_number }
+            ? { ...item, issued_workcard_number: shortFormat }
             : item
         )
       )
@@ -749,13 +775,13 @@ const BulkOpenWorkcards: React.FC = () => {
                   )
                 )
               }
-              message.success(`缺陷 ${record.defect_number} 开出工卡成功${response.workcard_number ? `，工卡号: ${response.workcard_number}` : ''}`)
+              message.success(`缺陷 ${record.defect_number} 开出工卡成功${response.workcard_number ? `，工卡号: ${response.workcard_number}` : ''} `)
             } else {
-              message.error(`缺陷 ${record.defect_number} 开出工卡失败: ${response.message}`)
+              message.error(`缺陷 ${record.defect_number} 开出工卡失败: ${response.message} `)
             }
           } catch (error: any) {
             if (!error?.errorFields) {
-              message.error(`开出工卡失败: ${error?.message || error}`)
+              message.error(`开出工卡失败: ${error?.message || error} `)
             }
           } finally {
             setImportingRecordIds((prev) => prev.filter((id) => id !== record.defect_record_id))
@@ -853,10 +879,10 @@ const BulkOpenWorkcards: React.FC = () => {
                     )
                   }
                 } else {
-                  failureMessages.push(`缺陷 ${record.defect_number}: ${response.message || '开出工卡失败'}`)
+                  failureMessages.push(`缺陷 ${record.defect_number}: ${response.message || '开出工卡失败'} `)
                 }
               } catch (error: any) {
-                failureMessages.push(`缺陷 ${record.defect_number}: ${error?.message || error}`)
+                failureMessages.push(`缺陷 ${record.defect_number}: ${error?.message || error} `)
               }
             }
 
@@ -885,7 +911,7 @@ const BulkOpenWorkcards: React.FC = () => {
 
   const handleImportStepsSingle = async (record: MatchResult) => {
     // 导入步骤需要已开出工卡号和候选工卡（用于获取工卡指令号）
-    if (!record.issued_workcard_number || record.issued_workcard_number === 'NR/000') {
+    if (!record.issued_workcard_number) {
       message.warning(`缺陷 ${record.defect_number} 需要已开出工卡号`)
       return
     }
@@ -920,6 +946,7 @@ const BulkOpenWorkcards: React.FC = () => {
           tail_no: importParams.txtACNO || '',
           work_group: importParams.txtDept || '3_CABIN_TPG',
           cookies,
+          ref_manual: record.ref_manual || undefined,  // 参考手册 (CMM_REFER)
         })
 
         // 合并日志和产物
@@ -933,10 +960,10 @@ const BulkOpenWorkcards: React.FC = () => {
         if (response.success) {
           message.success(`缺陷 ${record.defect_number} 步骤导入成功，共导入 ${response.imported_count || 0} 个步骤`)
         } else {
-          message.error(`缺陷 ${record.defect_number} 步骤导入失败: ${response.message || '未知错误'}`)
+          message.error(`缺陷 ${record.defect_number} 步骤导入失败: ${response.message || '未知错误'} `)
         }
       } catch (error: any) {
-        message.error(`缺陷 ${record.defect_number} 步骤导入失败: ${error?.message || error}`)
+        message.error(`缺陷 ${record.defect_number} 步骤导入失败: ${error?.message || error} `)
       } finally {
         setImportingStepsRecordIds((prev) => prev.filter((id) => id !== record.defect_record_id))
       }
@@ -958,7 +985,6 @@ const BulkOpenWorkcards: React.FC = () => {
       (item) =>
         selectedBatchIds.includes(item.defect_record_id) &&
         item.issued_workcard_number &&
-        item.issued_workcard_number !== 'NR/000' &&
         item.selected_workcard_id  // 导入步骤需要候选工卡
     )
 
@@ -1024,6 +1050,7 @@ const BulkOpenWorkcards: React.FC = () => {
                   tail_no: importParams.txtACNO || '',
                   work_group: importParams.txtDept || '3_CABIN_TPG',
                   cookies,
+                  ref_manual: record.ref_manual || undefined,  // 参考手册 (CMM_REFER)
                 })
 
                 // 合并日志和产物
@@ -1045,7 +1072,7 @@ const BulkOpenWorkcards: React.FC = () => {
                     failed_count: response.failed_count
                   })
                 } else {
-                  failureMessages.push(`缺陷 ${record.defect_number}: ${response.message || '导入失败'}`)
+                  failureMessages.push(`缺陷 ${record.defect_number}: ${response.message || '导入失败'} `)
                   results.push({
                     defect_number: record.defect_number,
                     success: false,
@@ -1055,7 +1082,7 @@ const BulkOpenWorkcards: React.FC = () => {
                   })
                 }
               } catch (error: any) {
-                failureMessages.push(`缺陷 ${record.defect_number}: ${error?.message || error}`)
+                failureMessages.push(`缺陷 ${record.defect_number}: ${error?.message || error} `)
                 results.push({
                   defect_number: record.defect_number,
                   success: false,
@@ -1157,8 +1184,8 @@ const BulkOpenWorkcards: React.FC = () => {
           description_cn: result.description_cn,
           description_en: result.description_en,
           // 候选工卡：只使用Excel中的"候选工卡"字段，如果没有数据则留空（null），不使用相关工卡号
-          workcard_number: selectedCandidate?.workcard_number && selectedCandidate.workcard_number.trim() !== '' 
-            ? selectedCandidate.workcard_number 
+          workcard_number: selectedCandidate?.workcard_number && selectedCandidate.workcard_number.trim() !== ''
+            ? selectedCandidate.workcard_number
             : null,
           issued_workcard_number: result.issued_workcard_number,
           selected_workcard_id: selectedCandidate?.id && selectedCandidate.id > 0 ? selectedCandidate.id : null,
@@ -1167,7 +1194,8 @@ const BulkOpenWorkcards: React.FC = () => {
           reference_workcard_number: result.relative_jobcard_number || null,
           reference_workcard_item: result.relative_jobcard_sequence || null,
           area: result.zone || null,
-          zone_number: result.zone_ten || null
+          zone_number: result.zone_ten || null,
+          ref_manual: result.ref_manual || null // 参考手册 (CMM_REFER)
         }
       })
 
@@ -1206,7 +1234,7 @@ const BulkOpenWorkcards: React.FC = () => {
           errorMsg = detail
         } else if (Array.isArray(detail)) {
           // Format Pydantic validation errors
-          errorMsg = detail.map((e: any) => `${e.loc?.join('.')}: ${e.msg}`).join('; ')
+          errorMsg = detail.map((e: any) => `${e.loc?.join('.')}: ${e.msg} `).join('; ')
         } else if (typeof detail === 'object') {
           errorMsg = JSON.stringify(detail)
         }
@@ -1215,7 +1243,7 @@ const BulkOpenWorkcards: React.FC = () => {
         errorMsg = JSON.stringify(error)
       }
 
-      message.error(`保存失败: ${errorMsg}`)
+      message.error(`保存失败: ${errorMsg} `)
     } finally {
       setSavingBatch(false)
     }
@@ -1275,6 +1303,14 @@ const BulkOpenWorkcards: React.FC = () => {
       render: (text: string) => text || '-'
     },
     {
+      title: '参考手册',
+      dataIndex: 'ref_manual',
+      key: 'ref_manual',
+      width: 180,
+      ellipsis: true,
+      render: (text: string) => text || '-'
+    },
+    {
       title: '候选工卡',
       key: 'candidates',
       width: 480,
@@ -1320,17 +1356,18 @@ const BulkOpenWorkcards: React.FC = () => {
       width: 200,
       render: (text: string, record: MatchResult) => {
         const isUpdating = updatingWorkcardNumber.includes(record.defect_record_id)
-        const displayValue = text || 'NR/000'
+        // 显示短格式（如 50324），无值时显示 "-"
+        const displayValue = text ? formatWorkcardNumberToShort(text) : '-'
         return (
           <Space>
-            <Tag color="green">{displayValue}</Tag>
+            <Tag color={text ? 'green' : 'default'}>{displayValue}</Tag>
             <Button
               type="link"
               size="small"
               icon={<EditOutlined />}
               loading={isUpdating}
               disabled={isUpdating}
-              onClick={() => setEditingWorkcardNumber({ defect_record_id: record.defect_record_id, value: displayValue })}
+              onClick={() => setEditingWorkcardNumber({ defect_record_id: record.defect_record_id, value: text || '' })}
             >
               修改
             </Button>
@@ -1374,7 +1411,7 @@ const BulkOpenWorkcards: React.FC = () => {
               size="small"
               icon={<FileTextOutlined />}
               // 导入步骤需要已开出工卡号和候选工卡（用于获取工卡指令号）
-              disabled={!record.issued_workcard_number || record.issued_workcard_number === 'NR/000' || !record.selected_workcard_id || importingStepsRecordIds.includes(record.defect_record_id)}
+              disabled={!record.issued_workcard_number || !record.selected_workcard_id || importingStepsRecordIds.includes(record.defect_record_id)}
               loading={importingStepsRecordIds.includes(record.defect_record_id)}
               onClick={() => handleImportStepsSingle(record)}
             >
@@ -1394,7 +1431,7 @@ const BulkOpenWorkcards: React.FC = () => {
     preserveSelectedRowKeys: true,
     // 允许选中所有行，即使没有候选工卡也可以选中（用于批量操作）
     // 候选工卡的验证会在实际执行操作时进行
-    getCheckboxProps: (record: MatchResult) => ({
+    getCheckboxProps: () => ({
       disabled: false
     }),
   }
@@ -2003,7 +2040,7 @@ const BulkOpenWorkcards: React.FC = () => {
                   setEditingWorkcardNumber({ ...editingWorkcardNumber, value: e.target.value })
                 }
               }}
-              placeholder="请输入工卡号，如：NR/000000299"
+              placeholder="请输入工卡号，如：50299"
             />
           </Form.Item>
         </Form>
@@ -2014,4 +2051,3 @@ const BulkOpenWorkcards: React.FC = () => {
 }
 
 export default BulkOpenWorkcards
-

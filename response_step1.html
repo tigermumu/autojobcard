@@ -1,0 +1,906 @@
+
+
+
+
+<html>
+    <HEAD>
+		<meta name="robots" content="noindex,nofollow">
+
+        <TITLE>
+             - Sign In        </TITLE>
+        <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=utf-8">
+        <link rel="stylesheet" href="../Login/Login.css" type="text/css">
+		<script language="JavaScript" src="../Login/utilities.js"></script>
+		<script language="JavaScript" src="../Login/JS_RSA.js"></script>
+	    <script language="javascript">
+			breakOutOfFrames();
+
+			// SAML authentication definitions (in JavaScript)
+			//
+			add_saml_auth_iframe = function(realm)
+{
+
+	var resizeiFrame = function() {
+		var content = iFrame.contentDocument || iFrame.contentWindow.document;
+		if(!content){console.log("problem with IDP content loading");}
+		var idpButtons = content.getElementById(iframeId);
+		if(!idpButtons){console.log("problem with IDP content loading");}
+		
+		function getDocHeight() {//Get document height (cross-browser)
+			var D = content;	
+			return Math.max(
+				D.body.scrollHeight, D.documentElement.scrollHeight,
+				D.body.offsetHeight, D.documentElement.offsetHeight,
+				D.body.clientHeight, D.documentElement.clientHeight
+			);
+		}
+		iFrame.width  = idpButtons.scrollWidth;
+		iFrame.height = getDocHeight();
+	};
+
+	var samlDiv = document.getElementById('LoginSaml');
+	if(!samlDiv){console.log("problem with saml div loading");}
+	
+	var iframeId = 'saml_iframe';
+	var old_iframe = document.getElementById(iframeId);
+	if (old_iframe != null) {
+		old_iframe.parentNode.removeChild(old_iframe);
+		old_iframe = null;
+	}
+	
+	var iFrame = document.createElement('iframe');
+	iFrame.id = iframeId;
+	iFrame.src = "spPortal/IdentityProviders?Realm="+encodeURIComponent(realm);
+	if (iFrame.addEventListener){
+		iFrame.addEventListener('load', resizeiFrame, false);
+	}else {
+		iFrame.attachEvent("onload", resizeiFrame);
+	}
+	iFrame.frameBorder = 0;
+	iFrame.scrolling = "no";
+	iFrame.textContent = "Your browser doesn't support the iframe tag.";
+	samlDiv.appendChild(iFrame);
+	
+	//load logic of handleMessage into the window
+	load_saml_auth_events_handeling();
+}
+
+load_saml_auth_events_handeling = function()
+{
+	//get notification about authentication with saml
+	function handleMessage(event) {
+		
+		if (event.origin != "https://vpn.gameco.com.cn") 
+		{
+			if (typeof console === 'undefined') {						
+			} else {
+				console.log("SAML authentication: Domain mismatch");
+			}
+			return; 
+		}
+		var dataFromChildIframe = event.data;
+		if (typeof console === 'undefined') {						
+		} else {
+			console.log("got message: "+ dataFromChildIframe);
+		}
+		var samlprefix = "saml:";
+		if(dataFromChildIframe.indexOf(samlprefix)===0)
+		{
+			dataFromChildIframe = dataFromChildIframe.substring(samlprefix.length);
+			if (typeof console === 'undefined') {						
+			} else {
+				console.log("Navigating to: " + dataFromChildIframe);
+			}
+			window.location = dataFromChildIframe;
+		}
+		else
+		{
+			if (typeof console === 'undefined') {						
+			} else {
+				console.log("Ignoring message: " + dataFromChildIframe);
+			}
+		}	
+	}
+
+	if (window.addEventListener) {
+	window.addEventListener("message", handleMessage);	
+	} else {
+		window.attachEvent("onmessage", handleMessage);
+	}
+}				
+			var realmsArr = new Array();
+			var loginErrorMsg = "Invalid username or password - Please try again";
+			
+			function resizeToNormal()
+			{
+				document.getElementById("Table2").style.height = 496;
+				document.getElementById("Table2").width = 847;
+				document.getElementById("LegalNotice").width = 260;
+				document.getElementById("LoginLeft").style.paddingTop = "10px";
+				document.getElementById("Copyright").style.paddingBottom = "25px";
+				document.getElementById("Copyright").style.paddingLeft = "230px";				
+			}
+			
+						
+			function isRelogin()
+			{
+				return 0;
+			}
+			
+			function readOnlyUserNameInput()
+			{
+				document.getElementById("userName").readOnly = true;
+				document.getElementById('userName').style.backgroundColor = "#D4D0C8";
+			}
+			
+			function disableUserNameInput()
+			{
+				readOnlyUserNameInput();
+				document.getElementById("userName").disable = true;
+			}
+			
+			function enableUserNameInput()
+			{
+				document.getElementById("userName").readOnly = false;
+				document.getElementById('userName').style.backgroundColor = "white";
+				document.getElementById("userName").disable = false;
+			}
+			
+			function disablePasswordInput()
+			{
+				document.getElementById("passwordDisplayed").readOnly = true;
+				document.getElementById("passwordDisplayed").disable = true;
+				document.getElementById("passwordDisplayed").style.backgroundColor = "#D4D0C8";
+			}
+			
+			function enablePasswordInput()
+			{
+				document.getElementById("passwordDisplayed").disable = false;
+				document.getElementById("passwordDisplayed").readOnly = false;
+				document.getElementById('passwordDisplayed').style.backgroundColor = "white";
+			}
+			
+			function disableAllInput()
+			{
+				disableUserNameInput();
+				disablePasswordInput();
+			}
+			
+			function enableAllnecessaryInput()
+			{
+				enablePasswordInput();
+				if(!isRelogin())
+				{
+					enableUserNameInput();	
+					setTimeout(function() { document.getElementById('userName').focus(); }, 0);
+				}
+				else
+				{
+					readOnlyUserNameInput();
+					setTimeout(function() { document.getElementById('passwordDisplayed').focus(); }, 0);
+				}
+			}
+					
+			function toLogin()
+			{
+			    location.href = "/Login/Login";
+			}
+			
+			function isValidInput(form)
+			{
+				if(isCertAuth())
+				{
+					return true;
+				}
+
+				var passwordVal = form['passwordDisplayed'].value;
+				var usernameVal = form['userName'].value;
+
+				if(passwordVal == null || passwordVal == '' || usernameVal == null || usernameVal == '')
+				{
+					return false;
+				}
+					
+				return true;
+			}
+
+			if (top.location != self.location)
+	        {
+	            top.location = self.location;
+	        }
+
+			function SWScheckboxClicked()
+			{
+				if (null != document.loginForm.LaunchSWS)
+				{
+					if (document.loginForm.LaunchSWS.checked)
+					{
+						setCookie('CPCVPN_SWS_SELECTED', '1', null, '/', null, true);
+					}
+					else
+					{
+						setCookie('CPCVPN_SWS_SELECTED', '', null, '/', null, true);
+					}
+				}
+			}
+
+	        function formSubmit(dis)
+	        {
+				if(!isValidInput(dis))
+				{
+					document.getElementById('errorMsgDIV').innerHTML   = '<span class="errorMessage">' + loginErrorMsg + '</span>';
+					
+					return false;
+				}
+
+								encryptPasswordAndDisablePasswordDisplay(dis);
+				document.getElementById("LoginButton").disabled = true;
+				var locationHref = "LoginWithCert?selectedRealm="+encodeURIComponent(document.getElementById("selectedRealm").value);
+
+				if (null != document.loginForm.LaunchSWS)
+				{
+					if (document.loginForm.LaunchSWS.checked)
+					{
+						locationHref += "&LaunchSWS=on";
+					}
+				}
+				
+				if(eval("")) {
+					locationHref = "ReLoginWithCert?selectedRealm="+encodeURIComponent(document.getElementById("selectedRealm").value); }
+				if(eval("")) {
+					locationHref = "ReLoginWithCert?selectedRealm="+encodeURIComponent(document.getElementById("selectedRealm").value); }
+
+				//	No certificate needed
+				if(!isCertAuth())
+	            {
+	                return true;
+	            }
+				//	Certificate authentication
+	            else
+	            {
+	                location.href = locationHref;
+	                return false;
+	            }
+	        }
+						
+			// Get previously selected realm from cookie and set it as selected realm
+			function initSelectedRealm()
+			{
+				var selectedRealm = getCookie('selected_realm');
+				
+				if(selectedRealm != null)
+				{	
+					//	Set selected realm
+					var options = document.getElementById('selectedRealm').options;
+					for (var i = 0; i < options.length; i++) 
+					{
+						if (options[i].value == selectedRealm) 
+						{
+							options[i].selected= true;
+							break;
+						}
+					}
+				}
+			}
+	 
+			function getSelectedRealm()
+			{
+				var selectedRealmIndex = document.getElementById('selectedRealm').selectedIndex;
+				
+				return realmsArr[selectedRealmIndex];
+			}
+			
+			// Creates a javascript associate array (class really) from php class
+			function initAvailableRealms()
+			{
+				realm_0 = new Array();
+realm_0['name'] = 'ssl_vpn';
+realm_0['displayName'] = 'Standard';
+realm_0['isHidden'] = false;
+realm_0['authSchemesInfo'] = [{"authMethodType":5,"securidType":0,"customDisplayHeader":"Please provide user name and password to authenticate","customDisplayUserName":"User name","customDisplayPassword":"Password","customDisplayPin":"","imageBasedRadiusURL":""}];
+realmsArr[0]=realm_0;
+realm_1 = new Array();
+realm_1['name'] = 'ssl_vpn_NINGDUN_Auth';
+realm_1['displayName'] = 'GAMECO';
+realm_1['isHidden'] = false;
+realm_1['authSchemesInfo'] = [{"authMethodType":5,"securidType":0,"customDisplayHeader":"Please provide user name and password to authenticate","customDisplayUserName":"User name","customDisplayPassword":"Password","customDisplayPin":"","imageBasedRadiusURL":""}];
+realmsArr[1]=realm_1;
+			}
+			
+			function isShowRealmsCombobox()
+			{
+				// Only one realm
+				if(realmsArr.length < 2)
+				{
+					return false;
+				}
+				
+				// relogin
+				if(0)
+				{
+					return false;
+				}
+				
+				return true;
+			}
+			
+			// Hides the login option combobox if needed
+			function initRealmsCombobox()
+			{
+				if(!isShowRealmsCombobox())
+				{
+					document.getElementById('loginOptionlabel').style.display = 'none';
+					document.getElementById('selectedRealm').style.display = 'none';
+				}
+			}
+			
+			function getFirstAuthType(realm)
+			{
+				return realm.authSchemesInfo[0].authMethodType;
+			}
+			
+			function isCertAuth()
+			{
+				var authType = getFirstAuthType(getSelectedRealm());
+				
+				// Certificate authentication method
+				if(authType == 3)
+				{
+					return true;
+				}
+				
+				if(authType == 1 && 
+				   document.getElementById('Certificate').checked)
+				{
+					return true;
+				}
+				
+				return false;
+			}
+
+			function isIdentityProviderAuth()
+			{
+				var authType = getFirstAuthType(getSelectedRealm());
+
+				if (authType == 8	)
+				{
+					return true;
+				}
+
+				return false;
+			}
+			
+			function initRealms()
+			{
+
+				// Set selected realm from cookie
+				initSelectedRealm();
+				
+				// init available realms
+				initAvailableRealms();
+				
+				//	Update view
+				updateRealmView();
+				
+				// Display or hide the realm select option
+				initRealmsCombobox();
+
+				if(0)
+				{
+					loadCaptchaSrc();
+				}
+			}
+			
+			function handleRealmChange()
+			{
+				//document.getElementById('errorMsgDIV').innerHTML   = '';
+				
+				updateRealmView();
+			}
+			
+			// Hides all the input fields and labels
+			function clearLoginForm()
+			{
+				document.getElementById('userNameInputId').style.display = 'none';
+				document.getElementById('passwordInputId').style.display = 'none';
+				document.getElementById('pinTextInputId').style.display = 'none';
+				
+				document.getElementById('loginPagePromptCell').style.display = 'none';
+				
+				document.getElementById('certificateRadio').style.display = 'none';
+				document.getElementById('credentialsRadio').style.display = 'none';
+
+				document.getElementById('LoginSaml').style.display = 'none';
+				
+				document.getElementById('userNameTd').className  = 'loginInput';
+				document.getElementById('passwordTd').className  = 'loginInput';
+
+									document.getElementById("LoginButton").disabled = false;
+							}
+			
+			function setSelectedRealmCookie(selectedRealmName)
+			{
+				var expireDate = new Date ();
+				expireDate.setTime(expireDate.getTime() + (365 * 24 * 3600 * 1000));
+				setCookie("selected_realm", selectedRealmName, expireDate, "/", null /*domain*/, true /*secure*/);
+			}
+
+			function setStyleDisplayTableRow(elementID)
+			{
+				try {
+					document.getElementById(elementID).style.display = 'table-row';
+				}
+				catch (e) {
+					document.getElementById(elementID).style.display = 'block';
+				}	
+			}
+					
+			function showUserPasswordForm()
+			{
+				setStyleDisplayTableRow('userNameInputId');
+				setStyleDisplayTableRow('passwordInputId');
+				document.getElementById('loginPagePromptCell').style.display = 'table-cell';
+
+				enableAllnecessaryInput();
+			}
+
+			function showCertificateForm()
+			{
+				document.getElementById('loginPagePromptCell').style.display = 'table-cell';
+			}
+
+			function showKeyfobForm()
+			{
+				if(0)
+				{
+					document.getElementById("Table2").style.height = 566;
+					document.getElementById("Table2").width = 946;
+					
+					document.getElementById("LegalNotice").width = 300;
+					document.getElementById("LoginLeft").style.paddingTop = "20px";
+					document.getElementById("Copyright").style.paddingBottom = "40px";
+					document.getElementById("Copyright").style.paddingLeft = "260px";
+				}
+				
+				showUserPasswordForm();
+				// if you change this, verify that it doesn't affect autofill
+				setStyleDisplayTableRow('pinTextInputId');
+				
+			}
+
+			function showCertificateOrUserPasswordForm()
+			{
+
+				setStyleDisplayTableRow('userNameInputId');
+				setStyleDisplayTableRow('passwordInputId');
+
+				setStyleDisplayTableRow('certificateRadio');
+				setStyleDisplayTableRow('credentialsRadio');
+
+				document.getElementById('loginPagePromptCell').style.display = 'table-cell';
+
+				document.getElementById('userNameTd').className  = 'loginInputLeftMargin';
+				document.getElementById('passwordTd').className  = 'loginInputLeftMargin';
+
+				if(document.getElementById('Certificate').checked)
+				{
+					disableAllInput();
+				}
+				else
+				{
+					enableAllnecessaryInput();
+				}
+			}
+
+			function showSamlForm()
+			{
+				setStyleDisplayTableRow('LoginSaml');
+				setStyleDisplayTableRow('loginPagePromptCell');
+				document.getElementById("LoginButton").disabled = true;
+			}
+			
+			function showLoginForm(selectedRealm)
+			{
+				resizeToNormal();
+				authType = getFirstAuthType(selectedRealm);
+
+				// console.log("authType = " + authType);
+				
+				// Adjust login form
+				switch(authType)
+				{
+					case 2:
+					case 4:
+					case 5:
+						showUserPasswordForm();
+					break;
+					
+					case 7:
+						showKeyfobForm();
+					break;
+					
+					case 3: 
+						showCertificateForm();
+					break;
+					
+					case 8:
+						showSamlForm();
+					break;
+					
+					case 1: 
+					default:
+						showCertificateOrUserPasswordForm();
+					break;
+				}
+			}
+
+			function updateLoginForm(realm)
+			{
+				// Clear login form
+				clearLoginForm();
+				
+				// Shows the current login form
+				showLoginForm(realm);
+			}
+
+			function truncateLabel(label)
+			{
+				if(label.length > 80)
+					return label.slice(0, 80) + '... ';
+				return label;
+			}
+
+			function updateLabels(selectedRealm)
+			{
+				// prompt
+				document.getElementById('loginPagePrompt').innerHTML  = truncateLabel(selectedRealm.authSchemesInfo[0].customDisplayHeader);
+				document.getElementById('loginPagePrompt').title  = selectedRealm.authSchemesInfo[0].customDisplayHeader;
+
+				//      User name input field label
+				document.getElementById('userNameLabel').innerHTML  = truncateLabel(selectedRealm.authSchemesInfo[0].customDisplayUserName) + ':';
+				document.getElementById('userNameLabel').title  = selectedRealm.authSchemesInfo[0].customDisplayUserName + ':';
+
+				//      Password input field label
+				document.getElementById('passwordLabel').innerHTML  = truncateLabel(selectedRealm.authSchemesInfo[0].customDisplayPassword) + ':';
+				document.getElementById('passwordLabel').title  = selectedRealm.authSchemesInfo[0].customDisplayPassword + ':';
+
+				//      Pin input label
+				document.getElementById('pinInputLabel').innerHTML = 'PIN' + ':';
+			}
+			
+			function updateRealmView()
+			{
+				var selectedRealm = getSelectedRealm();
+				
+				// Set selected realm cookie
+				setSelectedRealmCookie(selectedRealm.name);
+				
+				// Update the login form
+				updateLoginForm(selectedRealm);
+				
+				// Update prompt and input labels
+				updateLabels(selectedRealm);
+				
+				// Set caps detect position
+				setCapsLockDiv('passwordTd', sCapsLockHeadline, sCapsLockMessage);
+		
+				// Show the login table once all visibility settings were set to avoid flickering.
+				setStyleDisplayTableRow('loginContainerTable');
+				
+				
+				////////////////////////////////////////////////////////////////////////////
+				// SAML authentication - begin
+				////////////////////////////////////////////////////////////////////////////
+
+				if (isIdentityProviderAuth())
+				{
+					add_saml_auth_iframe(document.getElementById("selectedRealm").value);
+				}
+				
+				////////////////////////////////////////////////////////////////////////////
+				// SAML authentication - end
+				////////////////////////////////////////////////////////////////////////////
+			}
+			
+			function showIcsExpired()
+			{
+				document.getElementById("LoginFormDiv").style.display="none";
+				document.getElementById("icsExpired").style.display="block";
+				
+								document.getElementById("userName").value = "";
+				document.getElementById("passwordDisplayed").value = "";			
+			}
+
+			//This handle is called once the CAPTCHA is successfully filled by the user
+			//This is not a verification of the CAPTCHA challenge!
+			//Only for GUI purposes, once the CAPTCHA is displayed the 'login' button is disabled
+			//and this handler enables it after the CAPTCHA challenge completes.
+			function onCaptchaChallengeComplete(){
+				document.getElementById("LoginButton").disabled = false;
+			}
+			
+			function loadCaptchaSrc()
+			{
+								var script = document.createElement("script"); // Make a script DOM node
+			
+				script.src = 'https://www.google.com/recaptcha/api.js?hl='+'en'+'&onload=onCaptchaLoadCB&render=explicit'; 
+				document.head.appendChild(script); 
+				setTimeout(function(){
+					if(GetObj("reCaptcha-div").style.display == "none")
+					{
+						document.getElementById("loadingDiv").style["display"] = "block";
+					setTimeout(function(){
+							if(GetObj("reCaptcha-div").style.display == "none")
+							{
+							document.getElementById("loadingDiv").style["display"] = "none";
+							var recaptchaDiv = GetObj("reCaptcha-div");
+							recaptchaDiv.style.display = "block";
+							recaptchaDiv.innerHTML = '<span class = \'errorMessage\'>' + 'Loading CAPTCHA challenge took too long, check your connectivity with google and try again.' +'</span>';
+							}
+						}, 10000);
+					}
+				}, 500);
+				
+			}
+			
+			function onCaptchaLoadCB ()
+			{
+				document.getElementById("loadingDiv").style["display"] = "none";
+				document.getElementById("reCaptcha-div").style["display"] = "block";
+				grecaptcha.render('reCaptcha-div', {
+				    'sitekey': '',
+				    'callback': onCaptchaChallengeComplete
+				});
+			}
+			
+					 
+
+	    </script>
+		
+		
+		
+    </HEAD>
+    <body topmargin="0" leftmargin="0" class="body_default" style="overflow: auto;" onload="initRealms();">
+		<TABLE id="Table1" cellSpacing="0" cellPadding="0" height="100%" width="100%" border="0">
+			<TR>
+                <TD width="100%" height="100%" align="center" valign="middle">
+					<TABLE id="Table2" style="background: url(/Login/images/background_card.png) no-repeat; background-size:100%" cellSpacing="0" cellPadding="0" height="496" width="847" border="0">
+                        <TR>
+							<TD width="100%" height="35" valign="bottom">
+								<TABLE id="Table3" cellSpacing="0" cellPadding="0" width="100%" border="0" style="padding-top:25px;">
+                        			<TR>
+			                            <TD width=200>
+											<center>
+											<a href="/" style="padding-left:10px;">
+												<img src="/Login/images/CompanyLogo.png" width="165" height="35" border="0" id="firmLogo" align="absmiddle">											</a>
+											</center>
+										</TD>
+										
+			                            <TD align="right" style="padding-right:25px;">
+											<DIV id=product_name class="productName" style="padding-left:30px; padding-top:0px; width:500px; overflow: hidden;" align="right">
+																							</DIV>
+										</TD>
+			                        </TR>
+			                    </TABLE>
+			                </TD>
+			            </TR>
+			            <TR>
+			                <TD width="100%" height="100%">
+			                    <table width="100%" height="100%" cellpadding="0" cellspacing="0" border="0" style="padding-left: 5px;">
+			                        <tr>
+									<td width=10>&nbsp;</td>
+									<td width=260 id="LegalNotice" valign=top>
+																		
+									</td>
+								
+                                        <td align="left" style="padding-left: 0px; position: relative;" valign="top">
+											<div id="loginContainer">
+		<div id="LoginLeft">
+			<form id="loginForm" name="loginForm" method="post" action="/Login/Login" onSubmit="return formSubmit(this);">
+				<!-- Login container table -->
+				<table id="loginContainerTable" cellpadding="0" cellspacing="0" border="0" style="display:none;">
+					<!-- Login option combobox -->
+					<tr id = "loginOptionTableRow" class = "">
+							<td class="loginInput" style="width:100%">
+								<div class = "inputLabel">
+									<label for="selectedRealm" id = "loginOptionlabel">
+										Login option:
+									</label>
+								</div>
+								<div>
+							<select name="selectedRealm" id = "selectedRealm" class="loginInput" onchange = "handleRealmChange();">	
+										<option value='ssl_vpn'>Standard</option>
+<option value='ssl_vpn_NINGDUN_Auth'>GAMECO</option>
+									</select>
+								</div>
+							</td>
+					</tr> <!-- loginOptionTableRow -->
+					<!-- Error msg -->
+					<tr = "errorMsgRow">
+						<td id = "errorMsgTD">
+							<!-- <div class = "redBox"> -->
+								<div id = "errorMsgDIV">
+																	</div>
+							<!-- </div> -->
+						</td>
+					</tr>
+					
+					<!-- Input fields container -->
+					<tr class="inputFieldsContainer">
+						<td class="inputFieldsContainer" style="height: 100%;">
+							<table id="inputFieldsTable" cellpadding="0" cellspacing="0" border="0" class="inputFieldsTable">
+
+								<!-- Prompt message -->
+								<tr id = "promptRow">
+									<td id = "loginPagePromptCell" class = "secTitleBold" colspan = "1">
+										<div id = "loginPagePrompt" class = "textBox secTitleBold">
+										</div>
+									</td>
+								</tr>
+					
+								<!-- Standard input radio -->
+								<tr id = "credentialsRadio">
+									<td colspan="1" valign="middle" class="signInType" style="padding-bottom:10px; padding-top:0px;">
+										<input type="radio" name="loginType" id="Standard" value="Standard" style="margin: 0px 3px 0px 0px;"  checked onclick="enableAllnecessaryInput();">							
+										<label for="Standard">Standard Sign In</label>
+									</td>
+								</tr>
+							
+								<!-- User name -->
+								<tr id = "userNameInputId">
+									<td id="userNameTd" class="loginInput">
+										<div class = "inputLabel">
+											<label for="userName" id="userNameLabel"></label>
+										</div>
+										<div>
+											<input type="text" id="userName" name="userName" autocorrect="off" autocapitalize="none" spellcheck="false" class="loginInput" autocomplete="off"  value="">
+										</div>
+									</td>
+								</tr>
+					
+								<!-- PIN -->
+								<tr id = "pinTextInputId"> 
+									<td id="pinTd" class="loginInput">
+										<div class="inputLabel">
+											<label for="pin" id = "pinInputLabel"></label>
+										</div>
+										<div>
+											<input type="password" id="pin" name="pin" class="loginInput" autocomplete="off">
+										</div>
+									</td>
+								</tr>
+					
+								<!-- Password -->
+								<tr id = "passwordInputId">
+																		<td id="passwordTd" class="loginInput" style="width: 300px;">
+										<div id="passwordContainer">
+											<div class="inputLabel">
+												<label for="passwordDisplayed" id = "passwordLabel"></label>
+											</div>
+											<div id ="passwordDisplayedDIV">
+												<input type="password" id="passwordDisplayed" name="loginInput" class="loginInput" colspan="1" autocomplete="off" onkeypress="capsDetect(arguments[0]);" onblur="HideCapsDiv(true);" >
+												<input type="hidden" id="password" name="password">
+											</div>
+										</div>
+									</td>
+								</tr>
+							
+								<!-- Certificate radio -->
+								<tr id = "certificateRadio">
+									<td valign="middle" class="signInType"  style="padding-top:0px;">
+										<div id = "certificateRadioDiv">
+											<input type="radio" name="loginType" id="Certificate" value="Certificate" style="margin: 0px 3px 0px 0px;"   onclick="disableAllInput();">
+											<label for="Certificate">Certificate Sign In</label>
+										</div>
+									</td>	
+								</tr>
+
+							
+								<!-- =================================================== -->
+								<!-- =================================================== -->
+								
+								<!-- SAML authentication ('LoginSaml' is the name of the IDP button's 'iframe') --> 
+								
+								<tr>
+									<td>
+									<div id="LoginSaml" />
+									</td>
+								</tr>
+								
+								<!-- =================================================== -->
+								<!-- =================================================== -->
+								
+																<!-- Submit button -->
+								<tr>
+									<td id="LoginButtonTD" align="right">
+										<div id = "submitDiv">
+											<input type="submit" id="LoginButton" NAME="Login" value="Sign In" align="absmiddle" class="butt"  >
+										</div>
+									</td>
+								</tr> <!-- submit button -->
+								
+								<tr height="0px">
+										<td height="0px">
+										<input type="hidden" name="HeightData">
+									</td>
+								</tr>
+							</table> <!-- inputFieldsTable -->
+						</td>  <!-- inputFieldsContainer -->
+					</tr> <!-- inputFieldsContainer -->
+				</table> <!-- loginContainerTable -->
+			</form>	 <!-- loginForm  -->
+		</div>	<!-- End of LoginLeft -->
+		<div id="LoginRight">
+			<div id="Languages">
+				<table>
+										<tr>
+																									<td colspan="1" width="60px" align="left" style="font-family: Sans-serif; color: black; font-size: 11px;font-weight: normal;">
+															<label>Language:</label>
+														</td>
+														<td colspan="1" align="left" style="font-family: Sans-serif; color: black; font-size: 11px;font-weight: normal;">
+															<SCRIPT LANGUAGE="JavaScript">
+																<!--
+																	RenderLanguageSelectionCombo();
+																//-->
+																</SCRIPT>	
+														</td>
+																							</tr>
+				</table>
+			</div> <!-- Languages -->
+		</div>
+	</div> <!-- LoginContainer -->
+	<div id="icsExpired" width="306px" style="display:none; padding-top:100px">
+		<table width="306px">
+			<tr>
+				<td class="signInType" style="padding-top:20px">
+				Your connection has timed out. Please reconnect.				</td>
+			</tr>
+			<tr>
+				<td align="right" style="padding-top:20px; padding-right:20px;">
+					<form name="icsScanAgain" action="/Login/Login" method="post" >
+						<input name="ScanAgainButton" id="ScanAgainButton" type="submit" value="Connect" class="butt"/>
+					</form>
+				</td>
+			</tr>
+		</table>
+	</div>	
+	                            </td>
+                        </tr>
+                    </table>
+                </TD>
+            </TR>
+       		
+            <TR style="display:none;">
+                <TD colspan="3" height="100%"><img src="/Login/images/pix.gif" border="0" align="absmiddle"></TD>
+            </TR>
+			
+            <TR>
+                <TD colspan="3" style="PADDING-LEFT: 15px;" valign="bottom">
+                    <TABLE id="Table2" cellSpacing="0" cellPadding="0" width="100%" border="0">
+                        <TR>
+                            <TD id="Copyright" colspan="3" align="left" valign="bottom" class="Copyright" style="padding-bottom: 25px; padding-left: 230px;">
+							&copy; Copyright 2004-2019&nbsp;&nbsp;&nbsp;Check Point Software Technologies Ltd. All rights reserved.                            </TD>
+                        </TR>
+                    </TABLE>
+                </TD>
+            </TR>
+			
+            <TR style="display:none;">
+                <TD colspan="3" height="100%"><img src="/Login/images/pix.gif" border="0" align="absmiddle"></TD>
+						<form name="heightForm" id="heightForm" method="post" action="">
+						  <input type="hidden" name="HeightData">&nbsp;
+						</form>
+						<script language="javascript">
+							document.getElementById("heightForm").HeightData.value = window.screen.availHeight;
+						</script>
+                </TD>
+            </TR>
+
+        </TABLE>
+				</TD>
+			</TR>
+        </TABLE>
+    </body>
+	<script language='javascript'>
+	document.getElementById("userName").focus();	</script>
+</html>

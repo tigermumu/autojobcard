@@ -62,7 +62,15 @@ class ImportBatchService:
                 reference_workcard_number=item.get("reference_workcard_number"),
                 reference_workcard_item=item.get("reference_workcard_item"),
                 area=item.get("area"),
-                zone_number=item.get("zone_number")
+                zone_number=item.get("zone_number"),
+                loc=item.get("loc"),
+                qty=item.get("qty"),
+                comp_pn=item.get("comp_pn"),
+                keywords_1=item.get("keywords_1"),
+                keywords_2=item.get("keywords_2"),
+                candidate_description_en=item.get("candidate_description_en"),
+                candidate_description_cn=item.get("candidate_description_cn"),
+                ref_manual=item.get("ref_manual")  # 参考手册 (CMM_REFER)
             )
             self.db.add(batch_item)
 
@@ -152,10 +160,17 @@ class ImportBatchService:
                     "reference_workcard_number": item.reference_workcard_number,
                     "reference_workcard_item": item.reference_workcard_item,
                     "area": item.area,
-                    "zone_number": item.zone_number
+                    "zone_number": item.zone_number,
+                    "loc": item.loc,
+                    "qty": item.qty,
+                    "comp_pn": item.comp_pn,
+                    "keywords_1": item.keywords_1,
+                    "keywords_2": item.keywords_2,
+                    "candidate_description_en": item.candidate_description_en,
+                    "candidate_description_cn": item.candidate_description_cn,
+                    "ref_manual": item.ref_manual  # 参考手册 (CMM_REFER)
                 }
                 for item in items
             ]
         }
-
 

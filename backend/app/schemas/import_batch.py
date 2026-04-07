@@ -26,6 +26,14 @@ class ImportBatchItemCreate(BaseModel):
     reference_workcard_item: Optional[str] = None
     area: Optional[str] = None
     zone_number: Optional[str] = None
+    loc: Optional[str] = None
+    qty: Optional[int] = None
+    comp_pn: Optional[str] = None
+    keywords_1: Optional[str] = None
+    keywords_2: Optional[str] = None
+    candidate_description_en: Optional[str] = None  # 历史工卡描述（英文），来自Excel的 Candidate Workcard Description (English) 列
+    candidate_description_cn: Optional[str] = None  # 历史工卡描述（中文），来自Excel的 Candidate Workcard Description (Chinese) 列
+    ref_manual: Optional[str] = None  # 参考手册 (CMM_REFER)，来自Excel的 参考手册 列
 
 
 class ImportBatchCreate(BaseModel):
@@ -63,6 +71,14 @@ class ImportBatchItem(BaseModel):
     reference_workcard_item: Optional[str] = None
     area: Optional[str] = None
     zone_number: Optional[str] = None
+    loc: Optional[str] = None
+    qty: Optional[int] = None
+    comp_pn: Optional[str] = None
+    keywords_1: Optional[str] = None
+    keywords_2: Optional[str] = None
+    candidate_description_en: Optional[str] = None  # 历史工卡描述（英文），来自Excel的 Candidate Workcard Description (English) 列
+    candidate_description_cn: Optional[str] = None  # 历史工卡描述（中文），来自Excel的 Candidate Workcard Description (Chinese) 列
+    ref_manual: Optional[str] = None  # 参考手册 (CMM_REFER)，来自Excel的 参考手册 列
 
     class Config:
         from_attributes = True
@@ -81,5 +97,4 @@ class ImportBatchDetail(BaseModel):
 
     class Config:
         from_attributes = True
-
 

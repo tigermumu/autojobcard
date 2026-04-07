@@ -1,0 +1,55 @@
+# 飞机方案处理系统 - 生产环境 Docker Compose 配置
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: autojobcard-backend
+    restart: unless-stopped
+    working_dir: /app
+    environment:
+      - DATABASE_URL=sqlite:///./data/aircraft_workcard.db
+      - REDIS_URL=redis://redis:6379
+      - BACKEND_CORS_ORIGINS=["http://localhost","http://127.0.0.1","http://45.152.66.70","http://45.152.66.70:80"]
+    env_file:
+      - ./backend/.env
+    volumes:
+      - backend_data:/app/data
+      - backend_storage:/app/storage
+    depends_on:
+      - redis
+    networks:
+      - app-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: autojobcard-redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
+
+  nginx:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.nginx
+    container_name: autojobcard-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+volumes:
+  backend_data:
+  backend_storage:
+  redis_data:
+
+networks:
+  app-network:
+    driver: bridge

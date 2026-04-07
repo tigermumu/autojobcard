@@ -7,7 +7,11 @@ import AddWorkCardData from './pages/AddWorkCardData'
 import DefectProcessing from './pages/DefectProcessing'
 import BulkOpenWorkcards from './pages/BulkOpenWorkcards'
 import EnglishBatchImportDebug from './pages/EnglishBatchImportDebug'
+import ChineseJobCardBatchProcess from './pages/ChineseJobCardBatchProcess'
 import DefectHistory from './pages/DefectHistory'
+import KeywordManager from './pages/KeywordManager'
+import DefectListProcessing from './pages/DefectListProcessing'
+import DefectCheck from './pages/DefectCheck'
 import { fetchLLMModels, selectLLMModel, LLMModelInfo } from './services/llmApi'
 
 const { Content } = Layout
@@ -18,14 +22,30 @@ const Home: React.FC = () => {
   const [currentModel, setCurrentModel] = useState<LLMModelInfo | null>(null)
   const [modelOptions, setModelOptions] = useState<LLMModelInfo[]>([])
   const [modelLoading, setModelLoading] = useState(false)
+  const [showIdleModules, setShowIdleModules] = useState(false)
 
   const menuItems = [
     { title: '📁 构型与缺陷关键词库', path: '/configurations', color: '#1890ff', desc: '管理飞机构型及缺陷关键词库' },
     { title: '📋 历史工卡数据库管理', path: '/workcards', color: '#52c41a', desc: '管理历史工卡数据库' },
     { title: '🐛 缺陷处理与匹配', path: '/defect-processing', color: '#722ed1', desc: '缺陷清单处理、清洗与工卡匹配' },
+    { title: '🧩 本地词典管理', path: '/keyword-manager', color: '#13c2c2', desc: '本地清洗/匹配的关键词词典管理（按构型）' },
     { title: '🔗 批量导入调试', path: '/defect-processing/batch-open', color: '#fa8c16', desc: '对接公司系统执行批量开卡导入' },
-    { title: '🌍 英文工卡批量导入调试', path: '/english-batch-import', color: '#eb2f96', desc: '英文工卡批量导入调试与验证' }
+    { title: '🌍 英文工卡批量导入调试', path: '/english-batch-import', color: '#eb2f96', desc: '英文工卡批量导入调试与验证' },
+    { title: '🏮 中文工卡批量处理', path: '/chinese-batch-import', color: '#d4380d', desc: '中文工卡批量导入调试与验证' },
+    { title: '📋 缺陷清单处理', path: '/defect-list', color: '#2f54eb', desc: '索引表管理与缺陷清单批量处理' },
+    { title: '🛡️ 缺陷检查', path: '/defect-check', color: '#0958d9', desc: '单一部件/批量缺陷检查（占位）' }
   ]
+
+  const idlePaths = new Set([
+    '/configurations',
+    '/workcards',
+    '/defect-processing',
+    '/keyword-manager',
+    '/defect-processing/batch-open',
+    '/defect-list'
+  ])
+
+  const visibleMenuItems = menuItems.filter(item => showIdleModules || !idlePaths.has(item.path))
 
   useEffect(() => {
     const loadModels = async () => {
@@ -84,11 +104,17 @@ const Home: React.FC = () => {
               onChange={handleModelChange}
               disabled={!modelOptions.length}
             />
+            <Button
+              onClick={() => setShowIdleModules(v => !v)}
+              style={{ marginLeft: 8 }}
+            >
+              {showIdleModules ? '隐藏闲置模块' : '显示闲置模块'}
+            </Button>
           </div>
         </div>
 
         <Row gutter={[24, 24]} style={{ maxWidth: '1400px', margin: '0 auto' }}>
-          {menuItems.map((item) => (
+          {visibleMenuItems.map((item) => (
             <Col xs={24} sm={12} md={8} key={item.path}>
               <Card
                 hoverable
@@ -149,7 +175,11 @@ const App: React.FC = () => {
       <Route path="/defect-processing" element={<DefectProcessing />} />
       <Route path="/defect-processing/batch-open" element={<BulkOpenWorkcards />} />
       <Route path="/english-batch-import" element={<EnglishBatchImportDebug />} />
+      <Route path="/chinese-batch-import" element={<ChineseJobCardBatchProcess />} />
       <Route path="/defect-history" element={<DefectHistory />} />
+      <Route path="/keyword-manager" element={<KeywordManager />} />
+      <Route path="/defect-list" element={<DefectListProcessing />} />
+      <Route path="/defect-check" element={<DefectCheck />} />
     </Routes>
   )
 }

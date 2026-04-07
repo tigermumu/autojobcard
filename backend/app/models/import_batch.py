@@ -47,7 +47,14 @@ class ImportBatchItem(Base):
     reference_workcard_item = Column(String(100), nullable=True, comment="相关工卡序号 (refNo)")
     area = Column(String(100), nullable=True, comment="区域 (txtZoneName)")
     zone_number = Column(String(100), nullable=True, comment="区域号 (txtZoneTen)")
-
+    loc = Column(String(100), nullable=True, comment="位置 (Location)")
+    qty = Column(Integer, nullable=True, comment="数量 (Qty)")
+    comp_pn = Column(String(100), nullable=True, comment="部件件号 (P/N)")
+    keywords_1 = Column(String(100), nullable=True, comment="关键词1")
+    keywords_2 = Column(String(100), nullable=True, comment="关键词2")
+    candidate_description_en = Column(Text, nullable=True, comment="历史工卡描述（英文），来自Excel的 Candidate Workcard Description (English) 列")
+    candidate_description_cn = Column(Text, nullable=True, comment="历史工卡描述（中文），来自Excel的 Candidate Workcard Description (Chinese) 列")
+    ref_manual = Column(String(200), nullable=True, comment="参考手册 (CMM_REFER)，来自Excel的 参考手册 列")
 
 
 

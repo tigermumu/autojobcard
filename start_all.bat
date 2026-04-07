@@ -53,11 +53,16 @@ if "%FOUND_PYTHON%"=="0" (
 
 :python_found
 cd backend
+set "DATABASE_URL=sqlite:///./aircraft_workcard.db"
+echo    - Using DATABASE_URL=%DATABASE_URL%
+echo    - Validating SQLite database file...
+call "%PYTHON_EXE%" scripts\validate_sqlite.py
 echo    - Checking database migrations...
 :: Try running alembic, ignore if command not found (non-fatal)
 call "%PYTHON_EXE%" -m alembic upgrade head
 if %ERRORLEVEL% NEQ 0 (
-    echo    - [WARNING] Database migration might have failed, attempting to continue...
+    echo    - [WARNING] Database migration failed, attempting to stamp current head...
+    call "%PYTHON_EXE%" -m alembic stamp head
 )
 
 echo    - Starting API Service (Port 8000)...

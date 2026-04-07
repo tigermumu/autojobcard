@@ -7,6 +7,7 @@ import json
 from datetime import datetime
 import pandas as pd
 from io import BytesIO
+from sqlalchemy.exc import IntegrityError
 
 class ConfigurationService:
     def __init__(self, db: Session):
@@ -22,11 +23,25 @@ class ConfigurationService:
 
     def create_configuration(self, configuration: ConfigurationCreate) -> Configuration:
         """创建新的构型配置"""
+        # name 是唯一键；先查重给出友好提示，避免直接抛出 sqlite IntegrityError
+        existing = (
+            self.db.query(Configuration)
+            .filter(Configuration.name == configuration.name)
+            .first()
+        )
+        if existing:
+            raise ValueError(f"构型名称已存在：{configuration.name}（请修改名称或在列表中编辑该构型）")
+
         # 获取所有字段，使用dict方式创建
         config_data = configuration.dict(exclude_unset=True)
         db_configuration = Configuration(**config_data)
         self.db.add(db_configuration)
-        self.db.commit()
+        try:
+            self.db.commit()
+        except IntegrityError:
+            self.db.rollback()
+            # 兜底：并发/竞态导致的重复
+            raise ValueError(f"构型名称已存在：{configuration.name}（请修改名称或在列表中编辑该构型）")
         self.db.refresh(db_configuration)
         return db_configuration
 
@@ -203,4 +218,3 @@ class ConfigurationService:
         except Exception as e:
             self.db.rollback()
             raise Exception(f"导入Excel失败: {str(e)}")
-

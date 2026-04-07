@@ -1,9 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from app.core.config import settings
 from app.api.api_v1.api import api_router
 import logging
 import sys
+import os
 
 # 配置日志输出到控制台
 logging.basicConfig(
@@ -50,6 +52,9 @@ app.add_middleware(
 
 # 注册API路由
 app.include_router(api_router, prefix=settings.API_V1_STR)
+
+os.makedirs("uploads", exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 @app.get("/")
 async def root():

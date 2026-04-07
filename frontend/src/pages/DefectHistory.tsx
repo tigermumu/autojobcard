@@ -55,7 +55,7 @@ const DefectHistory: React.FC = () => {
       setLoading(true)
       const lists = await defectApi.getLists()
       setDefectLists(lists)
-      
+
       // 加载每个清单的处理状态
       for (const list of lists) {
         try {
@@ -227,7 +227,7 @@ const DefectHistory: React.FC = () => {
           (status.cleaning_status === 'completed' && status.matching_status === 'pending')
         )
         const canDelete = !!status && ((status.cleaned_count || 0) > 0 || (status.matched_count || 0) > 0)
-        
+
         return (
           <Space>
             <Button
@@ -246,7 +246,7 @@ const DefectHistory: React.FC = () => {
                 继续处理
               </Button>
             )}
-            {status?.cleaned_count > 0 && (
+            {(status?.cleaned_count ?? 0) > 0 && (
               <Button
                 type="link"
                 icon={<DownloadOutlined />}
@@ -255,7 +255,7 @@ const DefectHistory: React.FC = () => {
                 导出清洗数据
               </Button>
             )}
-            {status?.matched_count > 0 && (
+            {(status?.matched_count ?? 0) > 0 && (
               <Button
                 type="link"
                 icon={<DownloadOutlined />}
@@ -287,7 +287,7 @@ const DefectHistory: React.FC = () => {
   // 统计信息
   const totalLists = defectLists.length
   const completedLists = Array.from(statusMap.values()).filter(s => s.processing_stage === 'completed').length
-  const processingLists = Array.from(statusMap.values()).filter(s => 
+  const processingLists = Array.from(statusMap.values()).filter(s =>
     s.cleaning_status === 'processing' || s.matching_status === 'processing'
   ).length
 
@@ -359,6 +359,15 @@ const DefectHistory: React.FC = () => {
 }
 
 export default DefectHistory
+
+
+
+
+
+
+
+
+
 
 
 

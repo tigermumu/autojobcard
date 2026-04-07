@@ -26,24 +26,101 @@ class DefectService:
             "英文描述",
             "工卡描述（英文）",
             "工卡描述(英文)",
+            "工卡描述英文",
+            "Description",
+            "description",
+        ]
+
+        for key in candidate_keys:
+            # 同时也尝试不同的大小写和全角/半角括号变体
+            variants = {
+                key, key.lower(), key.upper(),
+                key.replace("（", "(").replace("）", ")"),
+                key.replace("(", "（").replace(")", "）")
+            }
+            for variant in variants:
+                value = raw.get(variant)
+                if value and isinstance(value, (str, bytes)):
+                    val_str = value.decode('utf-8') if isinstance(value, bytes) else value
+                    stripped = val_str.strip()
+                    if stripped:
+                        return stripped
+
+        for key, value in raw.items():
+            if not value or not isinstance(value, (str, bytes)):
+                continue
+            key_str = str(key).lower()
+            if "英文" in str(key) or "english" in key_str:
+                val_str = value.decode('utf-8') if isinstance(value, bytes) else value
+                stripped = val_str.strip()
+                if stripped:
+                    return stripped
+
+        return ""
+
+    @staticmethod
+    def _extract_chinese_description(raw: Dict[str, Any]) -> str:
+        if not isinstance(raw, dict):
+            return ""
+
+        candidate_keys = [
+            "description_cn",
+            "descriptionChn",
+            "中文描述",
+            "工卡描述（中文）",
+            "工卡描述(中文)",
+            "工卡描述中文",
+            "描述",
+            "工卡描述",
+            "title",
+            "Title",
+        ]
+
+        for key in candidate_keys:
+            variants = {
+                key, key.lower(), key.upper(),
+                key.replace("（", "(").replace("）", ")"),
+                key.replace("(", "（").replace(")", "）")
+            }
+            for variant in variants:
+                value = raw.get(variant)
+                if value and isinstance(value, (str, bytes)):
+                    val_str = value.decode('utf-8') if isinstance(value, bytes) else value
+                    stripped = val_str.strip()
+                    if stripped:
+                        return stripped
+
+        for key, value in raw.items():
+            if not value or not isinstance(value, (str, bytes)):
+                continue
+            key_str = str(key).lower()
+            if "中文" in str(key) or "chinese" in key_str or "描述" in str(key):
+                val_str = value.decode('utf-8') if isinstance(value, bytes) else value
+                stripped = val_str.strip()
+                if stripped:
+                    return stripped
+
+        return ""
+
+    @staticmethod
+    def _extract_defect_number(raw: Dict[str, Any]) -> str:
+        if not isinstance(raw, dict):
+            return ""
+
+        candidate_keys = [
+            "defect_number",
+            "defectNumber",
+            "缺陷编号",
+            "编号",
+            "No.",
+            "Number",
         ]
 
         for key in candidate_keys:
             for variant in {key, key.lower(), key.upper()}:
                 value = raw.get(variant)
-                if value and isinstance(value, str):
-                    stripped = value.strip()
-                    if stripped:
-                        return stripped
-
-        for key, value in raw.items():
-            if not value or not isinstance(value, str):
-                continue
-            key_str = str(key).lower()
-            if "英文" in str(key) or "english" in key_str:
-                stripped = value.strip()
-                if stripped:
-                    return stripped
+                if value:
+                    return str(value).strip()
 
         return ""
 
@@ -124,8 +201,28 @@ class DefectService:
             logger.info(f"文件类型: {file.content_type if hasattr(file, 'content_type') else '未知'}")
             
             # 读取Excel文件（直接使用file.file，FastAPI的UploadFile对象支持）
+            # 将"相关工卡序号"列强制读取为字符串类型，以保留前导零
+            dtype_dict = {}
+            # 尝试识别可能的列名（中英文变体）
+            possible_column_keywords = [
+                '相关工卡序号', 'Item No', 'Ref No', 'Reference Item', 
+                'item_no', 'ref_no', 'reference_item',
+                'ItemNo', 'RefNo', 'ReferenceItem'
+            ]
             try:
-                df = pd.read_excel(file.file)
+                # 先读取第一行来识别列名
+                df_preview = pd.read_excel(file.file, nrows=1)
+                for col in df_preview.columns:
+                    col_str = str(col).strip()
+                    # 使用灵活的匹配方式：检查列名是否包含关键词
+                    for keyword in possible_column_keywords:
+                        if keyword.lower() in col_str.lower() or col_str == keyword:
+                            dtype_dict[col] = str
+                            logger.info(f"识别到'相关工卡序号'列: {col}，将强制读取为字符串类型")
+                            break
+                # 重新读取完整文件，应用dtype
+                file.file.seek(0)  # 重置文件指针
+                df = pd.read_excel(file.file, dtype=dtype_dict)
                 logger.info(f"成功读取Excel文件，共 {len(df)} 行数据")
             except Exception as e:
                 logger.error(f"读取Excel文件失败: {str(e)}", exc_info=True)
@@ -147,8 +244,40 @@ class DefectService:
                     # 替换 NaN 为 None
                     raw_data_cleaned = replace_nan_with_none(raw_data_dict)
                     
-                    # 生成缺陷编号
-                    defect_number = str(row.get('defect_number', f'DEF-{index+1}')) if pd.notna(row.get('defect_number')) else f'DEF-{index+1}'
+                    # 处理"相关工卡序号"列，确保保留前导零
+                    # 尝试识别可能的列名（中英文变体）
+                    workcard_item_keywords = [
+                        '相关工卡序号', 'Item No', 'Ref No', 'Reference Item',
+                        'item_no', 'ref_no', 'reference_item',
+                        'ItemNo', 'RefNo', 'ReferenceItem'
+                    ]
+                    for key in raw_data_cleaned.keys():
+                        key_str = str(key).strip()
+                        # 使用灵活的匹配方式：检查列名是否包含关键词
+                        for keyword in workcard_item_keywords:
+                            if keyword.lower() in key_str.lower() or key_str == keyword:
+                                value = raw_data_cleaned[key]
+                                if value is not None:
+                                    # 如果是数字类型，格式化为5位字符串（补零）
+                                    if isinstance(value, (int, float)) and not pd.isna(value):
+                                        try:
+                                            num = int(float(value))
+                                            raw_data_cleaned[key] = f"{num:05d}"  # 格式化为5位数字，不足补零
+                                        except (ValueError, TypeError):
+                                            pass
+                                    # 如果已经是字符串，确保是字符串类型（保留原始格式）
+                                    elif isinstance(value, str):
+                                        raw_data_cleaned[key] = value
+                                break  # 找到第一个匹配的列名就处理，避免重复处理
+                    
+                    # 获取中文描述作为 title
+                    title = self._extract_chinese_description(raw_data_cleaned)
+                    # 获取英文描述作为 description
+                    description = self._extract_english_description(raw_data_cleaned)
+                    # 获取缺陷编号
+                    defect_number = self._extract_defect_number(raw_data_cleaned)
+                    if not defect_number:
+                        defect_number = f'DEF-{index+1}'
                     
                     # 检查是否已存在相同缺陷编号的记录（在同一缺陷清单中）
                     existing_record = self.db.query(DefectRecord).filter(
@@ -166,8 +295,8 @@ class DefectService:
                     
                     defect_record = DefectRecord(
                         defect_number=defect_number,
-                        title=str(row.get('title', '')) if pd.notna(row.get('title')) else '',
-                        description=str(row.get('description', '')) if pd.notna(row.get('description')) else '',
+                        title=title,
+                        description=description,
                         system=str(row.get('system', '')) if pd.notna(row.get('system')) else '',
                         component=str(row.get('component', '')) if pd.notna(row.get('component')) else '',
                         location=str(row.get('location', '')) if pd.notna(row.get('location')) else '',

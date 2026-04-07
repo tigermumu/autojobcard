@@ -1,0 +1,465 @@
+[('url', 'alterJCSTPNRC.jsp'), ('woRid', '13757566'), ('planStartDate', '2026-01-05'), ('wgp', '3_CABIN_TPG'), ('workorder', '120000588122'), ('tailno', 'A6-EGB'), ('jcMode', 'E'), ('jcVid', '13'), ('jcSite', 'HG'), ('booth', 'A11'), ('txtMessage', ''), ('ownerCode', 'EK'), ('flightCheckNo', '5C'), ('strWorkGroupRii', 'Y'), ('station', 'CAN'), ('delrid', ''), ('updjobcard', 'false'), ('originalStatus', ''), ('woStatus', 'N'), ('jcStatus', 'N'), ('primaryJC', '13011601'), ('addJC', ''), ('printed', ''), ('jcType', 'NR'), ('jobcard', 'NR/000000290'), ('jcSeq', '50290'), ('workgroup', '3_CABIN_TPG'), ('corrosion', ''), ('eSign', ''), ('flagCmt', 'Y'), ('customerNo', ''), ('strCsnJcWorkOrder', ''), ('jcdesc', ''), ('mainlabor', ''), ('rii', 'N'), ('jcendesc', 'REPAINT CABIN LAVATORY TOILET SHROUD SURROUND,LOC:A B C D E F G H P N R S'), ('transferRemark', '添加航材'), ('jcRemark', ''), ('slnReqDate', ''), ('slnSchedFinish', ''), ('slnStatus', 'Y'), ('slnCoordinator', ''), ('jc_workorder', '50
+0007966298'), ('customer_jc', ''), ('all_N', '全选N'), ('all_N', '取消判断'), ('majorMdo', 'N'), ('pse', 'N'), ('external', 'N'), ('outOfManual', 'N'), ('authApp', 'N'
+), ('exteriorDamage', 'N'), ('appRef', ''), ('engSign', '007581 HU HONGWEI'), ('engSignDate', '2026-01-06'), ('referenceDesc', 'CMM 25-46-83 REV.26'), ('forbidEsign', ''), ('inspector', '007581 HU HONGWEI'), ('createdDate', '2026-01-06'), ('nrcTpgEva', ''), ('strRiiFlag', '2'), ('nrcTpgEvaRemark', ''), ('engSlnRcpDate', ''), ('engRsn', ''), ('printer', '\\\\lx-ps01\\Prt2N15M非例卡(机上客舱2车间)'), ('cb_prt_mat', ''), ('eSignInfo', ''), ('StepStatus', 'Y'), ('stepDesc', ''), ('flagEr', 'N'), ('st
+epEnDesc', 'REFER TO CMM 25-46-83 REV.26,REMOVE CABIN LAVATORY TOILET SHROUD SURROUND,LOC:A B C D E F G H P N R S'), ('schedphase', '阶段2-修理'), ('schedtrade', 'TRIM
+'), ('schedlabor', '1'), ('schedmh', '12.0'), ('schedzone', '客舱'), ('remark', ''), ('primary', '19600800'), ('updatedBy', '007581 HU HONGWEI'), ('editorGrp', '3_CABI
+N_TPG'), ('step', '1'), ('isupd', 'false'), ('onlyUpdStep', 'false'), ('stepVid', '2'), ('stepRii', 'N'), ('taskDsc', ''), ('flagTank', 'N'), ('eSignInfo', ''), ('StepStatus', 'Y'), ('stepDesc', ''), ('flagEr', 'N'), ('stepEnDesc', 'REFER TO AMM TASK 25-00-00-370-801 REV.___,REPAIR CABIN LAVATORY TOILET SHROUD SURROUND,LOC:A B C D E F G H P N R S'), ('schedphase', '阶段2-修理'), ('schedtrade', 'HM3_CABIN'), ('schedlabor', '3'), ('schedmh', '12.0'), ('schedzone', '客舱'), ('remark', ''), ('primary
+', '19600801'), ('updatedBy', '007581 HU HONGWEI'), ('editorGrp', '3_CABIN_TPG'), ('step', '2'), ('isupd', 'false'), ('onlyUpdStep', 'false'), ('stepVid', '2'), ('stepRii', 'N'), ('taskDsc', ''), ('flagTank', 'N'), ('eSignInfo', ''), ('StepStatus', 'N'), ('stepDesc', ''), ('flagEr', 'N'), ('stepEnDesc', 'REFER TO AMM TASK 25-00-00-370-801 REV.___,APPLY PAINT TO CABIN LAVATORY TOILET SHROUD SURROUND,LOC:A B C D E F G H P N R S'), ('schedphase', '阶段2-修理'), ('schedtrade', 'CABIN_PNT'), ('schedla
+bor', '4'), ('schedmh', '12.0'), ('schedzone', '客舱'), ('remark', ''), ('primary', '19600802'), ('updatedBy', '007581 HU HONGWEI'), ('editorGrp', '3_CABIN_TPG'), ('st
+ep', '3'), ('isupd', 'false'), ('onlyUpdStep', 'false'), ('stepVid', '6'), ('stepRii', 'N'), ('taskDsc', ''), ('flagTank', 'N'), ('eSignInfo', ''), ('StepStatus', 'N'), ('stepDesc', ''), ('flagEr', 'N'), ('stepEnDesc', 'REFER TO CMM 25-46-83 REV.26,INSTALL CABIN LAVATORY TOILET SHROUD SURROUND,LOC:A B C D E F G H P N R S'), ('schedphase', '阶段2-修理'), ('schedtrade', 'TRIM'), ('schedlabor', '2'), ('schedmh', '6.0'), ('schedzone', '客舱'), ('remark', ''), ('primary', '19600835'), ('updatedBy', '0
+07581 HU HONGWEI'), ('editorGrp', '3_CABIN_TPG'), ('step', '4'), ('isupd', 'false'), ('onlyUpdStep', 'false'), ('stepVid', '2'), ('stepRii', 'N'), ('taskDsc', ''), ('flagTank', 'N'), ('checkStepExist', 'true'), ('txtMenuID', '22800'), ('nrcHdPrt', '')]
+url: alterJCSTPNRC.jsp
+
+woRid: 13757566
+
+planStartDate: 2026-01-05
+
+wgp: 3_CABIN_TPG
+
+workorder: 120000588122
+
+tailno: A6-EGB
+
+jcMode: E
+
+jcVid: 13
+
+jcSite: HG
+
+booth: A11
+
+txtMessage:
+
+ownerCode: EK
+
+flightCheckNo: 5C
+
+strWorkGroupRii: Y
+
+station: CAN
+
+delrid:
+
+updjobcard: false
+
+originalStatus:
+
+woStatus: N
+
+jcStatus: N
+
+primaryJC: 13011601
+
+addJC:
+
+printed:
+
+jcType: NR
+
+jobcard: NR/000000290
+
+jcSeq: 50290
+
+workgroup: 3_CABIN_TPG
+
+corrosion:
+
+eSign:
+
+flagCmt: Y
+
+customerNo:
+
+strCsnJcWorkOrder:
+
+jcdesc:
+
+mainlabor:
+
+rii: N
+
+jcendesc: REPAINT CABIN LAVATORY TOILET SHROUD SURROUND,LOC:A B C D E F G H P N R S
+
+transferRemark: 添加航材
+
+jcRemark:
+
+slnReqDate:
+
+slnSchedFinish:
+
+slnStatus: Y
+
+slnCoordinator:
+
+jc_workorder: 500007966298
+
+customer_jc:
+
+all_N: 全选N
+
+all_N: 取消判断
+
+majorMdo: N
+
+pse: N
+
+external: N
+
+outOfManual: N
+
+authApp: N
+
+exteriorDamage: N
+
+appRef:
+
+engSign: 007581 HU HONGWEI
+
+engSignDate: 2026-01-06
+
+referenceDesc: CMM 25-46-83 REV.26
+
+forbidEsign:
+
+inspector: 007581 HU HONGWEI
+
+createdDate: 2026-01-06
+
+nrcTpgEva:
+
+strRiiFlag: 2
+
+nrcTpgEvaRemark:
+
+engSlnRcpDate:
+
+engRsn:
+
+printer: \lx-ps01\Prt2N15M非例卡(机上客舱2车间)
+
+cb_prt_mat:
+
+eSignInfo:
+
+StepStatus: Y
+
+stepDesc:
+
+flagEr: N
+
+stepEnDesc: REFER TO CMM 25-46-83 REV.26,REMOVE CABIN LAVATORY TOILET SHROUD SURROUND,LOC:A B C D E F G H P N R S
+
+schedphase: 阶段2-修理
+
+schedtrade: TRIM
+
+schedlabor: 1
+
+schedmh: 12.0
+
+schedzone: 客舱
+
+remark:
+
+primary: 19600800
+
+updatedBy: 007581 HU HONGWEI
+
+editorGrp: 3_CABIN_TPG
+
+step: 1
+
+isupd: false
+
+onlyUpdStep: false
+
+stepVid: 2
+
+stepRii: N
+
+taskDsc:
+
+flagTank: N
+
+eSignInfo:
+
+StepStatus: Y
+
+stepDesc:
+
+flagEr: N
+
+stepEnDesc: REFER TO AMM TASK 25-00-00-370-801 REV.___,REPAIR CABIN LAVATORY TOILET SHROUD SURROUND,LOC:A B C D E F G H P N R S
+
+schedphase: 阶段2-修理
+
+schedtrade: HM3_CABIN
+
+schedlabor: 3
+
+schedmh: 12.0
+
+schedzone: 客舱
+
+remark:
+
+primary: 19600801
+
+updatedBy: 007581 HU HONGWEI
+
+editorGrp: 3_CABIN_TPG
+
+step: 2
+
+isupd: false
+
+onlyUpdStep: false
+
+stepVid: 2
+
+stepRii: N
+
+taskDsc:
+
+flagTank: N
+
+eSignInfo:
+
+StepStatus: N
+
+stepDesc:
+
+flagEr: N
+
+stepEnDesc: REFER TO AMM TASK 25-00-00-370-801 REV.___,APPLY PAINT TO CABIN LAVATORY TOILET SHROUD SURROUND,LOC:A B C D E F G H P N R S
+
+schedphase: 阶段2-修理
+
+schedtrade: CABIN_PNT
+
+schedlabor: 4
+
+schedmh: 12.0
+
+schedzone: 客舱
+
+remark:
+
+primary: 19600802
+
+updatedBy: 007581 HU HONGWEI
+
+editorGrp: 3_CABIN_TPG
+
+step: 3
+
+isupd: false
+
+onlyUpdStep: false
+
+stepVid: 6
+
+stepRii: N
+
+taskDsc:
+
+flagTank: N
+
+eSignInfo:
+
+StepStatus: N
+
+stepDesc:
+
+flagEr: N
+
+stepEnDesc: REFER TO CMM 25-46-83 REV.26,INSTALL CABIN LAVATORY TOILET SHROUD SURROUND,LOC:A B C D E F G H P N R S
+
+schedphase: 阶段2-修理
+
+schedtrade: TRIM
+
+schedlabor: 2
+
+schedmh: 6.0
+
+schedzone: 客舱
+
+remark:
+
+primary: 19600835
+
+updatedBy: 007581 HU HONGWEI
+
+editorGrp: 3_CABIN_TPG
+
+step: 4
+
+isupd: false
+
+onlyUpdStep: false
+
+stepVid: 2
+
+stepRii: N
+
+taskDsc:
+
+flagTank: N
+
+checkStepExist: true
+
+txtMenuID: 22800
+
+nrcHdPrt:
+
+
+
+
+
+
+
+
+500007984729 字段
+[('url', 'alterJCSTPNRC.jsp'), ('woRid', '13757566'), ('planStartDate', '2026-01-05'), ('wgp', '3_CABIN_TPG'), ('workorder', '120000588122'), ('tailno', 'A6-EGB'), ('jcMode', 'E'), ('jcVid', '1'), ('jcSite', 'HG'), ('booth', 'A11'), ('txtMessage', ''), ('ownerCode', 'EK'), ('flightCheckNo', '5C'), ('strWorkGroupRii', 'Y'), ('station', 'CAN'), ('delrid', ''), ('updjobcard', 'false'), ('originalStatus', ''), ('woStatus', 'N'), ('jcStatus', 'N'), ('primaryJC', '13034743'), ('addJC', ''), ('printed', ''), ('jcType', 'NR'), ('jobcard', 'NR/000001196'), ('jcSeq', '51196'), ('workgroup', '3_CABIN_TPG'), ('corrosion', ''), ('eSign', ''), ('flagCmt', 'Y'), ('customerNo', ''), ('strCsnJcWorkOrder', ''), ('jcdesc', ''), ('mainlabor', ''), ('rii', ''), ('jcendesc', 'SPARE CABIN PARTS'), ('transferRemark', ''), ('jcRemark', ''), ('slnReqDate', ''), ('slnSchedFinish', ''), ('slnStatus', 'N'), ('slnCoordinator', ''), ('jc_workorder', '500007984729'), ('customer_jc', ''), ('all_N', '全选N'), ('all_N', '
+取消判断'), ('majorMdo', ''), ('pse', ''), ('external', ''), ('outOfManual', ''), ('authApp', ''), ('exteriorDamage', ''), ('appRef', ''), ('engSign', ''), ('engSignDa
+te', ''), ('referenceDesc', ''), ('forbidEsign', ''), ('inspector', '007548 LIU FAN'), ('createdDate', '2026-01-13'), ('nrcTpgEva', ''), ('strRiiFlag', '2'), ('nrcTpgEvaRemark', ''), ('engSlnRcpDate', ''), ('engRsn', ''), ('printer', '\\\\lx-ps01\\Prt2N15M非例卡(机上客舱2车间)'), ('cb_prt_mat', ''), ('checkStepExist', ''), ('txtMenu
+ID', '22800'), ('nrcHdPrt', '')]
+url: alterJCSTPNRC.jsp
+
+woRid: 13757566
+
+planStartDate: 2026-01-05
+
+wgp: 3_CABIN_TPG
+
+workorder: 120000588122
+
+tailno: A6-EGB
+
+jcMode: E
+
+jcVid: 1
+
+jcSite: HG
+
+booth: A11
+
+txtMessage:
+
+ownerCode: EK
+
+flightCheckNo: 5C
+
+strWorkGroupRii: Y
+
+station: CAN
+
+delrid:
+
+updjobcard: false
+
+originalStatus:
+
+woStatus: N
+
+jcStatus: N
+
+primaryJC: 13034743
+
+addJC:
+
+printed:
+
+jcType: NR
+
+jobcard: NR/000001196
+
+jcSeq: 51196
+
+workgroup: 3_CABIN_TPG
+
+corrosion:
+
+eSign:
+
+flagCmt: Y
+
+customerNo:
+
+strCsnJcWorkOrder:
+
+jcdesc:
+
+mainlabor:
+
+rii:
+
+jcendesc: SPARE CABIN PARTS
+
+transferRemark:
+
+jcRemark:
+
+slnReqDate:
+
+slnSchedFinish:
+
+slnStatus: N
+
+slnCoordinator:
+
+jc_workorder: 500007984729
+
+customer_jc:
+
+all_N: 全选N
+
+all_N: 取消判断
+
+majorMdo:
+
+pse:
+
+external:
+
+outOfManual:
+
+authApp:
+
+exteriorDamage:
+
+appRef:
+
+engSign:
+
+engSignDate:
+
+referenceDesc:
+
+forbidEsign:
+
+inspector: 007548 LIU FAN
+
+createdDate: 2026-01-13
+
+nrcTpgEva:
+
+strRiiFlag: 2
+
+nrcTpgEvaRemark:
+
+engSlnRcpDate:
+
+engRsn:
+
+printer: \lx-ps01\Prt2N15M非例卡(机上客舱2车间)
+
+cb_prt_mat:
+
+checkStepExist:
+
+txtMenuID: 22800
+
+nrcHdPrt:

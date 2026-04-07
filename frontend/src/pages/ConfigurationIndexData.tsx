@@ -13,8 +13,7 @@ import {
   Row,
   Col,
   Statistic,
-  Table,
-  Popconfirm
+  Table
 } from 'antd'
 import { 
   PlusOutlined, 
@@ -31,7 +30,7 @@ import { Upload } from 'antd'
 import { useNavigate } from 'react-router-dom'
 import IndexDataTreeEditor from './IndexDataTreeEditor'
 import { configApi, Configuration as ApiConfiguration } from '../services/configApi'
-import { indexDataApi, IndependentFields } from '../services/indexDataApi'
+import { indexDataApi } from '../services/indexDataApi'
 import { TreeNode, flatToTree, treeToFlat } from '../utils/treeConverter'
 
 const { Title } = Typography
@@ -121,7 +120,6 @@ const ConfigurationIndexData: React.FC = () => {
       setLoading(true)
       
       // 加载层级数据
-      const hierarchyData = await indexDataApi.getHierarchy(configurationId)
       const flatData = await indexDataApi.getAll({ configuration_id: configurationId })
       
       // 转换为树形结构
@@ -681,7 +679,6 @@ const ConfigurationIndexData: React.FC = () => {
                   quantity: '数量',
                 }
                 const values = (currentConfig && independentFieldsMap.get(currentConfig)) ? (independentFieldsMap.get(currentConfig) as IndependentIndexFields)[fieldKey] : []
-                let inputRef: any
                 return (
                   <Col span={12} key={fieldKey} style={{ marginBottom: 12 }}>
                     <Card size="small" title={fieldTitleMap[fieldKey]}>

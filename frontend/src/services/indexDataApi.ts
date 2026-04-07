@@ -157,7 +157,7 @@ export const indexDataApi = {
   // Get independent fields (frontend aggregation)
   getIndependentFields: async (configurationId: number): Promise<IndependentFields> => {
     const allData = await indexDataApi.getAll({ configuration_id: configurationId })
-    
+
     const independent: any = {
       orientation: [],
       defectSubject: [],
@@ -190,14 +190,15 @@ export const indexDataApi = {
   // Export index data to Excel
   exportToExcel: async (configurationId: number): Promise<void> => {
     const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'
-    const url = `${API_BASE_URL}/index-data/configuration/${configurationId}/export`
+    const BASE_URL = `${API_BASE_URL}/index-data`
+    const url = `${BASE_URL}/configuration/${configurationId}/export`
     const response = await fetch(url)
-    
+
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ detail: response.statusText }))
       throw new Error(errorData.detail || `HTTP error! status: ${response.status}`)
     }
-    
+
     // Get filename from Content-Disposition header
     // Support both RFC 5987 format (filename*=UTF-8''...) and standard format
     const contentDisposition = response.headers.get('Content-Disposition')
@@ -221,7 +222,7 @@ export const indexDataApi = {
         }
       }
     }
-    
+
     // Download file
     const blob = await response.blob()
     const downloadUrl = window.URL.createObjectURL(blob)

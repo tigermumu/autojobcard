@@ -79,14 +79,15 @@ export const configApi = {
   // 导出独立索引字段（field_mapping）到Excel
   exportFieldMappingToExcel: async (configurationId: number): Promise<void> => {
     const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'
-    const url = `${API_BASE_URL}/configurations/${configurationId}/field-mapping/export`
+    const BASE_URL = `${API_BASE_URL}/configurations`
+    const url = `${BASE_URL}/${configurationId}/field-mapping/export`
     const response = await fetch(url)
-    
+
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ detail: response.statusText }))
       throw new Error(errorData.detail || `HTTP error! status: ${response.status}`)
     }
-    
+
     // Get filename from Content-Disposition header
     const contentDisposition = response.headers.get('Content-Disposition')
     let filename = `独立索引字段_${configurationId}.xlsx`
@@ -108,7 +109,7 @@ export const configApi = {
         }
       }
     }
-    
+
     // Download file
     const blob = await response.blob()
     const downloadUrl = window.URL.createObjectURL(blob)

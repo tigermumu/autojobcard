@@ -1,0 +1,884 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+
+<HTML>
+<HEAD>
+<META http-equiv="Content-Type" content="text/html; charset=GBK">
+<link rel="stylesheet" href="/trace/common/css.css" type="text/css">
+<script type="text/javascript" src="/trace/common/js/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="/trace/common/common.js"></script>
+<META name="GENERATOR" content="IBM WebSphere Studio">
+<TITLE>工作包工卡导入</TITLE>
+</HEAD>
+
+<base target=_self>
+
+<BODY>
+
+
+<form action="" method="POST" name="form">
+<input type="hidden" name="isFrist" value="no"/>
+<input type="hidden" name="jcRidArr" value="13053215"/>
+<input type="hidden" name="jcVidArr" value="5"/>
+<input type="hidden" name="flnum" id="flnumId" value="A6-EUD"/>
+<input type="hidden" name="stepCtrl" id="stepCtrlId" value="Y"/>
+<input type="hidden" id="messageId" value="导入成功！">
+<table width="1030px" border="0" align="center" cellpadding="2" cellspacing="1" bgcolor="#3366FF" style="table-layout : fixed">
+	<tr bgcolor="#FFFFFF">
+		<td width="60">工卡指令号</td>
+		<td width="240" >
+			<input type="text" name="qJcWorkOrder" value="500007991753" style="width:100%;word-break:break-all" />
+		</td>
+		<td width="40">工卡号</td>
+		<td width="120">
+			<input type="text" name="qJobcard" value="" style="width:100%;word-break:break-all"/>
+		</td>
+		<td width="40">工艺组</td>
+		<td width="120">
+			<select name="workGroup" id="workGroupId" style="width:100%" onchange="changeWorkGroup()">
+				<option value="" ></option>
+			
+				<option value="3_CABIN_TPG" selected="selected">三部客舱工艺</option>
+			
+				<option value="3_STR_TPG" >CRC复合材料</option>
+			
+				<option value="ANZ AKL" >奥克兰</option>
+			
+				<option value="APF" >飞机零部件加工</option>
+			
+				<option value="ARJ_CNV" >ARJ客改货项目组</option>
+			
+				<option value="AUS MEL" >墨尔本</option>
+			
+				<option value="AUS SYD" >悉尼</option>
+			
+				<option value="AV" >AV</option>
+			
+				<option value="A_CHK_TPG" >航三A检工艺组</option>
+			
+				<option value="BOOTH" >工卡站</option>
+			
+				<option value="CABIN_TPG" >客舱车间工艺组</option>
+			
+				<option value="CQ_ENG_SUP" >CQ MOCC工程</option>
+			
+				<option value="CQ_GSE" >CQ特种车队</option>
+			
+				<option value="CQ_LM_G1" >CQ维修一组</option>
+			
+				<option value="CQ_LM_G2" >CQ维修二组</option>
+			
+				<option value="CQ_LM_G3" >CQ维修三组</option>
+			
+				<option value="CQ_LM_G4" >CQ维修四班</option>
+			
+				<option value="CQ_LM_G5" >CQ维修五组</option>
+			
+				<option value="CQ_MOCC_PP" >CQ计划</option>
+			
+				<option value="DMDOR" >DMDOR</option>
+			
+				<option value="DMPF" >改装自制件</option>
+			
+				<option value="ENG_AV" >工程电子</option>
+			
+				<option value="ENG_CABIN" >工程客舱</option>
+			
+				<option value="ENG_ENG" >工程发动机</option>
+			
+				<option value="ENG_FTM" >工程FTM</option>
+			
+				<option value="ENG_SD" >工程软件组</option>
+			
+				<option value="ENG_STR" >工程结构</option>
+			
+				<option value="ENG_SUP" >工程支援</option>
+			
+				<option value="HM3_ENG" >大修三发动机</option>
+			
+				<option value="HM4_SYS_TPG" >HM4系统工艺组</option>
+			
+				<option value="HM_TPG" >机电工艺组</option>
+			
+				<option value="LM1 AV" >空客窄体电子</option>
+			
+				<option value="LM1 ME" >空客窄体机电</option>
+			
+				<option value="LM2 AV" >波音窄体电子</option>
+			
+				<option value="LM2 ME" >波音窄体机电</option>
+			
+				<option value="LM3 CABIN" >航三客舱</option>
+			
+				<option value="LM3 EMB AV" >航三国产民机维护电子</option>
+			
+				<option value="LM3 EMB ME" >航三国产民机维护机电</option>
+			
+				<option value="LM3 FAST ME" >航三外航机电</option>
+			
+				<option value="LM4 AV" >航三联邦电子</option>
+			
+				<option value="LM4 ME" >航三联邦机电</option>
+			
+				<option value="LM5" >航一跟机</option>
+			
+				<option value="LM6 AV" >航三A检电子</option>
+			
+				<option value="LM6 ME" >航三A检机电</option>
+			
+				<option value="LM7 AV" >波音宽体电子</option>
+			
+				<option value="LM7 ME" >波音宽体机电</option>
+			
+				<option value="LM8 AV" >空客宽体电子</option>
+			
+				<option value="LM8 ME" >空客宽体机电</option>
+			
+				<option value="MOCC BOOTH" >MOCC工卡站</option>
+			
+				<option value="MOCC PPC1" >MOCC动态</option>
+			
+				<option value="MOCC PPC2" >MOCC静态</option>
+			
+				<option value="NAC" >CRC工程</option>
+			
+				<option value="NDT" >NDT</option>
+			
+				<option value="PAT_TPG" >综合维修工艺</option>
+			
+				<option value="PMA" >PMA</option>
+			
+				<option value="PP" >生产计划</option>
+			
+				<option value="PVG AV" >上海外站电子</option>
+			
+				<option value="PVG ME" >上海外站机电</option>
+			
+				<option value="QC" >检验</option>
+			
+				<option value="STR_TPG" >结构车间工艺组</option>
+			
+			</select>
+		</td>
+		<td width="40">RII</td>
+		<td width="40">
+			<select name="qRii" style="width:100%">
+				<option value="" selected="selected"></option>
+				<option value="Y" >Y</option>
+				<option value="N" >N</option>
+			</select>
+		</td>
+	</tr>
+	<tr bgcolor="#FFFFFF">
+		<td width="">工卡描述</td>
+		<td width=""><input type="text" style="width:100%" name="qJcDesc" value=""/></td>
+		<td width="">工种</td>
+		<td width="">
+			<select name="qTrade" style="width:100%">
+				<option value="" selected="selected"></option>
+			
+				<option value="--" >--</option>
+			
+				<option value="机电-机上" >机电-机上</option>
+			
+				<option value="机电-机下" >机电-机下</option>
+			
+				<option value="机电-大翼" >机电-大翼</option>
+			
+				<option value="机电-发动机" >机电-发动机</option>
+			
+				<option value="机电-起落架" >机电-起落架</option>
+			
+				<option value="机电-尾部" >机电-尾部</option>
+			
+				<option value="电子" >电子</option>
+			
+				<option value="金工" >金工</option>
+			
+				<option value="机上" >机上</option>
+			
+				<option value="机电" >机电</option>
+			
+				<option value="三部金工" >三部金工</option>
+			
+				<option value="CRC复合材料" >CRC复合材料</option>
+			
+				<option value="CRC机加工" >CRC机加工</option>
+			
+				<option value="CRC特种处理" >CRC特种处理</option>
+			
+				<option value="三部客舱" >三部客舱</option>
+			
+				<option value="客舱漆工" >客舱漆工</option>
+			
+				<option value="漆工" >漆工</option>
+			
+				<option value="清洁" >清洁</option>
+			
+				<option value="WIP" >WIP</option>
+			
+				<option value="发动机" >发动机</option>
+			
+				<option value="检验" >检验</option>
+			
+				<option value="无损探伤" >无损探伤</option>
+			
+				<option value="工程师" >工程师</option>
+			
+				<option value="控制" >控制</option>
+			
+				<option value="系统" >系统</option>
+			
+				<option value="工艺工程师-机上" >工艺工程师-机上</option>
+			
+				<option value="工艺工程师-电子" >工艺工程师-电子</option>
+			
+				<option value="工艺工程师-机电" >工艺工程师-机电</option>
+			
+				<option value="工艺工程师-结构" >工艺工程师-结构</option>
+			
+				<option value="航线机电" >航线机电</option>
+			
+				<option value="航线电子" >航线电子</option>
+			
+				<option value="配送" >配送</option>
+			
+				<option value="计划" >计划</option>
+			
+				<option value="墨尔本" >墨尔本</option>
+			
+				<option value="悉尼" >悉尼</option>
+			
+				<option value="厂房设施" >厂房设施</option>
+			
+				<option value="奥克兰" >奥克兰</option>
+			
+				<option value="CRC金工" >CRC金工</option>
+			
+				<option value="CRC装配" >CRC装配</option>
+			
+				<option value="CRC喷漆" >CRC喷漆</option>
+			
+				<option value="发动机孔探" >发动机孔探</option>
+			
+				<option value="PMC-装配" >PMC-装配</option>
+			
+				<option value="PMC-钣金加工" >PMC-钣金加工</option>
+			
+				<option value="PMC-注塑" >PMC-注塑</option>
+			
+				<option value="PMC-标牌制作" >PMC-标牌制作</option>
+			
+				<option value="PMC-特种处理" >PMC-特种处理</option>
+			
+				<option value="PMC-缝纫" >PMC-缝纫</option>
+			
+				<option value="PMC-复合材料" >PMC-复合材料</option>
+			
+				<option value="PMC-喷漆" >PMC-喷漆</option>
+			
+				<option value="PMC-吸塑" >PMC-吸塑</option>
+			
+				<option value="PMC-CNC下料" >PMC-CNC下料</option>
+			
+				<option value="PMC-机加工" >PMC-机加工</option>
+			
+				<option value="PMC-外协" >PMC-外协</option>
+			
+				<option value="PMC-3D打印" >PMC-3D打印</option>
+			
+				<option value="PMC-CRC焊接" >PMC-CRC焊接</option>
+			
+			</select>
+		</td>
+		<td width="">备注</td>
+		<td width="" colspan="3"><input type="text" style="width:100%" name="qRemark" value=""/></td>
+	</tr>
+</table>
+<br/>
+<table width="1030px" border="0" align="center" cellpadding="0" cellspacing="0">
+	<tr>
+		<td align="center">
+			<input type="button" value="查询" onclick="onSubmit()" />&nbsp;&nbsp;&nbsp;&nbsp;
+			<input type="button" value="导入步骤" onclick="onSave()" />&nbsp;&nbsp;&nbsp;&nbsp;
+			<input type="button" value="返回" onclick="closeWindow('')" />&nbsp;&nbsp;&nbsp;&nbsp;
+			<input name="txtRadioArea" type="radio" value="1">与所选第一个步骤的区域相同&nbsp;&nbsp;&nbsp;&nbsp;
+			<input name="txtRadioArea" type="radio" value="2">
+			<select name="txtArea" id="txtAreaId">
+			
+				<option value="空调舱">空调舱</option>
+			
+				<option value="后货舱">后货舱</option>
+			
+				<option value="后货舱门">后货舱门</option>
+			
+				<option value="APU及舱">APU及舱</option>
+			
+				<option value="散货舱">散货舱</option>
+			
+				<option value="散货舱门">散货舱门</option>
+			
+				<option value="中央翼盒">中央翼盒</option>
+			
+				<option value="客舱">客舱</option>
+			
+				<option value="货舱(主)">货舱(主)</option>
+			
+				<option value="天行侧">天行侧</option>
+			
+				<option value="驾驶舱">驾驶舱</option>
+			
+				<option value="驾驶舱门">驾驶舱门</option>
+			
+				<option value="中央翼">中央翼</option>
+			
+				<option value="门(主)">门(主)</option>
+			
+				<option value="电子舱(主)">电子舱(主)</option>
+			
+				<option value="应急出口">应急出口</option>
+			
+				<option value="发动机及吊架(主)">发动机及吊架(主)</option>
+			
+				<option value="1#发动机">1#发动机</option>
+			
+				<option value="2#发动机">2#发动机</option>
+			
+				<option value="3#发动机">3#发动机</option>
+			
+				<option value="4#发动机">4#发动机</option>
+			
+				<option value="左发">左发</option>
+			
+				<option value="右发">右发</option>
+			
+				<option value="尾部(主)">尾部(主)</option>
+			
+				<option value="前货舱">前货舱</option>
+			
+				<option value="前货舱门">前货舱门</option>
+			
+				<option value="前电子舱">前电子舱</option>
+			
+				<option value="厨卫">厨卫</option>
+			
+				<option value="水平安定面">水平安定面</option>
+			
+				<option value="内饰">内饰</option>
+			
+				<option value="龙骨梁">龙骨梁</option>
+			
+				<option value="左机身起落架">左机身起落架</option>
+			
+				<option value="左机身起落架轮舱">左机身起落架轮舱</option>
+			
+				<option value="左主轮舱">左主轮舱</option>
+			
+				<option value="左大翼前缘">左大翼前缘</option>
+			
+				<option value="左大翼后缘">左大翼后缘</option>
+			
+				<option value="左大翼起落架">左大翼起落架</option>
+			
+				<option value="左大翼起落架轮舱">左大翼起落架轮舱</option>
+			
+				<option value="侧电子舱">侧电子舱</option>
+			
+				<option value="起落架(主)">起落架(主)</option>
+			
+				<option value="下部机身">下部机身</option>
+			
+				<option value="机下(主)">机下(主)</option>
+			
+				<option value="左大翼(主)">左大翼(主)</option>
+			
+				<option value="主电子舱">主电子舱</option>
+			
+				<option value="主货舱">主货舱</option>
+			
+				<option value="主舱门">主舱门</option>
+			
+				<option value="左主起落架">左主起落架</option>
+			
+				<option value="右主起落架">右主起落架</option>
+			
+				<option value="前起落架">前起落架</option>
+			
+				<option value="前轮舱">前轮舱</option>
+			
+				<option value="客舱门">客舱门</option>
+			
+				<option value="1#吊架/吊舱">1#吊架/吊舱</option>
+			
+				<option value="2#吊架/吊舱">2#吊架/吊舱</option>
+			
+				<option value="3#吊架/吊舱">3#吊架/吊舱</option>
+			
+				<option value="4#吊架/吊舱">4#吊架/吊舱</option>
+			
+				<option value="左吊架/吊舱">左吊架/吊舱</option>
+			
+				<option value="右吊架/吊舱">右吊架/吊舱</option>
+			
+				<option value="右机身起落架">右机身起落架</option>
+			
+				<option value="右机身起落架轮舱">右机身起落架轮舱</option>
+			
+				<option value="右主轮舱">右主轮舱</option>
+			
+				<option value="右大翼前缘">右大翼前缘</option>
+			
+				<option value="右大翼后缘">右大翼后缘</option>
+			
+				<option value="右大翼起落架">右大翼起落架</option>
+			
+				<option value="右大翼起落架轮舱">右大翼起落架轮舱</option>
+			
+				<option value="后电子舱">后电子舱</option>
+			
+				<option value="右大翼(主)">右大翼(主)</option>
+			
+				<option value="座椅">座椅</option>
+			
+				<option value="SHOP(主)">SHOP(主)</option>
+			
+				<option value="尾舱">尾舱</option>
+			
+				<option value="中央油箱">中央油箱</option>
+			
+				<option value="左大翼油箱">左大翼油箱</option>
+			
+				<option value="右大翼油箱">右大翼油箱</option>
+			
+				<option value="配平油箱">配平油箱</option>
+			
+				<option value="上部客舱">上部客舱</option>
+			
+				<option value="上部机身">上部机身</option>
+			
+				<option value="机上(主)">机上(主)</option>
+			
+				<option value="垂直安定面">垂直安定面</option>
+			
+				<option value="大翼/机身整流罩(主)">大翼/机身整流罩(主)</option>
+			
+				<option value="大翼(主)">大翼(主)</option>
+			
+			</select>
+		</td>
+	</tr>
+</table>
+<br/>
+
+<table width="1090px" border="0" align="center" cellpadding="2" cellspacing="1" bgcolor="#3366FF" style="table-layout : fixed">
+	<tr bgcolor="#A4C2FE" align="center">
+		<td width="20"><input type="checkbox" onclick="checkAll(this,'rid')"/></td>
+		<td width="80"><b>工卡指令号</b></td>
+		<td width="110"><b>工卡号</b></td>
+		<td width="213"><b>工卡描述</b></td>
+		<td width="45"><b>步骤号</b></td>
+		<td width="210"><b>步骤描述</b></td>
+		<td width="70"><b>工种</b></td>
+		<td width="30"><b>人力</b></td>
+		<td width="30"><b>停场<br/>工时</b></td>
+		<td width="130"><b>阶段</b></td>
+		<td width="130"><b>区域</b></td>
+		<td width="30"><b>航材</b></td>
+		<td width="30"><b>工具</b></td>
+		<td width="60"><b>进入燃油箱工作</b></td>
+	</tr>
+
+	<tr bgcolor="#E8E8E2" align="center">
+		<td>
+			<input type="hidden" name="phase" value="阶段2-修理"/>
+			<input type="hidden" name="zone" value="客舱"/>
+			<input type="hidden" name="trade" value="三部客舱"/>
+			<input type="checkbox" name="rid" value="19678753"/>
+		</td>
+		<td>500007991753</td>
+		<td>NR/000000754</td>
+		<td align="left" onmouseover="showtip('GALLEY G2M4 FWD SURFACE WALLPAPER WORN')" onmouseout="hidetip()">GALLEY G2M4 FWD SURFACE WALLPAPER WORN</td>
+		<td>1</td>
+		<td align="left" onmouseover="showtip('REF TO CMM 25-04-71 REV.____,REMOVE GALLEY G2M4 FWD WALL')" onmouseout="hidetip()">REF TO CMM 25-04-71 REV.____,REMOVE GALLEY G2M4 FWD WALL</td>
+		<td>三部客舱</td>
+		<td>1</td>
+		<td>2.0</td>
+		<td>阶段2-修理</td>
+		<td>客舱</td>
+		<td></td>
+		<td></td>
+		<td><span style="color: red;">N</span></td>
+	</tr>
+
+	<tr bgcolor="#FFFFFF" align="center">
+		<td>
+			<input type="hidden" name="phase" value="阶段2-修理"/>
+			<input type="hidden" name="zone" value="厨卫"/>
+			<input type="hidden" name="trade" value="三部客舱"/>
+			<input type="checkbox" name="rid" value="19678754"/>
+		</td>
+		<td>500007991753</td>
+		<td>NR/000000754</td>
+		<td align="left" onmouseover="showtip('GALLEY G2M4 FWD SURFACE WALLPAPER WORN')" onmouseout="hidetip()">GALLEY G2M4 FWD SURFACE WALLPAPER WORN</td>
+		<td>2</td>
+		<td align="left" onmouseover="showtip('REF TO CMM 25-04-71 REV.____,DISASSEMBLE THE RELATED PARTS.')" onmouseout="hidetip()">REF TO CMM 25-04-71 REV.____,DISASSEMBLE THE RELATED PARTS.</td>
+		<td>三部客舱</td>
+		<td>1</td>
+		<td>1.0</td>
+		<td>阶段2-修理</td>
+		<td>厨卫</td>
+		<td></td>
+		<td></td>
+		<td><span style="color: red;">N</span></td>
+	</tr>
+
+	<tr bgcolor="#E8E8E2" align="center">
+		<td>
+			<input type="hidden" name="phase" value="阶段2-修理"/>
+			<input type="hidden" name="zone" value="厨卫"/>
+			<input type="hidden" name="trade" value="三部客舱"/>
+			<input type="checkbox" name="rid" value="19678771"/>
+		</td>
+		<td>500007991753</td>
+		<td>NR/000000754</td>
+		<td align="left" onmouseover="showtip('GALLEY G2M4 FWD SURFACE WALLPAPER WORN')" onmouseout="hidetip()">GALLEY G2M4 FWD SURFACE WALLPAPER WORN</td>
+		<td>3</td>
+		<td align="left" onmouseover="showtip('REF TO SPM 25-32-03 REV.____,REMOVE THE WORN WALLPAPER.')" onmouseout="hidetip()">REF TO SPM 25-32-03 REV.____,REMOVE THE WORN WALLPAPER.</td>
+		<td>三部客舱</td>
+		<td>1</td>
+		<td>2.0</td>
+		<td>阶段2-修理</td>
+		<td>厨卫</td>
+		<td></td>
+		<td></td>
+		<td><span style="color: red;">N</span></td>
+	</tr>
+
+	<tr bgcolor="#FFFFFF" align="center">
+		<td>
+			<input type="hidden" name="phase" value="阶段2-修理"/>
+			<input type="hidden" name="zone" value="厨卫"/>
+			<input type="hidden" name="trade" value="三部客舱"/>
+			<input type="checkbox" name="rid" value="19678755"/>
+		</td>
+		<td>500007991753</td>
+		<td>NR/000000754</td>
+		<td align="left" onmouseover="showtip('GALLEY G2M4 FWD SURFACE WALLPAPER WORN')" onmouseout="hidetip()">GALLEY G2M4 FWD SURFACE WALLPAPER WORN</td>
+		<td>4</td>
+		<td align="left" onmouseover="showtip('REF TO SPM 25-32-03 REV.____,REMOVE THE RESIDUAL ADHESIVE.')" onmouseout="hidetip()">REF TO SPM 25-32-03 REV.____,REMOVE THE RESIDUAL ADHESIVE.</td>
+		<td>三部客舱</td>
+		<td>1</td>
+		<td>10.0</td>
+		<td>阶段2-修理</td>
+		<td>厨卫</td>
+		<td></td>
+		<td></td>
+		<td><span style="color: red;">N</span></td>
+	</tr>
+
+	<tr bgcolor="#E8E8E2" align="center">
+		<td>
+			<input type="hidden" name="phase" value="阶段2-修理"/>
+			<input type="hidden" name="zone" value="厨卫"/>
+			<input type="hidden" name="trade" value="三部客舱"/>
+			<input type="checkbox" name="rid" value="19678756"/>
+		</td>
+		<td>500007991753</td>
+		<td>NR/000000754</td>
+		<td align="left" onmouseover="showtip('GALLEY G2M4 FWD SURFACE WALLPAPER WORN')" onmouseout="hidetip()">GALLEY G2M4 FWD SURFACE WALLPAPER WORN</td>
+		<td>5</td>
+		<td align="left" onmouseover="showtip('REF TO AMM TASK 25-20-00-340-803-A REV.____,FILL THE SURFACE DENT.')" onmouseout="hidetip()">REF TO AMM TASK 25-20-00-340-803-A REV.____,FILL THE SURFACE DENT.</td>
+		<td>三部客舱</td>
+		<td>1</td>
+		<td>6.0</td>
+		<td>阶段2-修理</td>
+		<td>厨卫</td>
+		<td>1</td>
+		<td></td>
+		<td><span style="color: red;">N</span></td>
+	</tr>
+
+	<tr bgcolor="#FFFFFF" align="center">
+		<td>
+			<input type="hidden" name="phase" value="阶段2-修理"/>
+			<input type="hidden" name="zone" value="厨卫"/>
+			<input type="hidden" name="trade" value="三部客舱"/>
+			<input type="checkbox" name="rid" value="19678757"/>
+		</td>
+		<td>500007991753</td>
+		<td>NR/000000754</td>
+		<td align="left" onmouseover="showtip('GALLEY G2M4 FWD SURFACE WALLPAPER WORN')" onmouseout="hidetip()">GALLEY G2M4 FWD SURFACE WALLPAPER WORN</td>
+		<td>6</td>
+		<td align="left" onmouseover="showtip('REF TO SPM 25-32-03 REV.____,APPLY THE NEW WALLPAPER.')" onmouseout="hidetip()">REF TO SPM 25-32-03 REV.____,APPLY THE NEW WALLPAPER.</td>
+		<td>三部客舱</td>
+		<td>1</td>
+		<td>6.0</td>
+		<td>阶段2-修理</td>
+		<td>厨卫</td>
+		<td>2</td>
+		<td></td>
+		<td><span style="color: red;">N</span></td>
+	</tr>
+
+	<tr bgcolor="#E8E8E2" align="center">
+		<td>
+			<input type="hidden" name="phase" value="阶段2-修理"/>
+			<input type="hidden" name="zone" value="厨卫"/>
+			<input type="hidden" name="trade" value="三部客舱"/>
+			<input type="checkbox" name="rid" value="19678760"/>
+		</td>
+		<td>500007991753</td>
+		<td>NR/000000754</td>
+		<td align="left" onmouseover="showtip('GALLEY G2M4 FWD SURFACE WALLPAPER WORN')" onmouseout="hidetip()">GALLEY G2M4 FWD SURFACE WALLPAPER WORN</td>
+		<td>7</td>
+		<td align="left" onmouseover="showtip('REF TO CMM 25-04-71 REV.____,ASSEMBLE THE RELATED PARTS.')" onmouseout="hidetip()">REF TO CMM 25-04-71 REV.____,ASSEMBLE THE RELATED PARTS.</td>
+		<td>三部客舱</td>
+		<td>1</td>
+		<td>1.0</td>
+		<td>阶段2-修理</td>
+		<td>厨卫</td>
+		<td></td>
+		<td></td>
+		<td><span style="color: red;">N</span></td>
+	</tr>
+
+	<tr bgcolor="#FFFFFF" align="center">
+		<td>
+			<input type="hidden" name="phase" value="阶段2-修理"/>
+			<input type="hidden" name="zone" value="客舱"/>
+			<input type="hidden" name="trade" value="三部客舱"/>
+			<input type="checkbox" name="rid" value="19678758"/>
+		</td>
+		<td>500007991753</td>
+		<td>NR/000000754</td>
+		<td align="left" onmouseover="showtip('GALLEY G2M4 FWD SURFACE WALLPAPER WORN')" onmouseout="hidetip()">GALLEY G2M4 FWD SURFACE WALLPAPER WORN</td>
+		<td>8</td>
+		<td align="left" onmouseover="showtip('REF TO CMM 25-04-71 REV.____,INSTALL GALLEY G2M4 FWD WALL')" onmouseout="hidetip()">REF TO CMM 25-04-71 REV.____,INSTALL GALLEY G2M4 FWD WALL</td>
+		<td>三部客舱</td>
+		<td>1</td>
+		<td>3.0</td>
+		<td>阶段2-修理</td>
+		<td>客舱</td>
+		<td></td>
+		<td></td>
+		<td><span style="color: red;">N</span></td>
+	</tr>
+
+</table>
+<table width="1030px" border="0" align="center" cellpadding="2" cellspacing="1">
+	<tr>
+		<td><b>第1页共1页 . 共8条记录.</b></td>
+		<td align="right">
+			<b>
+			<a href="#" onclick="pageFirst()">第一页</a>
+			<a href="#" onclick="pagePrevious()">上一页</a>
+			<a href="#" onclick="pageNext()">下一页</a>
+			<a href="#" onclick="pageLast()">末尾页</a>
+			<select name="txtPage" onchange="pageGo()">
+				<option value="1">1</option>
+			
+				<option value="1">1</option>
+			
+			</select>
+			</b>
+		</td>
+	</tr>
+</table>
+</form>
+
+<script type="text/javascript">
+<!--
+document.write("<div id=\"tooltip\" style=\"position:absolute;visibility:hidden; "
++"padding:3px;border:1px solid #528AC6;\;background-color:#ffdfd0; height: 19px; left: 77px; top: 96px\"></div>"); 
+// 设置初始值
+var msgObj = $("#messageId");			// 提示信息
+var isFirst = false;
+var stepCtrl = $("#stepCtrlId");
+var flagHM = true;
+
+//页面加载完成时运行
+$(document).ready(function()
+{
+	if($.trim(msgObj.val())!="")
+	{
+		alert(msgObj.val());
+	}
+});
+
+// 保存
+function onSave()
+{
+	var radioArea = "";
+	var radios = $(":radio");
+	var area = $("#txtAreaId");
+	var cb = $("input[name='rid']:checked");// 选中的集合
+	var pass = true;
+	
+	//if(checkItem("rid")==false)
+	if(cb.length==0)
+	{
+		alert("请至少选择一项!");
+		return;
+	}
+	
+	// 步骤区域的模式
+	$.each(radios,function(i,n){
+		if($(n).attr("checked") && $(n).attr("name")=="txtRadioArea")
+		{
+			radioArea = $(n).val();
+		}
+	});
+	
+	// 步骤区域的模式 1=与所选第一步骤的区域相同，2=与用户选择的区域相同，null=按步骤的区域
+	if(radioArea=="2" && $.trim(area.val())=="")
+	{
+		alert("请选择区域!");
+		area.focus();
+		return;
+	}
+	
+	// 校验步骤的阶段和区域是否存在(只针对以步骤控制的卡校验，使用新的阶段和区域)
+	if(stepCtrl.val()=="Y")
+	{
+		$.each(cb,function(i,n){
+			phase = $(n).siblings("input[name='phase']").val();
+			zone = $(n).siblings("input[name='zone']").val();
+			trade = $(n).siblings("input[name='trade']").val();
+			if(phase=="")
+			{
+				alert("阶段信息不正确!");
+				pass = false;
+				return false;
+			}
+			// 以步骤区域模式1，只检验第一步的区域即可
+			if(radioArea==1 && i==0 && zone=="")
+			{
+				alert("区域信息不正确!");
+				pass = false;
+				return false;
+			}
+			// 以步骤区域模式2，不需要检验区域
+			else if(radioArea==2)
+			{
+				
+			}
+			// 不以步骤区域模式的，检验每一步的区域
+			else if(radioArea=="" && zone=="")
+			{
+				alert("区域信息不正确!");
+				pass = false;
+				return false;
+			}
+		});
+	}
+	
+	// 大修部门才需要校验
+	if(flagHM=="true")
+	{
+		$.each(cb,function(i,n){
+			trade = $(n).siblings("input[name='trade']").val();
+			//alert(flagRob+","+trade);
+			// 不是串件卡不允许选择机电
+			if(flagRob=="false" && trade=="AIRP")
+			{
+				alert("不允许选择机电!");
+				pass = false;
+				return false;
+			}
+		});
+	}
+	if(!pass)
+	{
+		return;
+	}
+	
+	if(!confirm("如步骤存在工具或航材时会一并导入!"))
+		return;
+	
+	document.form.action="doBathImportNrcStep.jsp";
+	document.form.submit();
+	document.form.action="";
+	$(":button").attr("disabled","disabled");
+}
+
+function showtip(text)  //显示链接的说明
+{
+	if (document.all&&document.readyState=="complete")  //针对IE
+	{
+		document.all.tooltip.innerHTML="<div vAlign=center><font SIZE=2>"+text+"</font></div>";
+		document.all.tooltip.style.pixelLeft=event.clientX+document.body.scrollLeft+10;
+		document.all.tooltip.style.pixelTop=event.clientY+document.body.scrollTop+10;
+		document.all.tooltip.style.visibility="visible";
+	}
+}
+
+function hidetip()  
+{
+	if (document.all)
+	{
+		document.all.tooltip.style.visibility="hidden";
+	}
+}
+
+// 关闭窗口
+function closeWindow(value)
+{
+	window.returnValue = value;
+	window.close();
+}
+
+// 查询
+function onSubmit()
+{
+	document.form.action="bathImportNrcStep.jsp";
+	document.form.submit();
+	document.form.action="";
+	$(":button").attr("disabled","disabled");
+}
+
+function pageFirst()
+{
+	document.form.action="bathImportNrcStep.jsp?pag=1";
+    document.form.submit();
+}
+
+function pageNext()
+{
+	document.form.action="bathImportNrcStep.jsp?page=2";
+   	document.form.submit();
+}
+
+function pagePrevious()
+{
+	document.form.action="bathImportNrcStep.jsp?page=0";
+   	document.form.submit();
+}
+
+function pageLast()
+{
+	document.form.action="bathImportNrcStep.jsp?page=1";
+   	document.form.submit();
+}
+function pageGo()
+{
+	document.form.action="bathImportNrcStep.jsp?page="+document.form.txtPage.value;
+   	document.form.submit();
+}
+// -->
+</script>
+</BODY>
+</HTML>

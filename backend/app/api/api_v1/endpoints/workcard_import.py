@@ -413,13 +413,14 @@ class StepInfoSchema(BaseModel):
 
 class ImportStepsRequest(BaseModel):
     """导入步骤请求"""
-    jobcard_number: str = Field(..., description="工卡号（如 NR/000000300）")
+    jobcard_number: str = Field(..., description="工卡号（如 NR/000000300 或 50300）")
     target_work_order: str = Field(..., description="目标工单号（候选工卡的工卡指令号，用于 qJcWorkOrder）")
     source_work_order: str = Field(..., description="源工单号（导入参数配置的工作指令号 txtWO，用于 qWorkorder）")
     tail_no: str = Field(..., description="飞机号")
     work_group: str = Field(..., description="工作组编码")
     step_rids: Optional[List[str]] = Field(None, description="要导入的步骤ID列表（如果为None，则导入所有步骤）")
     cookies: Optional[str] = Field(None, description="企业系统访问所需 Cookies，优先于配置项")
+    ref_manual: Optional[str] = Field(None, description="参考手册 (CMM_REFER)，如果提供则在导入步骤后执行 updateSteps 更新步骤描述")
 
 
 class ImportStepsResponse(BaseModel):
@@ -457,6 +458,7 @@ def import_steps(
         logger.info(f"工作组: {request.work_group}")
         logger.info(f"要导入的步骤ID: {request.step_rids}")
         logger.info(f"Cookie是否提供: {bool(request.cookies)}")
+        logger.info(f"参考手册 (CMM_REFER): {request.ref_manual or 'N/A'}")
         logger.info("=" * 80)
         
         result = service.import_steps_workflow(
@@ -467,6 +469,7 @@ def import_steps(
             work_group=request.work_group,
             step_rids=request.step_rids,
             cookies=request.cookies,
+            ref_manual=request.ref_manual,  # 参考手册，用于 updateSteps
         )
         
         logger.info("=" * 80)
@@ -530,6 +533,7 @@ def import_steps(
 class ImportEnglishDefectRequest(BaseModel):
     params: Dict[str, Any] = Field(..., description="导入参数字典")
     cookies: Optional[str] = Field(None, description="Cookie字符串")
+    enable_crn_check: bool = Field(False, description="是否启用相关工卡号(CRN)校验")
 
 
 @router.post("/import-english-defect", response_model=ImportDefectResponse)
@@ -549,6 +553,7 @@ def import_english_defect_to_nrc(
         success, message, workcard_number, logs, artifacts = service.import_english_defect_to_nrc(
             params=request.params,
             cookies=request.cookies,
+            enable_crn_check=request.enable_crn_check,
         )
         
         logger.info(f"服务方法执行完成，成功: {success}, 消息: {message}, 工卡号: {workcard_number}")
@@ -617,3 +622,233 @@ def get_ac_info(
     except Exception as exc:
         logger.error(f"获取飞机信息失败: {exc}", exc_info=True)
         return ACInfoResponse(success=False, data={}, message=f"获取失败: {str(exc)}")
+
+
+# ==================== 编写方案 API ====================
+
+class WriteStepsRequest(BaseModel):
+    """编写方案请求"""
+    sale_wo: str = Field(..., description="工作指令号 (SaleWo)")
+    ac_no: str = Field(..., description="飞机号 (ACNo)")
+    jc_seq: str = Field(..., description="已开出工卡号 (jcSeq)")
+    cmm_refer: str = Field(..., description="参考手册 (CMM_REFER)")
+    owner_code: Optional[str] = Field(None, description="客户代码 (txtCust)")
+    cookies: Optional[str] = Field(None, description="企业系统访问所需 Cookies")
+    steps: Optional[List[Any]] = Field(None, description="自定义步骤列表 (如果提供则直接使用，不重新生成)，支持字符串或字典")
+
+
+class WriteStepsResponse(BaseModel):
+    """编写方案响应"""
+    success: bool
+    message: str
+    jc_workorder_input: Optional[str] = None
+    wo_rid: Optional[str] = None
+    jc_rid: Optional[str] = None
+    steps: List[Any] = Field(default_factory=list, description="生成的步骤列表")
+    logs: List[str] = Field(default_factory=list)
+
+
+@router.post("/write-steps", response_model=WriteStepsResponse)
+def write_steps(request: WriteStepsRequest):
+    """
+    编写方案 - 根据工卡缺陷描述关键词自动生成方案步骤
+    
+    关键词匹配规则（按优先级）：
+    1. WALLPAPER -> 4个固定步骤
+    2. PAINT -> 2个步骤
+    3. FAILED -> ADJUST
+    4. BROKEN -> REPLACE
+    5. MISSING -> INSTALL
+    6. DIRTY -> CLEAN
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    try:
+        logger.info(f"收到编写方案请求: sale_wo={request.sale_wo}, ac_no={request.ac_no}, jc_seq={request.jc_seq}")
+        
+        # 导入 write_steps 模块
+        from app.services.write_steps import run_update_steps
+        
+        # 执行编写方案
+        result = run_update_steps(
+            sale_wo=request.sale_wo,
+            ac_no=request.ac_no,
+            jc_seq=request.jc_seq,
+            cmm_refer=request.cmm_refer,
+            cookies=request.cookies,
+            owner_code=request.owner_code,
+            custom_steps=request.steps,
+        )
+        
+        return WriteStepsResponse(
+            success=result.get("success", False),
+            message=result.get("message", ""),
+            jc_workorder_input=result.get("jc_workorder_input"),
+            wo_rid=result.get("wo_rid"),
+            jc_rid=result.get("jc_rid"),
+            steps=result.get("steps", []),
+            logs=result.get("logs", []),
+        )
+        
+    except Exception as exc:
+        error_detail = str(exc)
+        logger.error(f"编写方案失败: {error_detail}", exc_info=True)
+        return WriteStepsResponse(
+            success=False,
+            message=f"编写方案失败: {error_detail}",
+            logs=[f"ERROR: {error_detail}"],
+        )
+
+
+class BatchWriteStepsRequest(BaseModel):
+    """批量编写方案请求"""
+    items: List[WriteStepsRequest] = Field(..., description="编写方案请求列表")
+
+
+class BatchWriteStepsItemResult(BaseModel):
+    """批量编写方案单项结果"""
+    jc_seq: str
+    success: bool
+    message: str
+    steps: List[Any] = Field(default_factory=list)
+
+
+class BatchWriteStepsResponse(BaseModel):
+    """批量编写方案响应"""
+    success: bool
+    message: str
+    total: int
+    success_count: int
+    failed_count: int
+    results: List[BatchWriteStepsItemResult] = Field(default_factory=list)
+
+
+@router.post("/batch-write-steps", response_model=BatchWriteStepsResponse)
+def batch_write_steps(request: BatchWriteStepsRequest):
+    """批量编写方案"""
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    try:
+        logger.info(f"收到批量编写方案请求，共 {len(request.items)} 项")
+        
+        from app.services.write_steps import run_update_steps
+        
+        results = []
+        success_count = 0
+        failed_count = 0
+        
+        for item in request.items:
+            try:
+                result = run_update_steps(
+                    sale_wo=item.sale_wo,
+                    ac_no=item.ac_no,
+                    jc_seq=item.jc_seq,
+                    cmm_refer=item.cmm_refer,
+                    cookies=item.cookies,
+                    owner_code=item.owner_code,
+                    custom_steps=item.steps,
+                )
+                
+                item_result = BatchWriteStepsItemResult(
+                    jc_seq=item.jc_seq,
+                    success=result.get("success", False),
+                    message=result.get("message", ""),
+                    steps=result.get("steps", []),
+                )
+                results.append(item_result)
+                
+                if result.get("success"):
+                    success_count += 1
+                else:
+                    failed_count += 1
+                    
+            except Exception as item_exc:
+                failed_count += 1
+                results.append(BatchWriteStepsItemResult(
+                    jc_seq=item.jc_seq,
+                    success=False,
+                    message=f"执行失败: {str(item_exc)}",
+                    steps=[],
+                ))
+        
+        return BatchWriteStepsResponse(
+            success=failed_count == 0,
+            message=f"批量编写方案完成，成功 {success_count} 项，失败 {failed_count} 项",
+            total=len(request.items),
+            success_count=success_count,
+            failed_count=failed_count,
+            results=results,
+        )
+        
+    except Exception as exc:
+        error_detail = str(exc)
+        logger.error(f"批量编写方案失败: {error_detail}", exc_info=True)
+        return BatchWriteStepsResponse(
+            success=False,
+            message=f"批量编写方案失败: {error_detail}",
+            total=len(request.items),
+            success_count=0,
+            failed_count=len(request.items),
+            results=[],
+        )
+
+
+# ==================== 预览方案步骤 API ====================
+
+class SchemeStep(BaseModel):
+    """方案步骤结构"""
+    step_number: int = Field(..., description="步骤序号")
+    content_en: str = Field(..., description="步骤内容（英文）")
+    content_cn: Optional[str] = Field("", description="步骤内容（中文）")
+    man_hours: str = Field(..., description="工时 (schedmh)")
+    manpower: str = Field(..., description="人力 (schedlabor)")
+    trade: str = Field(..., description="工种 (schedtrade)")
+    materials: List[Dict[str, Any]] = Field(default_factory=list, description="航材列表")
+
+
+class PreviewStepsRequest(BaseModel):
+    """预览方案步骤请求"""
+    description_en: str = Field(..., description="工卡描述（英文）")
+    ref_manual: str = Field(..., description="参考手册 (CMM_REFER)")
+
+
+class PreviewStepsResponse(BaseModel):
+    """预览方案步骤响应"""
+    success: bool
+    message: str
+    steps: List[SchemeStep] = Field(default_factory=list)
+
+
+@router.post("/preview-steps", response_model=PreviewStepsResponse)
+def preview_steps(request: PreviewStepsRequest):
+    """
+    预览方案步骤 - 根据工卡描述和参考手册生成结构化步骤
+    不涉及外部 API 调用，纯逻辑生成
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    try:
+        from app.services.write_steps import generate_structured_steps
+        
+        steps_data = generate_structured_steps(
+            jcendesc=request.description_en,
+            cmm_refer=request.ref_manual
+        )
+        
+        return PreviewStepsResponse(
+            success=True,
+            message=f"成功生成 {len(steps_data)} 个步骤",
+            steps=steps_data
+        )
+        
+    except Exception as exc:
+        logger.error(f"预览方案步骤失败: {exc}", exc_info=True)
+        return PreviewStepsResponse(
+            success=False,
+            message=f"生成失败: {str(exc)}",
+            steps=[]
+        )
+

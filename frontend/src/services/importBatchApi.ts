@@ -24,6 +24,14 @@ export interface ImportBatchItem {
   reference_workcard_item?: string | null
   area?: string | null
   zone_number?: string | null
+  loc?: string | null
+  qty?: number | null
+  comp_pn?: string | null
+  keywords_1?: string | null
+  keywords_2?: string | null
+  candidate_description_en?: string | null  // 历史工卡描述（英文），来自Excel的 Candidate Workcard Description (English) 列
+  candidate_description_cn?: string | null  // 历史工卡描述（中文），来自Excel的 Candidate Workcard Description (Chinese) 列
+  ref_manual?: string | null  // 参考手册 (CMM_REFER)，来自Excel的 参考手册 列
 }
 
 export interface ImportBatchSummary {
@@ -56,8 +64,6 @@ export const importBatchApi = {
     return apiClient.delete(`/import-batches/${batchId}`)
   }
 }
-
-
 
 
 

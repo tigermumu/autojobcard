@@ -162,8 +162,8 @@ export const workcardApi = {
   // 获取工卡分组列表
   getGroups: async (is_cleaned: boolean = true): Promise<WorkCardGroup[]> => {
     // 传递布尔值字符串，FastAPI会自动转换为布尔值
-    return apiClient.get<WorkCardGroup[]>('/workcards/groups', { 
-      is_cleaned: is_cleaned.toString() 
+    return apiClient.get<WorkCardGroup[]>('/workcards/groups', {
+      is_cleaned: is_cleaned.toString()
     })
   },
 
@@ -207,15 +207,15 @@ export const workcardApi = {
     if (params.msn) queryParams.append('msn', params.msn)
     if (params.amm_ipc_eff) queryParams.append('amm_ipc_eff', params.amm_ipc_eff)
     if (params.configuration_id) queryParams.append('configuration_id', String(params.configuration_id))
-    
+
     const url = `${API_BASE_URL}/workcards/by-group/export?${queryParams.toString()}`
     const response = await fetch(url)
-    
+
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ detail: response.statusText }))
       throw new Error(errorData.detail || `HTTP error! status: ${response.status}`)
     }
-    
+
     // Get filename from Content-Disposition header
     const contentDisposition = response.headers.get('Content-Disposition')
     let filename = `工卡数据表.xlsx`
@@ -235,7 +235,7 @@ export const workcardApi = {
         }
       }
     }
-    
+
     // Download file
     const blob = await response.blob()
     const downloadUrl = window.URL.createObjectURL(blob)
@@ -267,7 +267,7 @@ export const workcardApi = {
     if (params.amm_ipc_eff) queryParams.append('amm_ipc_eff', params.amm_ipc_eff)
     if (params.configuration_id) queryParams.append('configuration_id', String(params.configuration_id))
     if (params.replace !== undefined) queryParams.append('replace', String(params.replace))
-    
+
     return apiClient.upload(
       `/workcards/by-group/import?${queryParams.toString()}`,
       file
