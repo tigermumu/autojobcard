@@ -13,8 +13,6 @@ services:
       - DATABASE_URL=sqlite:///./data/aircraft_workcard.db
       - REDIS_URL=redis://redis:6379
       - BACKEND_CORS_ORIGINS=["http://localhost","http://127.0.0.1","http://45.152.66.70","http://45.152.66.70:80"]
-    env_file:
-      - ./backend/.env
     volumes:
       - backend_data:/app/data
       - backend_storage:/app/storage
