@@ -1,8 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from app.core.database import SessionLocal
 from app.core.config import settings
 from app.api.api_v1.api import api_router
+from app.services.auth_service import ensure_default_admin
 import logging
 import sys
 import os
@@ -19,10 +21,6 @@ logging.basicConfig(
 
 # 设置特定模块的日志级别
 logging.getLogger("app.services.qwen_service").setLevel(logging.INFO)
-logging.getLogger("app.services.workcard_service").setLevel(logging.INFO)
-logging.getLogger("app.services.defect_service").setLevel(logging.INFO)
-logging.getLogger("app.api.api_v1.endpoints.matching").setLevel(logging.INFO)
-
 app = FastAPI(
     title="飞机方案处理系统",
     description="智能化的飞机工卡数据处理系统",
@@ -55,6 +53,20 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 
 os.makedirs("uploads", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+
+
+@app.on_event("startup")
+def startup_seed_admin():
+    db = SessionLocal()
+    try:
+        ensure_default_admin(
+            db,
+            username=settings.INIT_ADMIN_USERNAME,
+            password=settings.INIT_ADMIN_PASSWORD,
+            display_name=settings.INIT_ADMIN_DISPLAY_NAME,
+        )
+    finally:
+        db.close()
 
 @app.get("/")
 async def root():

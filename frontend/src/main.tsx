@@ -5,6 +5,8 @@ import { BrowserRouter } from 'react-router-dom'
 import { ConfigProvider } from 'antd'
 import zhCN from 'antd/locale/zh_CN'
 import App from './App.tsx'
+import { AuthProvider } from './contexts/AuthContext.tsx'
+import { installAuthFetchInterceptor } from './services/api.ts'
 import './index.css'
 
 const queryClient = new QueryClient({
@@ -16,16 +18,19 @@ const queryClient = new QueryClient({
   },
 })
 
+installAuthFetchInterceptor()
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
-      <ConfigProvider locale={zhCN}>
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
-      </ConfigProvider>
+      <AuthProvider>
+        <ConfigProvider locale={zhCN}>
+          <BrowserRouter>
+            <App />
+          </BrowserRouter>
+        </ConfigProvider>
+      </AuthProvider>
     </QueryClientProvider>
   </React.StrictMode>,
 )
-
 

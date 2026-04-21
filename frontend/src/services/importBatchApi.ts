@@ -60,11 +60,13 @@ export const importBatchApi = {
   create: async (payload: { metadata: ImportBatchMetadata; items: Array<Omit<ImportBatchItem, 'id'>> }) => {
     return apiClient.post<ImportBatchSummary>('/import-batches', payload)
   },
+  updateIssuedWorkcardNumber: async (itemId: number, issued_workcard_number: string) => {
+    return apiClient.put(`/import-batches/items/${itemId}/issued-workcard-number`, { issued_workcard_number })
+  },
   delete: async (batchId: number): Promise<void> => {
     return apiClient.delete(`/import-batches/${batchId}`)
   }
 }
-
 
 
 

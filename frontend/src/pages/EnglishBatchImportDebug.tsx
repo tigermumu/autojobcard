@@ -36,8 +36,6 @@ import {
   DeleteOutlined,
   DownloadOutlined,
   AppstoreOutlined,
-  BugOutlined,
-  DatabaseOutlined,
   CloudUploadOutlined,
   EyeOutlined,
   PlusOutlined,
@@ -66,7 +64,7 @@ const { Sider, Content } = Layout
 import type { UploadProps, UploadFile, RcFile } from 'antd/es/upload/interface'
 import * as XLSX from 'xlsx'
 import type { ColumnsType } from 'antd/es/table'
-import { defectApi, CandidateWorkCard } from '../services/defectApi'
+import { CandidateWorkCard } from '../services/defectApi'
 import { workcardImportApi } from '../services/workcardImportApi'
 import { importBatchApi, ImportBatchSummary, ImportBatchDetail } from '../services/importBatchApi'
 import { WorkCardGroup } from '../services/workcardApi'
@@ -89,6 +87,7 @@ interface SchemeStep {
 }
 
 interface MatchResult {
+  import_batch_item_id?: number
   defect_record_id: number
   defect_number: string
   description_cn?: string
@@ -326,6 +325,7 @@ const EnglishBatchImportDebug: React.FC = () => {
         }
 
         return {
+          import_batch_item_id: item.id,
           defect_record_id: item.defect_record_id ?? -(index + 1),
           defect_number: item.defect_number,
           description_cn: item.description_cn || '',
@@ -874,9 +874,10 @@ const EnglishBatchImportDebug: React.FC = () => {
       
       // 统一转换为短格式存储（如 50324）
       const shortFormat = formatWorkcardNumberToShort(workcard_number)
+      const targetRecord = matchResults.find((item) => item.defect_record_id === defect_record_id)
       
       // 如果 defect_record_id 是负数，说明这是未保存到数据库的记录，只更新本地状态
-      if (defect_record_id < 0) {
+      if (defect_record_id < 0 || !targetRecord?.import_batch_item_id) {
         setMatchResults((prev) =>
           prev.map((item) =>
             item.defect_record_id === defect_record_id
@@ -889,8 +890,7 @@ const EnglishBatchImportDebug: React.FC = () => {
         return
       }
 
-      // 如果 defect_record_id 是正数，说明这是已保存的记录，调用后端API更新
-      await defectApi.updateIssuedWorkcardNumber(defect_record_id, shortFormat)
+      await importBatchApi.updateIssuedWorkcardNumber(targetRecord.import_batch_item_id, shortFormat)
 
       setMatchResults((prev) =>
         prev.map((item) =>
@@ -998,6 +998,9 @@ const EnglishBatchImportDebug: React.FC = () => {
             setImportLogs(response.logs)
 
             if (response.success) {
+              if (response.workcard_number && record.import_batch_item_id) {
+                await importBatchApi.updateIssuedWorkcardNumber(record.import_batch_item_id, response.workcard_number)
+              }
               if (response.workcard_number) {
                 setMatchResults((prev) =>
                   prev.map((item) =>
@@ -1080,6 +1083,9 @@ const EnglishBatchImportDebug: React.FC = () => {
 
                 if (response.success) {
                   successCount += 1
+                  if (response.workcard_number && record.import_batch_item_id) {
+                    await importBatchApi.updateIssuedWorkcardNumber(record.import_batch_item_id, response.workcard_number)
+                  }
                   if (response.workcard_number) {
                     setMatchResults((prev) =>
                       prev.map((item) =>
@@ -2936,8 +2942,6 @@ const EnglishBatchImportDebug: React.FC = () => {
 
   const menuItems = [
     { key: '1', icon: <AppstoreOutlined />, label: '英文工卡批量导入' },
-    { key: '2', icon: <BugOutlined />, label: '缺陷清单处理' },
-    { key: '3', icon: <DatabaseOutlined />, label: '索引数据表管理' },
   ]
 
   return (

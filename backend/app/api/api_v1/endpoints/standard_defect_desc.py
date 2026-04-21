@@ -1,9 +1,11 @@
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Form
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.core.database import get_db
+from app.core.permissions import PermissionCodes
+from app.core.security import get_current_user, require_permission
 from app.models.defect_desc import (
     StandardDefectDescription,
     CustomDefectDescription,
@@ -12,8 +14,12 @@ from app.models.defect_desc import (
     SeatDefectCheck,
     CrewSeatDefectCheck,
 )
+from app.models.user import User
+import logging
 import os
 import re
+import httpx
+import time
 from uuid import uuid4
 from datetime import datetime
 from app.schemas.defect_desc import (
@@ -37,14 +43,119 @@ from app.schemas.defect_desc import (
     CrewSeatDefectCheckUpdate,
 )
 
-router = APIRouter()
-custom_router = APIRouter()
-single_router = APIRouter()
-batch_router = APIRouter()
-seat_router = APIRouter()
-crew_seat_router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_permission(PermissionCodes.DEFECT_CHECK_CATALOG))])
+custom_router = APIRouter(dependencies=[Depends(require_permission(PermissionCodes.DEFECT_CHECK_CUSTOM))])
+single_router = APIRouter(dependencies=[Depends(require_permission(PermissionCodes.DEFECT_CHECK_SINGLE))])
+batch_router = APIRouter(dependencies=[Depends(require_permission(PermissionCodes.DEFECT_CHECK_BATCH))])
+seat_router = APIRouter(dependencies=[Depends(require_permission(PermissionCodes.DEFECT_CHECK_SEAT))])
+crew_seat_router = APIRouter(dependencies=[Depends(require_permission(PermissionCodes.DEFECT_CHECK_CREW_SEAT))])
 
 SEAT_PREVIEW_ORDER = ["L", "A", "B", "C", "D", "E", "M", "F", "G", "H", "I", "J", "K", "R"]
+
+logger = logging.getLogger(__name__)
+
+@crew_seat_router.post("/decode-match-seat-plate")
+async def decode_match_seat_plate(
+    ImageFile: UploadFile = File(...),
+    TaskId: Optional[str] = Form(None),
+):
+    total_start = time.perf_counter()
+    image_bytes = await ImageFile.read()
+    if not image_bytes:
+        raise HTTPException(status_code=400, detail="ImageFile 不能为空")
+
+    files = {
+        "ImageFile": (
+            ImageFile.filename or "image",
+            image_bytes,
+            ImageFile.content_type or "application/octet-stream",
+        )
+    }
+    data = {}
+    if TaskId is not None:
+        data["TaskId"] = TaskId
+
+    url = "https://p459329s04.uicp.fun/api/IDPlateDecode/DecodeMatchSeatPlate"
+    try:
+        async with httpx.AsyncClient(timeout=60) as client:
+            upstream_start = time.perf_counter()
+            resp = await client.post(url, files=files, data=data)
+            upstream_elapsed_ms = int((time.perf_counter() - upstream_start) * 1000)
+            resp.raise_for_status()
+            payload = resp.json()
+            total_elapsed_ms = int((time.perf_counter() - total_start) * 1000)
+            try:
+                upstream_elapsed_seconds = payload.get("elapsedSeconds")
+            except Exception:
+                upstream_elapsed_seconds = None
+            try:
+                image_id = payload.get("imageId")
+            except Exception:
+                image_id = None
+            logger.info(
+                "crew_seat_plate_decode ok status=%s upstream_elapsed_ms=%s total_elapsed_ms=%s upstream_elapsed=%s image_id=%s image_size=%s",
+                resp.status_code,
+                upstream_elapsed_ms,
+                total_elapsed_ms,
+                upstream_elapsed_seconds,
+                image_id,
+                len(image_bytes),
+            )
+            if isinstance(payload, dict):
+                payload["proxy_upstream_elapsed_ms"] = upstream_elapsed_ms
+                payload["proxy_total_elapsed_ms"] = total_elapsed_ms
+            return payload
+    except httpx.HTTPStatusError as e:
+        total_elapsed_ms = int((time.perf_counter() - total_start) * 1000)
+        status_code = e.response.status_code if e.response is not None else None
+        detail = e.response.text if e.response is not None else str(e)
+        logger.warning(
+            "crew_seat_plate_decode failed status=%s total_elapsed_ms=%s image_size=%s detail=%s",
+            status_code,
+            total_elapsed_ms,
+            len(image_bytes),
+            (detail or "")[:500],
+        )
+        raise HTTPException(status_code=502, detail=detail or "识别服务请求失败")
+    except Exception as e:
+        total_elapsed_ms = int((time.perf_counter() - total_start) * 1000)
+        logger.exception(
+            "crew_seat_plate_decode error total_elapsed_ms=%s image_size=%s",
+            total_elapsed_ms,
+            len(image_bytes),
+        )
+        raise HTTPException(status_code=502, detail=str(e) or "识别服务请求失败")
+
+@crew_seat_router.get("/seat-part-query")
+async def seat_part_query(
+    seatpn: str = Query(...),
+    sb: Optional[str] = Query(None),
+):
+    seatpn_norm = _norm_str(seatpn)
+    if not seatpn_norm:
+        raise HTTPException(status_code=400, detail="seatpn 不能为空")
+    params = {"seatpn": seatpn_norm}
+    sb_norm = _norm_str(sb)
+    if sb_norm:
+        params["sb"] = sb_norm
+    url = "http://101.201.101.48/seat/seatpartquery"
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.get(url, params=params)
+            resp.raise_for_status()
+            payload = resp.json()
+            if isinstance(payload, dict):
+                inner = payload.get("data")
+                if isinstance(inner, dict) and isinstance(inner.get("partlist"), list):
+                    if sb_norm and "sb" not in inner:
+                        inner["sb"] = sb_norm
+                    return inner
+            return payload
+    except httpx.HTTPStatusError as e:
+        detail = e.response.text if e.response is not None else str(e)
+        raise HTTPException(status_code=502, detail=detail or "座椅件号查询失败")
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e) or "座椅件号查询失败")
 
 def _norm_str(v: Optional[str]) -> Optional[str]:
     if v is None:
@@ -104,7 +215,7 @@ def _derive_yes_no_flags(yes_flag: Optional[int], no_flag: Optional[int]) -> tup
 
 def _required_or_optional_loc(model, value: Optional[str]) -> Optional[str]:
     if model is SeatDefectCheck:
-        return _require_nonempty("loc", value)
+        return _require_nonempty("座椅排数", value)
     return _norm_str(value)
 
 def _apply_optional_filter(q, column, value: Optional[str]):
@@ -564,7 +675,8 @@ async def import_descs(
 def bulk_create_single_checks(
     payload: List[SingleDefectCheckCreate],
     mode: str = Query("replace", pattern="^(replace|append)$"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     if mode == "replace" and payload:
         keys = set()
@@ -577,7 +689,7 @@ def bulk_create_single_checks(
             a = _require_nonempty("aircraft_no", item.aircraft_no)
             s = _require_nonempty("sale_wo", item.sale_wo)
             p = _require_nonempty("plan_year_month", item.plan_year_month)
-            insp = _require_nonempty("inspector", item.inspector)
+            insp = current_user.username
             keys.add((
                 t,
                 c,
@@ -601,6 +713,7 @@ def bulk_create_single_checks(
             q = q.filter(SingleDefectCheck.sale_wo == s)
             q = q.filter(SingleDefectCheck.plan_year_month == p)
             q = q.filter(SingleDefectCheck.inspector == insp)
+            q = q.filter(SingleDefectCheck.created_by_user_id == current_user.id)
             deleted += q.delete(synchronize_session=False)
         db.commit()
     else:
@@ -617,7 +730,7 @@ def bulk_create_single_checks(
         a = _require_nonempty("aircraft_no", item.aircraft_no)
         s = _require_nonempty("sale_wo", item.sale_wo)
         p = _require_nonempty("plan_year_month", item.plan_year_month)
-        insp = _require_nonempty("inspector", item.inspector)
+        insp = current_user.username
 
         yes = 1 if item.yes_flag == 1 else 0
         no = 1 if item.no_flag == 1 else 0
@@ -659,6 +772,7 @@ def bulk_create_single_checks(
         data["sale_wo"] = s
         data["plan_year_month"] = p
         data["inspector"] = insp
+        data["inspector"] = insp
         data["yes_flag"] = 1 if yes == 1 else None
         data["no_flag"] = 1 if no == 1 else None
         data["defect_status"] = defect_status
@@ -666,6 +780,7 @@ def bulk_create_single_checks(
         data["defect_quantity"] = defect_quantity
         data["local_photo_url"] = local_photo_url
         data["global_photo_url"] = global_photo_url
+        data["created_by_user_id"] = current_user.id
         data.update(_build_derived_preview_fields(
             "single",
             is_defect=yes == 1,
@@ -842,7 +957,7 @@ def delete_single_check(
     db.commit()
     return obj
 
-def _bulk_create_seat_like_checks(model, payload: List, mode: str, db: Session):
+def _bulk_create_seat_like_checks(model, payload: List, mode: str, db: Session, current_user_id: int, current_username: str):
     module_kind = "seat" if model is SeatDefectCheck else "crew-seat"
     if mode == "replace" and payload:
         keys = set()
@@ -855,7 +970,7 @@ def _bulk_create_seat_like_checks(model, payload: List, mode: str, db: Session):
             a = _require_nonempty("aircraft_no", item.aircraft_no)
             s = _require_nonempty("sale_wo", item.sale_wo)
             p = _require_nonempty("plan_year_month", item.plan_year_month)
-            insp = _require_nonempty("inspector", item.inspector)
+            insp = current_username
             keys.add((t, c, n, pn, loc, a, s, p, insp))
         deleted = 0
         for t, c, n, pn, loc, a, s, p, insp in keys:
@@ -869,6 +984,7 @@ def _bulk_create_seat_like_checks(model, payload: List, mode: str, db: Session):
             q = q.filter(model.sale_wo == s)
             q = q.filter(model.plan_year_month == p)
             q = q.filter(model.inspector == insp)
+            q = q.filter(model.created_by_user_id == current_user_id)
             deleted += q.delete(synchronize_session=False)
         db.commit()
     else:
@@ -885,7 +1001,7 @@ def _bulk_create_seat_like_checks(model, payload: List, mode: str, db: Session):
         a = _require_nonempty("aircraft_no", item.aircraft_no)
         s = _require_nonempty("sale_wo", item.sale_wo)
         p = _require_nonempty("plan_year_month", item.plan_year_month)
-        insp = _require_nonempty("inspector", item.inspector)
+        insp = current_username
 
         yes, no = _derive_yes_no_flags(
             getattr(item, "yes_flag", None),
@@ -898,6 +1014,7 @@ def _bulk_create_seat_like_checks(model, payload: List, mode: str, db: Session):
         local_photo_url = _norm_str(getattr(item, "local_photo_url", None))
         global_photo_url = _norm_str(getattr(item, "global_photo_url", None))
         custom_positions_input = _norm_str(getattr(item, "custom_positions_input", None))
+        ref_pn = _norm_str(getattr(item, "ref_pn", None))
         if yes == 1:
             pos_list = [x.strip() for x in str(defect_positions).split(";") if x.strip()] if defect_positions else []
             defect_positions = ";".join(pos_list) if pos_list else None
@@ -916,6 +1033,7 @@ def _bulk_create_seat_like_checks(model, payload: List, mode: str, db: Session):
             defect_quantity = None
             local_photo_url = None
             global_photo_url = None
+            ref_pn = None
 
         data = item.dict(exclude_unset=True)
         data["type"] = t
@@ -936,6 +1054,8 @@ def _bulk_create_seat_like_checks(model, payload: List, mode: str, db: Session):
         data["local_photo_url"] = local_photo_url
         data["global_photo_url"] = global_photo_url
         data["custom_positions_input"] = custom_positions_input
+        data["ref_pn"] = ref_pn
+        data["created_by_user_id"] = current_user_id
         data.update(_build_derived_preview_fields(
             module_kind,
             is_defect=yes == 1,
@@ -956,9 +1076,10 @@ def _bulk_create_seat_like_checks(model, payload: List, mode: str, db: Session):
 def bulk_create_seat_checks(
     payload: List[SeatDefectCheckCreate],
     mode: str = Query("replace", pattern="^(replace|append)$"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    return _bulk_create_seat_like_checks(SeatDefectCheck, payload, mode, db)
+    return _bulk_create_seat_like_checks(SeatDefectCheck, payload, mode, db, current_user.id, current_user.username)
 
 @seat_router.get("/", response_model=List[SeatDefectCheckSchema])
 def list_seat_checks(
@@ -1062,9 +1183,10 @@ def delete_seat_check(
 def bulk_create_crew_seat_checks(
     payload: List[CrewSeatDefectCheckCreate],
     mode: str = Query("replace", pattern="^(replace|append)$"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    return _bulk_create_seat_like_checks(CrewSeatDefectCheck, payload, mode, db)
+    return _bulk_create_seat_like_checks(CrewSeatDefectCheck, payload, mode, db, current_user.id, current_user.username)
 
 @crew_seat_router.get("/", response_model=List[CrewSeatDefectCheckSchema])
 def list_crew_seat_checks(
@@ -1168,7 +1290,8 @@ def delete_crew_seat_check(
 def bulk_create_batch_checks(
     payload: List[BatchDefectCheckCreate],
     mode: str = Query("replace", pattern="^(replace|append)$"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     if mode == "replace" and payload:
         keys = set()
@@ -1191,6 +1314,7 @@ def bulk_create_batch_checks(
             q = q.filter(BatchDefectCheck.aircraft_no == a)
             q = q.filter(BatchDefectCheck.sale_wo == s)
             q = q.filter(BatchDefectCheck.plan_year_month == p)
+            q = q.filter(BatchDefectCheck.created_by_user_id == current_user.id)
             deleted += q.delete(synchronize_session=False)
         db.commit()
     else:
@@ -1252,6 +1376,7 @@ def bulk_create_batch_checks(
         data["aircraft_no"] = a
         data["sale_wo"] = s
         data["plan_year_month"] = p
+        data["created_by_user_id"] = current_user.id
         data["yes_flag"] = 1 if yes == 1 else None
         data["no_flag"] = 1 if no == 1 else None
         data["defect_status"] = defect_status

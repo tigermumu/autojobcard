@@ -6,7 +6,8 @@ from app.core.database import get_db
 from app.schemas.import_batch import (
     ImportBatchCreate,
     ImportBatchSummary,
-    ImportBatchDetail
+    ImportBatchDetail,
+    ImportBatchItemIssuedWorkcardNumberUpdate,
 )
 from app.services.import_batch_service import ImportBatchService
 
@@ -56,6 +57,22 @@ def get_import_batch(
     return batch
 
 
+@router.put("/items/{item_id}/issued-workcard-number")
+def update_import_batch_item_issued_workcard_number(
+    item_id: int,
+    payload: ImportBatchItemIssuedWorkcardNumberUpdate,
+    db: Session = Depends(get_db)
+):
+    service = ImportBatchService(db)
+    item = service.update_item_issued_workcard_number(item_id, payload.issued_workcard_number)
+    if not item:
+        raise HTTPException(status_code=404, detail="待导入数据项未找到")
+    return {
+        "message": "工卡号更新成功",
+        "issued_workcard_number": item.issued_workcard_number,
+    }
+
+
 @router.delete("/{batch_id}")
 def delete_import_batch(
     batch_id: int,
@@ -66,7 +83,6 @@ def delete_import_batch(
     if not success:
         raise HTTPException(status_code=404, detail="待导入批次未找到")
     return {"message": "删除成功"}
-
 
 
 

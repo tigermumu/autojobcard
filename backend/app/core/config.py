@@ -59,6 +59,9 @@ class Settings(BaseSettings):
     SECRET_KEY: str = os.getenv("SECRET_KEY", "your-secret-key-here-change-in-production")
     ALGORITHM: str = os.getenv("ALGORITHM", "HS256")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
+    INIT_ADMIN_USERNAME: str = os.getenv("INIT_ADMIN_USERNAME", "admin")
+    INIT_ADMIN_PASSWORD: str = os.getenv("INIT_ADMIN_PASSWORD", "admin123456")
+    INIT_ADMIN_DISPLAY_NAME: str = os.getenv("INIT_ADMIN_DISPLAY_NAME", "系统管理员")
     
     class Config:
         env_file = ".env"

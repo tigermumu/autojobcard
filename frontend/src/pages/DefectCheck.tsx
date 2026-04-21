@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Layout, Menu, Typography, Card, Button, Table, message, Form, Select, List, Radio, Space, Grid, Input, Row, Col, Modal, InputNumber } from 'antd'
+import { Layout, Menu, Typography, Card, Button, Table, message, Form, Select, List, Radio, Space, Grid, Input, Row, Col, Modal, InputNumber, Result, Divider } from 'antd'
 import { useNavigate } from 'react-router-dom'
 import { HomeOutlined, FileSearchOutlined, FolderOpenOutlined, MenuOutlined, FileExcelOutlined, UploadOutlined, EyeOutlined } from '@ant-design/icons'
 import * as XLSX from 'xlsx'
+import { PermissionCodes } from '../constants/permissions'
+import { useAuth } from '../contexts/AuthContext'
 
 const { Sider, Content } = Layout
 const { Title } = Typography
@@ -169,8 +171,16 @@ const buildFallbackQtyValue = (row: any): number => {
   return positions.length > 0 ? positions.length : 0
 }
 
+const getCurrentPlanYearMonth = () => {
+  const d = new Date()
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  return `${y}-${m}`
+}
+
 const DefectCheck: React.FC = () => {
   const navigate = useNavigate()
+  const { hasPermission, user } = useAuth()
   const screens = useBreakpoint()
   const isMobile = !screens.md
   const [activeKey, setActiveKey] = useState('single')
@@ -193,9 +203,8 @@ const DefectCheck: React.FC = () => {
   const [metaCompPn, setMetaCompPn] = useState('')
   const [metaAircraftNo, setMetaAircraftNo] = useState('')
   const [metaSaleWo, setMetaSaleWo] = useState('')
-  const [metaPlanYearMonth, setMetaPlanYearMonth] = useState('')
+  const [metaPlanYearMonth, setMetaPlanYearMonth] = useState(() => getCurrentPlanYearMonth())
   const [metaLoc, setMetaLoc] = useState('')
-  const [metaInspector, setMetaInspector] = useState('')
   const [metaCollapsed, setMetaCollapsed] = useState(false)
   const [batchMetaCollapsed, setBatchMetaCollapsed] = useState(false)
   const [batchSubmitting, setBatchSubmitting] = useState(false)
@@ -203,7 +212,6 @@ const DefectCheck: React.FC = () => {
   const [batchAnswers, setBatchAnswers] = useState<Record<string, 'yes' | 'no'>>({})
   const [batchDefectDetails, setBatchDefectDetails] = useState<Record<string, DefectDetailItem[]>>({})
   const [customModalOpen, setCustomModalOpen] = useState(false)
-  const [customDraftSeq, setCustomDraftSeq] = useState('')
   const [customDraftDesc, setCustomDraftDesc] = useState('')
   const [defectDetails, setDefectDetails] = useState<Record<string, DefectDetailItem[]>>({})
   const [detailModalOpen, setDetailModalOpen] = useState(false)
@@ -215,7 +223,6 @@ const DefectCheck: React.FC = () => {
   const [exportSaleWo, setExportSaleWo] = useState('')
   const [exportCompName, setExportCompName] = useState('')
   const [exportCompPn, setExportCompPn] = useState('')
-  const [exportInspector, setExportInspector] = useState('')
   const [exportPreviewRows, setExportPreviewRows] = useState<any[]>([])
   const [exportPreviewLoading, setExportPreviewLoading] = useState(false)
   const [exporting, setExporting] = useState(false)
@@ -238,7 +245,18 @@ const DefectCheck: React.FC = () => {
   const [seatPhotoModalKey, setSeatPhotoModalKey] = useState<string | null>(null)
   const [seatPhotoDraft, setSeatPhotoDraft] = useState<{ local_photo_url: string, global_photo_url: string }>({ local_photo_url: '', global_photo_url: '' })
   const [seatFilter, setSeatFilter] = useState<'all' | 'pending' | 'checked'>('pending')
+  const [seatDetailExpanded, setSeatDetailExpanded] = useState<Record<string, boolean>>({})
+  const [seatRefPnMap, setSeatRefPnMap] = useState<Record<string, string>>({})
+  const [seatRefPnLoadingMap, setSeatRefPnLoadingMap] = useState<Record<string, boolean>>({})
+  const [seatRefPnNoMatchMap, setSeatRefPnNoMatchMap] = useState<Record<string, boolean>>({})
   const [crewSeatCustomPositionsInput, setCrewSeatCustomPositionsInput] = useState('')
+  const [pilotSeatPlate, setPilotSeatPlate] = useState({
+    captain: { comp_pn: '', sb_versions: [] as string[] },
+    copilot: { comp_pn: '', sb_versions: [] as string[] },
+  })
+  const [pilotSeatPlateLoading, setPilotSeatPlateLoading] = useState({ captain: false, copilot: false })
+  const seatPartQueryCacheRef = useRef(new Map<string, any>())
+  const seatRefPnReqSeqRef = useRef(new Map<string, number>())
   const [singleFilter, setSingleFilter] = useState<'all' | 'pending' | 'checked'>('pending')
   const [batchFilter, setBatchFilter] = useState<'all' | 'pending' | 'checked'>('pending')
 
@@ -258,7 +276,6 @@ const DefectCheck: React.FC = () => {
     metaSaleWo?: string
     metaPlanYearMonth?: string
     metaLoc?: string
-    metaInspector?: string
     metaCollapsed?: boolean
     answers?: Record<string, 'yes' | 'no'>
     checkItems?: any[]
@@ -291,7 +308,6 @@ const DefectCheck: React.FC = () => {
       metaSaleWo,
       metaPlanYearMonth,
       metaLoc,
-      metaInspector,
       metaCollapsed,
       answers,
       checkItems,
@@ -308,7 +324,7 @@ const DefectCheck: React.FC = () => {
         autosaveToastAtRef.current = now
       }
     }
-  }, [activeKey, answers, checkItems, defectDetails, metaAircraftNo, metaCollapsed, metaCompPn, metaInspector, metaLoc, metaPlanYearMonth, metaSaleWo, selectedCompName, selectedCust, selectedType])
+  }, [activeKey, answers, checkItems, defectDetails, metaAircraftNo, metaCollapsed, metaCompPn, metaLoc, metaPlanYearMonth, metaSaleWo, selectedCompName, selectedCust, selectedType])
 
   const clearSingleDraft = useCallback(() => {
     try {
@@ -316,15 +332,21 @@ const DefectCheck: React.FC = () => {
     } catch {}
   }, [])
 
-  const items = [
-    { key: 'single', icon: <FileSearchOutlined />, label: '厨卫部件检查' },
-    { key: 'seat', icon: <FileSearchOutlined />, label: '旅客座椅缺陷检查' },
-    { key: 'crew-seat', icon: <FileSearchOutlined />, label: '机组座椅缺陷检查' },
-    { key: 'batch', icon: <FolderOpenOutlined />, label: '天行侧部件检查' },
-    { key: 'export', icon: <FileExcelOutlined />, label: '缺陷清单导出' },
-    { key: 'catalog', icon: <FolderOpenOutlined />, label: '标准缺陷描述数据表' },
-    { key: 'custom', icon: <FolderOpenOutlined />, label: '自定义缺陷描述' },
-  ]
+  const items = useMemo(() => ([
+    { key: 'single', icon: <FileSearchOutlined />, label: '厨卫部件检查', permission: PermissionCodes.DEFECT_CHECK_SINGLE },
+    { key: 'seat', icon: <FileSearchOutlined />, label: '旅客座椅缺陷检查', permission: PermissionCodes.DEFECT_CHECK_SEAT },
+    { key: 'crew-seat', icon: <FileSearchOutlined />, label: '机组座椅缺陷检查', permission: PermissionCodes.DEFECT_CHECK_CREW_SEAT },
+    { key: 'batch', icon: <FolderOpenOutlined />, label: '天行侧部件检查', permission: PermissionCodes.DEFECT_CHECK_BATCH },
+    { key: 'export', icon: <FileExcelOutlined />, label: '缺陷清单导出', permission: PermissionCodes.DEFECT_CHECK_EXPORT },
+    { key: 'catalog', icon: <FolderOpenOutlined />, label: '标准缺陷描述数据表', permission: PermissionCodes.DEFECT_CHECK_CATALOG },
+    { key: 'custom', icon: <FolderOpenOutlined />, label: '自定义缺陷描述', permission: PermissionCodes.DEFECT_CHECK_CUSTOM },
+  ].filter((item) => hasPermission(item.permission))), [hasPermission])
+
+  useEffect(() => {
+    if (!items.some((item) => item.key === activeKey) && items.length > 0) {
+      setActiveKey(items[0].key)
+    }
+  }, [activeKey, items])
 
   const endpoint = useMemo(() => {
     if (activeKey === 'catalog') return '/api/v1/standard-defect-desc/'
@@ -601,6 +623,7 @@ const DefectCheck: React.FC = () => {
     return [
       '缺陷编号',
       '部件件号',
+      '参考件号',
       '工卡描述中文',
       '工卡描述英文',
       '位置',
@@ -625,6 +648,7 @@ const DefectCheck: React.FC = () => {
     return [
       { title: '部件件号', dataIndex: 'comp_pn', key: 'comp_pn', width: 140 },
       { title: '缺陷描述', dataIndex: 'defect_desc', key: 'defect_desc', width: 520 },
+      { title: '参考件号', dataIndex: 'ref_pn', key: 'ref_pn', width: 220 },
       { title: '位置', dataIndex: 'position', key: 'position', width: 260 },
       { title: '数量', dataIndex: 'quantity', key: 'quantity', width: 90 },
       {
@@ -764,14 +788,14 @@ const DefectCheck: React.FC = () => {
     const saleWo = exportSaleWo.trim()
     const compName = exportCompName.trim()
     const compPn = exportCompPn.trim()
-    const inspector = exportInspector.trim()
-    if (!aircraftNo && !saleWo && !compName && !compPn && !inspector) {
-      message.error('请至少填写一个筛选条件')
+    const inspector = String(user?.username || '').trim()
+    if (!aircraftNo || !saleWo) {
+      message.error('请先填写：飞机号、销售指令号')
       return
     }
     setExportPreviewLoading(true)
     try {
-      const serverKeyword = aircraftNo || saleWo || compPn || compName || inspector
+      const serverKeyword = aircraftNo || saleWo
       const [singleRows, batchRows, seatRows, crewSeatRows] = await Promise.all([
         exportFetchAll('/api/v1/single-defect-checks/', serverKeyword),
         exportFetchAll('/api/v1/batch-defect-checks/', serverKeyword),
@@ -813,6 +837,7 @@ const DefectCheck: React.FC = () => {
             source,
             seq: row?.seq,
             comp_pn: String(row?.comp_pn || '').trim(),
+            ref_pn: String(row?.ref_pn || '').trim(),
             standardized_desc: String(row?.standardized_desc || '').trim(),
             type: String(row?.type || '').trim(),
             cust: String(row?.cust || '').trim(),
@@ -846,6 +871,7 @@ const DefectCheck: React.FC = () => {
             ...row,
             _positions: row.position ? [row.position] : [],
             _quantityTotal: Number(row.quantity ?? 0) || 0,
+            _ref_pns: (String(row.ref_pn || '').trim() ? String(row.ref_pn || '').split(';').map((x: string) => x.trim()).filter(Boolean) : []),
           })
           continue
         }
@@ -853,16 +879,22 @@ const DefectCheck: React.FC = () => {
         current._quantityTotal += Number(row.quantity ?? 0) || 0
         if (!current.global_photo_url && row.global_photo_url) current.global_photo_url = row.global_photo_url
         if (!current.local_photo_url && row.local_photo_url) current.local_photo_url = row.local_photo_url
+        const nextRefs = String(row.ref_pn || '').trim() ? String(row.ref_pn || '').split(';').map((x: string) => x.trim()).filter(Boolean) : []
+        for (const r of nextRefs) {
+          if (!current._ref_pns.includes(r)) current._ref_pns.push(r)
+        }
       }
 
       const previewRows = Array.from(grouped.values()).map((row: any, index: number) => {
         const position = row._positions.join('；')
         const quantity = row._quantityTotal > 0 ? row._quantityTotal : null
+        const refPn = Array.isArray(row._ref_pns) ? row._ref_pns.join(';') : String(row.ref_pn || '').trim()
         return {
           ...row,
           id: row.id ?? `${row.source}-${index}`,
           position,
           quantity,
+          ref_pn: refPn,
           defect_desc_preview: `${row.defect_desc}，LOC：${position}，QTY：${quantity ? `${quantity} EA` : ''}`,
         }
       })
@@ -875,15 +907,31 @@ const DefectCheck: React.FC = () => {
     } finally {
       setExportPreviewLoading(false)
     }
-  }, [exportAircraftNo, exportCompName, exportCompPn, exportFetchAll, exportInspector, exportMatches, exportSaleWo])
+  }, [exportAircraftNo, exportCompName, exportCompPn, exportFetchAll, exportMatches, exportSaleWo, user?.username])
 
   const doExportExcel = useCallback(async () => {
     if (!exportPreviewRows.length) {
       message.error('请先查询预览结果')
       return
     }
+    const aircraftNo = exportAircraftNo.trim()
+    const saleWo = exportSaleWo.trim()
+    const compName = exportCompName.trim()
+    const compPn = exportCompPn.trim()
+    if (!aircraftNo || !saleWo) {
+      message.error('请先填写：飞机号、销售指令号')
+      return
+    }
     setExporting(true)
     try {
+      const sanitizeFilePart = (input: string) => {
+        const s = String(input || '').trim()
+        if (!s) return ''
+        return s
+          .replace(/[\\/:*?"<>|]/g, '')
+          .replace(/\s+/g, '')
+          .slice(0, 60)
+      }
       const toAbsUrl = (u: string) => {
         const s = String(u || '').trim()
         if (!s) return ''
@@ -899,6 +947,7 @@ const DefectCheck: React.FC = () => {
         ...exportPreviewRows.map((r: any) =>
           exportHeaders.map((h) => {
             if (h === '部件件号') return r?.comp_pn || ''
+            if (h === '参考件号') return r?.ref_pn || ''
             if (h === '工卡描述中文') return r?.defect_desc || r?.standardized_desc || ''
             if (h === '位置') return r?.position || ''
             if (h === '数量') return r?.quantity ? `${r.quantity} EA` : ''
@@ -939,14 +988,22 @@ const DefectCheck: React.FC = () => {
       const pad2 = (n: number) => String(n).padStart(2, '0')
       const d = new Date()
       const stamp = `${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}_${pad2(d.getHours())}${pad2(d.getMinutes())}`
-      XLSX.writeFile(wb, `缺陷清单_${stamp}.xlsx`)
+      const nameParts = [
+        sanitizeFilePart(aircraftNo),
+        sanitizeFilePart(saleWo),
+        compName ? sanitizeFilePart(compName) : '',
+        compPn ? sanitizeFilePart(compPn) : '',
+        '缺陷清单',
+        stamp,
+      ].filter(Boolean)
+      XLSX.writeFile(wb, `${nameParts.join('_')}.xlsx`)
       message.success('已导出Excel')
     } catch (e: any) {
       message.error(e?.message || '导出失败')
     } finally {
       setExporting(false)
     }
-  }, [exportHeaders, exportPreviewRows])
+  }, [exportAircraftNo, exportCompName, exportCompPn, exportHeaders, exportPreviewRows, exportSaleWo])
 
   const fetchOptions = useCallback(async (params: { type?: string, cust?: string }) => {
     const url = new URL('/api/v1/standard-defect-desc/options', window.location.origin)
@@ -1112,8 +1169,10 @@ const DefectCheck: React.FC = () => {
       }
       const data = await res.json()
       const standardItems = Array.isArray(data) ? data : []
-      setSeatCheckItems(standardItems)
-      const nextIds = new Set(standardItems.map((it: any) => String(it?.id)))
+      const prevCustom = seatCheckItems.filter((it) => it?.__custom)
+      const nextItems = [...standardItems, ...prevCustom]
+      setSeatCheckItems(nextItems)
+      const nextIds = new Set(nextItems.map((it: any) => String(it?.id)))
       setSeatAnswers((prev) => {
         const next: Record<string, 'yes' | 'no'> = {}
         for (const [k, v] of Object.entries(prev)) {
@@ -1171,7 +1230,7 @@ const DefectCheck: React.FC = () => {
     } finally {
       setSeatCheckLoading(false)
     }
-  }, [activeCompNameOptionsSet, activeSeatPositionOptionSet, selectedCompName, selectedCust, selectedType])
+  }, [activeCompNameOptionsSet, activeSeatPositionOptionSet, seatCheckItems, selectedCompName, selectedCust, selectedType])
 
   const submitSeatCheck = useCallback(async () => {
     if (!selectedType || !selectedCust || !selectedCompName) {
@@ -1185,16 +1244,21 @@ const DefectCheck: React.FC = () => {
     const compPn = metaCompPn.trim()
     const aircraftNo = metaAircraftNo.trim()
     const saleWo = metaSaleWo.trim()
-    const planYearMonth = metaPlanYearMonth.trim()
+    const planYearMonth = getCurrentPlanYearMonth()
     const loc = metaLoc.trim()
     const locForSubmit = activeKey === 'seat' ? loc : null
-    const inspector = metaInspector.trim()
-    if (!compPn || !aircraftNo || !saleWo || !planYearMonth || !inspector || (activeKey === 'seat' && !loc)) {
-      message.error(`提交前请填写：部件件号、飞机号、销售指令号、定检年月${activeKey === 'seat' ? '、位置' : ''}、检查人`)
+    const inspector = String(user?.username || '').trim()
+    if (!compPn || !aircraftNo || !saleWo || (activeKey === 'seat' && !loc)) {
+      message.error(`提交前请填写：部件件号、飞机号、销售指令号${activeKey === 'seat' ? '、座椅排数' : ''}`)
       return
     }
     if (seatCheckItems.length === 0) {
       message.error('没有可提交的检查项')
+      return
+    }
+    const emptyCustom = seatCheckItems.filter((it) => it?.__custom && !(String(it?.standardized_desc || '').trim())).length
+    if (emptyCustom > 0) {
+      message.error(`还有 ${emptyCustom} 条自定义描述未填写内容`)
       return
     }
     const missingAnswer = seatCheckItems.filter((it) => !seatAnswers[String(it.id)]).length
@@ -1241,6 +1305,7 @@ const DefectCheck: React.FC = () => {
           defect_status: status || null,
           defect_positions: positions.join(';') || null,
           defect_quantity: quantity,
+          ref_pn: String(seatRefPnMap[k] || '').trim() || null,
           local_photo_url: String(seatDefectPhotos[k]?.local_photo_url || '').trim() || null,
           global_photo_url: String(seatDefectPhotos[k]?.global_photo_url || '').trim() || null,
           custom_positions_input: activeKey === 'crew-seat' ? String(crewSeatCustomPositionsInput || '').trim() || null : null,
@@ -1253,6 +1318,7 @@ const DefectCheck: React.FC = () => {
         defect_status: null,
         defect_positions: null,
         defect_quantity: null,
+        ref_pn: null,
         local_photo_url: null,
         global_photo_url: null,
         custom_positions_input: activeKey === 'crew-seat' ? String(crewSeatCustomPositionsInput || '').trim() || null : null,
@@ -1276,12 +1342,48 @@ const DefectCheck: React.FC = () => {
       const inserted = typeof data.inserted === 'number' ? data.inserted : undefined
       const deleted = typeof data.deleted === 'number' ? data.deleted : undefined
       message.success(`提交成功${typeof inserted === 'number' ? `，写入 ${inserted} 条` : ''}${typeof deleted === 'number' ? `，覆盖删除 ${deleted} 条` : ''}`)
+      const customItems = seatCheckItems.filter((it) => it?.__custom)
+      if (customItems.length > 0) {
+        const customPayload = customItems.map((it) => ({
+          seq: it.seq ?? null,
+          comp_pn: compPn,
+          standardized_desc: String(it.standardized_desc || '').trim(),
+          type: selectedType,
+          cust: selectedCust,
+          comp_name: selectedCompName,
+        }))
+        const cr = await fetch('/api/v1/custom-defect-desc/bulk', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(customPayload),
+        })
+        if (cr.ok) {
+          const cd = await cr.json().catch(() => ({}))
+          const ci = typeof cd.inserted === 'number' ? cd.inserted : 0
+          const cs = typeof cd.skipped_duplicates === 'number' ? cd.skipped_duplicates : 0
+          message.success(`自定义描述入库：新增 ${ci} 条${cs > 0 ? `，跳过重复 ${cs} 条` : ''}`)
+        } else {
+          const text = await cr.text().catch(() => '')
+          message.warning(text || '自定义描述入库失败')
+        }
+      }
+      setSeatCheckItems([])
+      setSeatAnswers({})
+      setSeatDefectPositions({})
+      setSeatDefectStatus({})
+      setSeatDefectQuantity({})
+      setSeatDefectPhotos({})
+      setSeatDetailExpanded({})
+      setSeatRefPnMap({})
+      setSeatRefPnLoadingMap({})
+      setSeatRefPnNoMatchMap({})
+      setCrewSeatCustomPositionsInput('')
     } catch (e: any) {
       message.error(e?.message || '提交失败')
     } finally {
       setSeatSubmitting(false)
     }
-  }, [activeCompNameOptionsSet, activeKey, activeSeatPositionOptionSet, crewSeatCustomPositionsInput, metaAircraftNo, metaCompPn, metaInspector, metaLoc, metaPlanYearMonth, metaSaleWo, seatAnswers, seatCheckItems, seatDefectPhotos, seatDefectPositions, seatDefectQuantity, seatDefectStatus, selectedCompName, selectedCust, selectedType])
+  }, [activeCompNameOptionsSet, activeKey, activeSeatPositionOptionSet, crewSeatCustomPositionsInput, metaAircraftNo, metaCompPn, metaLoc, metaPlanYearMonth, metaSaleWo, seatAnswers, seatCheckItems, seatDefectPhotos, seatDefectPositions, seatDefectQuantity, seatDefectStatus, seatRefPnMap, selectedCompName, selectedCust, selectedType, user?.username])
 
   const submitBatchCheck = useCallback(async () => {
     if (!selectedType || !selectedCust || !selectedCompName) {
@@ -1295,9 +1397,9 @@ const DefectCheck: React.FC = () => {
     const compPn = metaCompPn.trim()
     const aircraftNo = metaAircraftNo.trim()
     const saleWo = metaSaleWo.trim()
-    const planYearMonth = metaPlanYearMonth.trim()
-    if (!compPn || !aircraftNo || !saleWo || !planYearMonth) {
-      message.error('提交前请填写：部件件号、飞机号、销售指令号、定检年月')
+    const planYearMonth = getCurrentPlanYearMonth()
+    if (!compPn || !aircraftNo || !saleWo) {
+      message.error('提交前请填写：部件件号、飞机号、销售指令号')
       return
     }
     if (checkItems.length === 0) {
@@ -1380,6 +1482,34 @@ const DefectCheck: React.FC = () => {
       const inserted = typeof data.inserted === 'number' ? data.inserted : undefined
       const deleted = typeof data.deleted === 'number' ? data.deleted : undefined
       message.success(`提交成功${typeof inserted === 'number' ? `，写入 ${inserted} 条` : ''}${typeof deleted === 'number' ? `，覆盖删除 ${deleted} 条` : ''}`)
+      const customItems = checkItems.filter((it) => it?.__custom)
+      if (customItems.length > 0) {
+        const customPayload = customItems.map((it) => ({
+          seq: it.seq ?? null,
+          comp_pn: compPn,
+          standardized_desc: String(it.standardized_desc || '').trim(),
+          type: selectedType,
+          cust: selectedCust,
+          comp_name: selectedCompName,
+        }))
+        const cr = await fetch('/api/v1/custom-defect-desc/bulk', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(customPayload),
+        })
+        if (cr.ok) {
+          const cd = await cr.json().catch(() => ({}))
+          const ci = typeof cd.inserted === 'number' ? cd.inserted : 0
+          const cs = typeof cd.skipped_duplicates === 'number' ? cd.skipped_duplicates : 0
+          message.success(`自定义描述入库：新增 ${ci} 条${cs > 0 ? `，跳过重复 ${cs} 条` : ''}`)
+        } else {
+          const text = await cr.text().catch(() => '')
+          message.warning(text || '自定义描述入库失败')
+        }
+      }
+      setCheckItems([])
+      setBatchAnswers({})
+      setBatchDefectDetails({})
     } catch (e: any) {
       message.error(e?.message || '提交失败')
     } finally {
@@ -1388,7 +1518,6 @@ const DefectCheck: React.FC = () => {
   }, [activeCompNameOptionsSet, batchAnswers, batchDefectDetails, checkItems, metaAircraftNo, metaCompPn, metaPlanYearMonth, metaSaleWo, selectedCompName, selectedCust, selectedType])
 
   const addCustomCheckItem = useCallback(() => {
-    setCustomDraftSeq('')
     setCustomDraftDesc('')
     setCustomModalOpen(true)
   }, [])
@@ -1399,16 +1528,12 @@ const DefectCheck: React.FC = () => {
       message.error('请输入自定义缺陷描述')
       return
     }
-    const seqRaw = customDraftSeq.trim()
-    let seq: number | null = null
-    if (seqRaw) {
-      const n = Number(seqRaw)
-      if (!Number.isFinite(n)) {
-        message.error('序号必须是数字')
-        return
-      }
-      seq = Math.trunc(n)
-    }
+    const listForSeq = (activeKey === 'seat' || activeKey === 'crew-seat') ? seatCheckItems : checkItems
+    const seqCandidates = listForSeq
+      .map((it) => Number(it?.seq))
+      .filter((n) => Number.isFinite(n) && n > 0) as number[]
+    const maxSeq = seqCandidates.length ? Math.max(...seqCandidates) : 0
+    const seq = maxSeq + 1
     const id = `custom-${Date.now()}-${Math.random().toString(16).slice(2)}`
     const item = {
       id,
@@ -1420,14 +1545,18 @@ const DefectCheck: React.FC = () => {
       comp_name: null,
       __custom: true,
     }
-    setCheckItems((prev) => {
-      const next = [...prev, item]
-      if (activeKey === 'single') writeSingleDraft({ checkItems: next }, true)
-      return next
-    })
+    if (activeKey === 'seat' || activeKey === 'crew-seat') {
+      setSeatCheckItems((prev) => [...prev, item])
+    } else {
+      setCheckItems((prev) => {
+        const next = [...prev, item]
+        if (activeKey === 'single') writeSingleDraft({ checkItems: next }, true)
+        return next
+      })
+    }
     setCustomModalOpen(false)
     message.success('已添加到清单')
-  }, [activeKey, customDraftDesc, customDraftSeq, writeSingleDraft])
+  }, [activeKey, checkItems, customDraftDesc, seatCheckItems, writeSingleDraft])
 
   const submitSingleCheck = useCallback(async () => {
     if (!selectedType || !selectedCust || !selectedCompName) {
@@ -1441,11 +1570,11 @@ const DefectCheck: React.FC = () => {
     const compPn = metaCompPn.trim()
     const aircraftNo = metaAircraftNo.trim()
     const saleWo = metaSaleWo.trim()
-    const planYearMonth = metaPlanYearMonth.trim()
+    const planYearMonth = getCurrentPlanYearMonth()
     const loc = metaLoc.trim()
-    const inspector = metaInspector.trim()
-    if (!compPn || !aircraftNo || !saleWo || !planYearMonth || !loc || !inspector) {
-      message.error('提交前请填写：部件件号、飞机号、销售指令号、定检年月、位置、检查人')
+    const inspector = String(user?.username || '').trim()
+    if (!compPn || !aircraftNo || !saleWo || !loc) {
+      message.error('提交前请填写：部件件号、飞机号、销售指令号、位置/座椅排数')
       return
     }
     if (checkItems.length === 0) {
@@ -1554,13 +1683,16 @@ const DefectCheck: React.FC = () => {
           message.warning(text || '自定义描述入库失败')
         }
       }
+      setCheckItems([])
+      setAnswers({})
+      setDefectDetails({})
       clearSingleDraft()
     } catch (e: any) {
       message.error(e?.message || '提交失败')
     } finally {
       setSubmitting(false)
     }
-  }, [activeCompNameOptionsSet, answers, checkItems, clearSingleDraft, defectDetails, metaAircraftNo, metaCompPn, metaInspector, metaLoc, metaPlanYearMonth, metaSaleWo, selectedCompName, selectedCust, selectedType])
+  }, [activeCompNameOptionsSet, answers, checkItems, clearSingleDraft, defectDetails, metaAircraftNo, metaCompPn, metaLoc, metaPlanYearMonth, metaSaleWo, selectedCompName, selectedCust, selectedType, user?.username])
 
   const openDetailModal = useCallback((scope: 'single' | 'batch', k: string, prevAnswer?: 'yes' | 'no') => {
     setDetailModalKey(k)
@@ -1760,6 +1892,236 @@ const DefectCheck: React.FC = () => {
     })
   }, [uploadDefectPhoto])
 
+  const pickImageFile = useCallback(async (opts: { capture?: 'environment' | 'user' }) => {
+    return new Promise<File>((resolve, reject) => {
+      const input = document.createElement('input')
+      input.type = 'file'
+      input.accept = 'image/*'
+      input.multiple = false
+      if (opts.capture) input.setAttribute('capture', opts.capture)
+      input.onchange = () => {
+        const f = input.files?.[0]
+        if (!f) {
+          reject(new Error('未选择图片'))
+          return
+        }
+        resolve(f)
+        input.value = ''
+      }
+      input.click()
+    })
+  }, [])
+
+  const decodeCrewSeatPlate = useCallback(async (file: File) => {
+    const formData = new FormData()
+    formData.append('ImageFile', file)
+    formData.append('TaskId', '')
+    const res = await fetch('/api/v1/crew-seat-defect-checks/decode-match-seat-plate', {
+      method: 'POST',
+      body: formData,
+    })
+    if (!res.ok) {
+      const text = await res.text().catch(() => '')
+      throw new Error(text || res.statusText)
+    }
+    const data = await res.json().catch(() => ({}))
+    const compPn = String(data?.parseResult?.pn?.content || '').trim()
+    const rawSbs = String(data?.parseResult?.sBs || '').trim()
+    const sbVersions = rawSbs
+      ? rawSbs.split(/[;；,，|、\n\r\t ]+/g).map((s: string) => s.trim()).filter(Boolean)
+      : []
+    return { comp_pn: compPn, sb_versions: sbVersions }
+  }, [])
+
+  const runPilotSeatPlateDecode = useCallback(async (side: 'captain' | 'copilot', mode: 'camera' | 'upload') => {
+    setPilotSeatPlateLoading((prev) => ({ ...prev, [side]: true }))
+    try {
+      const file = await pickImageFile({ capture: mode === 'camera' ? 'environment' : undefined })
+      const result = await decodeCrewSeatPlate(file)
+      setPilotSeatPlate((prev) => ({
+        ...prev,
+        [side]: {
+          comp_pn: String(result.comp_pn || '').trim(),
+          sb_versions: Array.isArray(result.sb_versions) ? result.sb_versions : [],
+        },
+      }))
+      if (String(result.comp_pn || '').trim() && !metaCompPn.trim()) {
+        setMetaCompPn(String(result.comp_pn || '').trim())
+      }
+      if (String(result.comp_pn || '').trim()) {
+        message.success('已识别')
+      } else {
+        message.warning('识别完成，但未提取到部件件号')
+      }
+    } catch (e: any) {
+      const msg = String(e?.message || '').trim()
+      if (msg && msg !== '未选择图片') message.error(msg)
+    } finally {
+      setPilotSeatPlateLoading((prev) => ({ ...prev, [side]: false }))
+    }
+  }, [decodeCrewSeatPlate, metaCompPn, pickImageFile])
+
+  const normalizeSeatPartText = useCallback((input: string) => {
+    return String(input || '')
+      .trim()
+      .replace(/\s+/g, '')
+      .replace(/[()（）【】[\]［］]/g, '')
+      .replace(/[：:，,；;、|/\\\-—_]/g, '')
+  }, [])
+
+  const stripDriverSeatPrefix = useCallback((input: string) => {
+    let s = String(input || '').trim()
+    s = s.replace(/^驾驶员座椅/, '')
+    s = s.replace(/^[-—:：\s]+/, '')
+    s = s.replace(/驾驶员座椅/g, '')
+    return s.trim()
+  }, [])
+
+  const fetchSeatPartQuery = useCallback(async (seatpn: string, sb: string) => {
+    const key = `${seatpn}__${sb}`
+    if (seatPartQueryCacheRef.current.has(key)) return seatPartQueryCacheRef.current.get(key)
+    const url = new URL('/api/v1/crew-seat-defect-checks/seat-part-query', window.location.origin)
+    url.searchParams.set('seatpn', seatpn)
+    if (sb) url.searchParams.set('sb', sb)
+    const res = await fetch(url.toString(), { method: 'GET' })
+    if (!res.ok) {
+      const text = await res.text().catch(() => '')
+      throw new Error(text || res.statusText)
+    }
+    const data = await res.json().catch(() => ({}))
+    seatPartQueryCacheRef.current.set(key, data)
+    return data
+  }, [])
+
+  const buildRefPnTextFromPart = useCallback((part: any) => {
+    const out: string[] = []
+    const name = String(part?.name || '').trim()
+    const pn = String(part?.pn || '').trim()
+    if (pn) out.push(name ? `${name}:${pn}` : pn)
+    const children = Array.isArray(part?.child) ? part.child : []
+    for (const c of children) {
+      const cn = String(c?.name || '').trim()
+      const cpn = String(c?.pn || '').trim()
+      if (!cpn) continue
+      out.push(cn ? `${cn}:${cpn}` : cpn)
+    }
+    return out
+  }, [])
+
+  const updateCrewSeatRefPnForItem = useCallback(async (k: string, standardizedDesc: string, positions: string[]) => {
+    if (!(activeKey === 'crew-seat' && selectedCompName === '驾驶员座椅')) return
+    const nextSeq = (seatRefPnReqSeqRef.current.get(k) || 0) + 1
+    seatRefPnReqSeqRef.current.set(k, nextSeq)
+    const needCaptain = positions.includes('正驾驶')
+    const needCopilot = positions.includes('副驾驶')
+    if (!needCaptain && !needCopilot) {
+      setSeatRefPnMap((prev) => {
+        if (!(k in prev)) return prev
+        const next = { ...prev }
+        delete next[k]
+        return next
+      })
+      setSeatRefPnLoadingMap((prev) => {
+        if (!(k in prev)) return prev
+        const next = { ...prev }
+        delete next[k]
+        return next
+      })
+      setSeatRefPnNoMatchMap((prev) => {
+        if (!(k in prev)) return prev
+        const next = { ...prev }
+        delete next[k]
+        return next
+      })
+      return
+    }
+
+    const seatpnCaptain = String(pilotSeatPlate.captain.comp_pn || '').trim()
+    const sbCaptain = Array.isArray(pilotSeatPlate.captain.sb_versions) ? pilotSeatPlate.captain.sb_versions.join(',') : ''
+    const seatpnCopilot = String(pilotSeatPlate.copilot.comp_pn || '').trim()
+    const sbCopilot = Array.isArray(pilotSeatPlate.copilot.sb_versions) ? pilotSeatPlate.copilot.sb_versions.join(',') : ''
+
+    if (needCaptain && !seatpnCaptain) {
+      message.warning('请先完成正驾驶座椅铭牌识别或手动填写 comp_pn')
+      return
+    }
+    if (needCopilot && !seatpnCopilot) {
+      message.warning('请先完成副驾驶座椅铭牌识别或手动填写 comp_pn')
+      return
+    }
+
+    const targetNameRaw = stripDriverSeatPrefix(standardizedDesc)
+    const targetCandidates = Array.from(new Set([
+      normalizeSeatPartText(targetNameRaw),
+      normalizeSeatPartText(targetNameRaw.replace(/(破损|磨损|起毛|掉漆|划伤|裂纹|断开|断裂|开裂|脱落|松动|缺失|变形|老化|脱胶|松脱|污渍|污染)$/g, '')),
+    ])).filter(Boolean)
+    if (targetCandidates.length === 0) return
+
+    setSeatRefPnLoadingMap((prev) => ({ ...prev, [k]: true }))
+    setSeatRefPnNoMatchMap((prev) => {
+      if (!(k in prev)) return prev
+      const next = { ...prev }
+      delete next[k]
+      return next
+    })
+
+    const pnEntries: string[] = []
+    const applyResult = (data: any) => {
+      const partlist = Array.isArray(data?.partlist) ? data.partlist : []
+      const exact = partlist.filter((p: any) => {
+        const n = normalizeSeatPartText(String(p?.name || ''))
+        return n && targetCandidates.includes(n)
+      })
+      const candidates = exact.length > 0 ? exact : partlist.filter((p: any) => {
+        const n = normalizeSeatPartText(String(p?.name || ''))
+        return n && targetCandidates.some((t) => n.includes(t) || t.includes(n))
+      })
+      for (const p of candidates) {
+        pnEntries.push(...buildRefPnTextFromPart(p))
+      }
+    }
+
+    try {
+      if (needCaptain) {
+        const data = await fetchSeatPartQuery(seatpnCaptain, sbCaptain)
+        if (seatRefPnReqSeqRef.current.get(k) !== nextSeq) return
+        applyResult(data)
+      }
+      if (needCopilot) {
+        const data = await fetchSeatPartQuery(seatpnCopilot, sbCopilot)
+        if (seatRefPnReqSeqRef.current.get(k) !== nextSeq) return
+        applyResult(data)
+      }
+    } catch (e: any) {
+      if (seatRefPnReqSeqRef.current.get(k) !== nextSeq) return
+      setSeatRefPnLoadingMap((prev) => ({ ...prev, [k]: false }))
+      message.error(String(e?.message || '座椅件号查询失败'))
+      return
+    }
+
+    if (seatRefPnReqSeqRef.current.get(k) !== nextSeq) return
+    const deduped = Array.from(new Set(pnEntries.map((x) => String(x).trim()).filter(Boolean)))
+    const refText = deduped.join(';')
+    if (refText) {
+      setSeatRefPnMap((prev) => ({ ...prev, [k]: refText }))
+      setSeatRefPnNoMatchMap((prev) => {
+        if (!(k in prev)) return prev
+        const next = { ...prev }
+        delete next[k]
+        return next
+      })
+    } else {
+      setSeatRefPnMap((prev) => {
+        if (!(k in prev)) return prev
+        const next = { ...prev }
+        delete next[k]
+        return next
+      })
+      setSeatRefPnNoMatchMap((prev) => ({ ...prev, [k]: true }))
+    }
+    setSeatRefPnLoadingMap((prev) => ({ ...prev, [k]: false }))
+  }, [activeKey, buildRefPnTextFromPart, fetchSeatPartQuery, normalizeSeatPartText, pilotSeatPlate.captain.comp_pn, pilotSeatPlate.captain.sb_versions, pilotSeatPlate.copilot.comp_pn, pilotSeatPlate.copilot.sb_versions, selectedCompName, stripDriverSeatPrefix])
+
   const saveDetailModal = useCallback(() => {
     const k = detailModalKey
     if (!k) return
@@ -1868,9 +2230,8 @@ const DefectCheck: React.FC = () => {
       setMetaCompPn(draft.metaCompPn || '')
       setMetaAircraftNo(draft.metaAircraftNo || '')
       setMetaSaleWo(draft.metaSaleWo || '')
-      setMetaPlanYearMonth(draft.metaPlanYearMonth || '')
+      setMetaPlanYearMonth(getCurrentPlanYearMonth())
       setMetaLoc(draft.metaLoc || '')
-      setMetaInspector(draft.metaInspector || '')
       setMetaCollapsed(Boolean(draft.metaCollapsed))
       setCheckItems(Array.isArray(draft.checkItems) ? draft.checkItems : [])
       setAnswers(draft.answers || {})
@@ -1890,9 +2251,8 @@ const DefectCheck: React.FC = () => {
       setMetaCompPn('')
       setMetaAircraftNo('')
       setMetaSaleWo('')
-      setMetaPlanYearMonth('')
+      setMetaPlanYearMonth(getCurrentPlanYearMonth())
       setMetaLoc('')
-      setMetaInspector('')
       setMetaCollapsed(false)
       setCustOptions([])
       setCompNameOptions([])
@@ -1913,6 +2273,12 @@ const DefectCheck: React.FC = () => {
       isRestoringDraftRef.current = false
     }, 0)
   }, [activeKey, fetchOptions, readSingleDraft])
+
+  useEffect(() => {
+    if (activeKey !== 'single' && activeKey !== 'batch' && activeKey !== 'seat' && activeKey !== 'crew-seat') return
+    const current = getCurrentPlanYearMonth()
+    if (metaPlanYearMonth !== current) setMetaPlanYearMonth(current)
+  }, [activeKey, metaPlanYearMonth])
 
   useEffect(() => {
     if (activeKey !== 'single' && activeKey !== 'batch' && activeKey !== 'seat' && activeKey !== 'crew-seat') return
@@ -1950,7 +2316,7 @@ const DefectCheck: React.FC = () => {
     return () => {
       if (autosaveTimerRef.current) window.clearTimeout(autosaveTimerRef.current)
     }
-  }, [activeKey, answers, checkItems, defectDetails, metaAircraftNo, metaCollapsed, metaCompPn, metaInspector, metaLoc, metaPlanYearMonth, metaSaleWo, selectedCompName, selectedCust, selectedType, writeSingleDraft])
+  }, [activeKey, answers, checkItems, defectDetails, metaAircraftNo, metaCollapsed, metaCompPn, metaLoc, metaPlanYearMonth, metaSaleWo, selectedCompName, selectedCust, selectedType, writeSingleDraft])
 
   useEffect(() => {
     if (activeKey !== 'seat' && activeKey !== 'crew-seat') return
@@ -1984,6 +2350,10 @@ const DefectCheck: React.FC = () => {
       return changed ? next : prev
     })
   }, [activeKey, activeSeatPositionOptionSet])
+
+  if (!items.length) {
+    return <Result status="403" title="当前账号没有任何缺陷检查子页权限" />
+  }
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
@@ -2272,9 +2642,6 @@ const DefectCheck: React.FC = () => {
                 destroyOnClose
               >
                 <Form layout="vertical">
-                  <Form.Item label="序号（可选）">
-                    <Input placeholder="例如：1" value={customDraftSeq} onChange={(e) => setCustomDraftSeq(e.target.value)} />
-                  </Form.Item>
                   <Form.Item label="自定义缺陷描述" required>
                     <Input.TextArea
                       placeholder="请输入自定义缺陷描述"
@@ -2612,8 +2979,8 @@ const DefectCheck: React.FC = () => {
                       </Form.Item>
                     </Col>
                     <Col xs={12} sm={12}>
-                      <Form.Item label="定检年月（plan_year_month）" required>
-                        <Input placeholder="例如：2026-03" value={metaPlanYearMonth} onChange={(e) => setMetaPlanYearMonth(e.target.value)} />
+                      <Form.Item label="定检年月（plan_year_month）">
+                        <Input value={metaPlanYearMonth} disabled />
                       </Form.Item>
                     </Col>
                     <Col xs={12} sm={12}>
@@ -2623,7 +2990,7 @@ const DefectCheck: React.FC = () => {
                     </Col>
                     <Col xs={12} sm={12}>
                       <Form.Item label="检查人（inspector）" required>
-                        <Input placeholder="请输入检查人" value={metaInspector} onChange={(e) => setMetaInspector(e.target.value)} />
+                        <Input value={String(user?.username || '')} disabled />
                       </Form.Item>
                     </Col>
                     </Row>
@@ -2899,7 +3266,16 @@ const DefectCheck: React.FC = () => {
                               setSeatDefectStatus({})
                               setSeatDefectQuantity({})
                               setSeatDefectPhotos({})
+                              setSeatDetailExpanded({})
+                              setSeatRefPnMap({})
+                              setSeatRefPnLoadingMap({})
+                              setSeatRefPnNoMatchMap({})
                               if (activeKey === 'crew-seat') setCrewSeatCustomPositionsInput('')
+                              setPilotSeatPlate({
+                                captain: { comp_pn: '', sb_versions: [] as string[] },
+                                copilot: { comp_pn: '', sb_versions: [] as string[] },
+                              })
+                              setPilotSeatPlateLoading({ captain: false, copilot: false })
                             }}
                             options={activeCompNameOptions.map((n) => ({ value: n, label: n }))}
                           />
@@ -2921,23 +3297,138 @@ const DefectCheck: React.FC = () => {
                         </Form.Item>
                       </Col>
                       <Col xs={12} sm={12}>
-                        <Form.Item label="定检年月（plan_year_month）" required>
-                          <Input placeholder="例如：2026-03" value={metaPlanYearMonth} onChange={(e) => setMetaPlanYearMonth(e.target.value)} />
+                        <Form.Item label="定检年月（plan_year_month）">
+                          <Input value={metaPlanYearMonth} disabled />
                         </Form.Item>
                       </Col>
                       {activeKey === 'seat' && (
                         <Col xs={12} sm={12}>
-                          <Form.Item label="座椅位置（seat loc）" required>
-                            <Input placeholder="请输入位置" value={metaLoc} onChange={(e) => setMetaLoc(e.target.value)} />
+                          <Form.Item label="座椅排数" required>
+                            <Input placeholder="请输入座椅排数（例如：12）" value={metaLoc} onChange={(e) => setMetaLoc(e.target.value)} />
                           </Form.Item>
                         </Col>
                       )}
                       <Col xs={12} sm={12}>
                         <Form.Item label="检查人（inspector）" required>
-                          <Input placeholder="请输入检查人" value={metaInspector} onChange={(e) => setMetaInspector(e.target.value)} />
+                          <Input value={String(user?.username || '')} disabled />
                         </Form.Item>
                       </Col>
                     </Row>
+                    {activeKey === 'crew-seat' && selectedCompName === '驾驶员座椅' && (
+                      <>
+                        <Divider style={{ margin: '8px 0 12px' }} />
+                        <Row gutter={12}>
+                          <Col xs={24} md={12}>
+                            <Card size="small" title="正驾驶座椅铭牌识别" bodyStyle={{ padding: 12 }}>
+                              <Space wrap>
+                                <Button
+                                  icon={<UploadOutlined />}
+                                  loading={pilotSeatPlateLoading.captain}
+                                  onClick={() => runPilotSeatPlateDecode('captain', 'camera')}
+                                >
+                                  拍照识别
+                                </Button>
+                                <Button
+                                  loading={pilotSeatPlateLoading.captain}
+                                  onClick={() => runPilotSeatPlateDecode('captain', 'upload')}
+                                >
+                                  上传识别
+                                </Button>
+                                <Button
+                                  type="link"
+                                  disabled={!pilotSeatPlate.captain.comp_pn.trim()}
+                                  onClick={() => setMetaCompPn(pilotSeatPlate.captain.comp_pn)}
+                                >
+                                  填入comp_pn
+                                </Button>
+                              </Space>
+                              <Row gutter={12} style={{ marginTop: 12 }}>
+                                <Col xs={24} sm={12}>
+                                  <Form.Item label="部件件号（comp_pn）" style={{ marginBottom: 8 }}>
+                                    <Input
+                                      placeholder="可手动修改/填写"
+                                      value={pilotSeatPlate.captain.comp_pn}
+                                      onChange={(e) => {
+                                        const v = e.target.value
+                                        setPilotSeatPlate((prev) => ({ ...prev, captain: { ...prev.captain, comp_pn: v } }))
+                                      }}
+                                    />
+                                  </Form.Item>
+                                </Col>
+                                <Col xs={24} sm={12}>
+                                  <Form.Item label="SB版本号" style={{ marginBottom: 0 }}>
+                                    <Select
+                                      mode="tags"
+                                      tokenSeparators={[',', '，', ';', '；', ' ']}
+                                      placeholder="例如：B,C,D（可手动添加）"
+                                      value={pilotSeatPlate.captain.sb_versions}
+                                      onChange={(v) => {
+                                        const list = Array.isArray(v) ? v.map((x) => String(x).trim()).filter(Boolean) : []
+                                        setPilotSeatPlate((prev) => ({ ...prev, captain: { ...prev.captain, sb_versions: list } }))
+                                      }}
+                                    />
+                                  </Form.Item>
+                                </Col>
+                              </Row>
+                            </Card>
+                          </Col>
+                          <Col xs={24} md={12}>
+                            <Card size="small" title="副驾驶座椅铭牌识别" bodyStyle={{ padding: 12 }}>
+                              <Space wrap>
+                                <Button
+                                  icon={<UploadOutlined />}
+                                  loading={pilotSeatPlateLoading.copilot}
+                                  onClick={() => runPilotSeatPlateDecode('copilot', 'camera')}
+                                >
+                                  拍照识别
+                                </Button>
+                                <Button
+                                  loading={pilotSeatPlateLoading.copilot}
+                                  onClick={() => runPilotSeatPlateDecode('copilot', 'upload')}
+                                >
+                                  上传识别
+                                </Button>
+                                <Button
+                                  type="link"
+                                  disabled={!pilotSeatPlate.copilot.comp_pn.trim()}
+                                  onClick={() => setMetaCompPn(pilotSeatPlate.copilot.comp_pn)}
+                                >
+                                  填入comp_pn
+                                </Button>
+                              </Space>
+                              <Row gutter={12} style={{ marginTop: 12 }}>
+                                <Col xs={24} sm={12}>
+                                  <Form.Item label="部件件号（comp_pn）" style={{ marginBottom: 8 }}>
+                                    <Input
+                                      placeholder="可手动修改/填写"
+                                      value={pilotSeatPlate.copilot.comp_pn}
+                                      onChange={(e) => {
+                                        const v = e.target.value
+                                        setPilotSeatPlate((prev) => ({ ...prev, copilot: { ...prev.copilot, comp_pn: v } }))
+                                      }}
+                                    />
+                                  </Form.Item>
+                                </Col>
+                                <Col xs={24} sm={12}>
+                                  <Form.Item label="SB版本号" style={{ marginBottom: 0 }}>
+                                    <Select
+                                      mode="tags"
+                                      tokenSeparators={[',', '，', ';', '；', ' ']}
+                                      placeholder="例如：B,C,D（可手动添加）"
+                                      value={pilotSeatPlate.copilot.sb_versions}
+                                      onChange={(v) => {
+                                        const list = Array.isArray(v) ? v.map((x) => String(x).trim()).filter(Boolean) : []
+                                        setPilotSeatPlate((prev) => ({ ...prev, copilot: { ...prev.copilot, sb_versions: list } }))
+                                      }}
+                                    />
+                                  </Form.Item>
+                                </Col>
+                              </Row>
+                            </Card>
+                          </Col>
+                        </Row>
+                      </>
+                    )}
                   </Form>
                 )}
               </Card>
@@ -2962,13 +3453,16 @@ const DefectCheck: React.FC = () => {
                       <Button onClick={loadSeatCheckItems} loading={seatCheckLoading} type="primary">
                         加载检查项
                       </Button>
+                      <Button onClick={addCustomCheckItem} disabled={!selectedType || !selectedCust || !selectedCompName}>
+                        新增自定义描述
+                      </Button>
                       <Button onClick={submitSeatCheck} loading={seatSubmitting} disabled={seatCheckItems.length === 0} type="primary">
                         提交
                       </Button>
                     </Space>
                   </div>
                   <div style={{ padding: '0 12px 12px', color: '#666' }}>
-                    飞机与部件位置信息：{metaLoc.trim() || '未填写'}
+                    座椅排数：{metaLoc.trim() || '未填写'}
                   </div>
                   {activeKey === 'crew-seat' && selectedCompName === '乘务员座椅' && (
                     <div style={{ padding: '0 12px 12px' }}>
@@ -3002,6 +3496,12 @@ const DefectCheck: React.FC = () => {
                       ? `${seatLocBase}${seatLocDetail}`
                       : (seatLocDetail || '未选择')
                     const seatPreview = `${String(item?.standardized_desc || '').trim()}${status ? `${status}` : ''}，LOC：${seatLocPreview}，QTY：${seatQty > 0 ? seatQty : 0} EA`
+                    const refPnText = String(seatRefPnMap[k] || '').trim()
+                    const refPnLoading = Boolean(seatRefPnLoadingMap[k])
+                    const refPnNoMatch = Boolean(seatRefPnNoMatchMap[k])
+                    const seatPreviewWithRef = refPnLoading
+                      ? `${seatPreview}，参考件号：查询中...`
+                      : (refPnText ? `${seatPreview}，参考件号：${refPnText}` : (refPnNoMatch ? `${seatPreview}，参考件号：未匹配` : seatPreview))
                     return (
                       <List.Item style={{ padding: isMobile ? 0 : 12, marginBottom: isMobile ? 12 : 0 }}>
                         <div style={{ width: '100%', ...(isMobile ? { border: '1px solid #f0f0f0', borderRadius: 10, padding: 12, background: '#fff' } : {}) }}>
@@ -3009,7 +3509,23 @@ const DefectCheck: React.FC = () => {
                             {displayPn ? `（${displayPn}）` : ''}
                           </div>
                           <div style={{ marginTop: 8, whiteSpace: 'pre-wrap' }}>
-                            {`${seqPrefix}${String(item.standardized_desc || '')}`}
+                            {item?.__custom ? (
+                              <div style={{ display: 'flex', gap: 8 }}>
+                                {seqPrefix ? <div style={{ whiteSpace: 'nowrap' }}>{seqPrefix}</div> : null}
+                                <Input.TextArea
+                                  placeholder="请输入自定义缺陷描述"
+                                  value={String(item.standardized_desc || '')}
+                                  autoSize={{ minRows: 2, maxRows: 6 }}
+                                  style={{ flex: 1 }}
+                                  onChange={(e) => {
+                                    const v = e.target.value
+                                    setSeatCheckItems((prev) => prev.map((p) => (String(p.id) === k ? { ...p, standardized_desc: v } : p)))
+                                  }}
+                                />
+                              </div>
+                            ) : (
+                              `${seqPrefix}${String(item.standardized_desc || '')}`
+                            )}
                           </div>
                           <div style={{ marginTop: 10, display: 'flex', justifyContent: isMobile ? 'stretch' : 'flex-end' }}>
                             <Radio.Group
@@ -3018,6 +3534,31 @@ const DefectCheck: React.FC = () => {
                                 const v = e.target.value as 'yes' | 'no'
                                 setSeatAnswers((prev) => ({ ...prev, [k]: v }))
                                 if (v === 'no') {
+                                  seatRefPnReqSeqRef.current.set(k, (seatRefPnReqSeqRef.current.get(k) || 0) + 1)
+                                  setSeatRefPnMap((prev) => {
+                                    if (!(k in prev)) return prev
+                                    const next = { ...prev }
+                                    delete next[k]
+                                    return next
+                                  })
+                                  setSeatRefPnLoadingMap((prev) => {
+                                    if (!(k in prev)) return prev
+                                    const next = { ...prev }
+                                    delete next[k]
+                                    return next
+                                  })
+                                  setSeatRefPnNoMatchMap((prev) => {
+                                    if (!(k in prev)) return prev
+                                    const next = { ...prev }
+                                    delete next[k]
+                                    return next
+                                  })
+                                  setSeatDetailExpanded((prev) => {
+                                    if (!(k in prev)) return prev
+                                    const next = { ...prev }
+                                    delete next[k]
+                                    return next
+                                  })
                                   setSeatDefectPositions((prev) => {
                                     if (!prev[k]) return prev
                                     const next = { ...prev }
@@ -3042,6 +3583,8 @@ const DefectCheck: React.FC = () => {
                                     delete next[k]
                                     return next
                                   })
+                                } else {
+                                  setSeatDetailExpanded((prev) => ({ ...prev, [k]: true }))
                                 }
                               }}
                               optionType="button"
@@ -3054,92 +3597,153 @@ const DefectCheck: React.FC = () => {
                           </div>
                           {value === 'yes' && (
                             <div style={{ marginTop: 10 }}>
-                              <Form.Item label="缺陷照片（可选）" style={{ marginBottom: 8 }}>
-                                <Space>
-                                  <Button
-                                    icon={<UploadOutlined />}
-                                    onClick={() => {
-                                      const draft = seatDefectPhotos[k] || {}
-                                      setSeatPhotoModalKey(k)
-                                      setSeatPhotoDraft({
-                                        local_photo_url: String(draft.local_photo_url || ''),
-                                        global_photo_url: String(draft.global_photo_url || ''),
-                                      })
-                                      setSeatPhotoModalOpen(true)
-                                    }}
-                                  >
-                                    拍照/相册
-                                  </Button>
-                                  {(String(seatDefectPhotos[k]?.local_photo_url || '').trim() || String(seatDefectPhotos[k]?.global_photo_url || '').trim())
-                                    ? <span style={{ color: '#52c41a' }}>已上传照片</span>
-                                    : <span style={{ color: '#999' }}>可选上传局部/全局照片</span>}
-                                </Space>
-                              </Form.Item>
-                              <Form.Item label="缺陷位置（可多选）" required style={{ marginBottom: 8 }}>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                                  {activeSeatPositionOptions.map((p) => {
-                                    const selected = selectedPositions.includes(p)
-                                    return (
-                                      <Button
-                                        key={p}
-                                        size="small"
-                                        style={{
-                                          minWidth: 34,
-                                          background: selected ? '#1677ff' : '#fff',
-                                          color: selected ? '#fff' : 'rgba(0,0,0,0.88)',
-                                          borderColor: selected ? '#1677ff' : '#d9d9d9',
-                                        }}
-                                        onClick={() => {
-                                          const current = seatDefectPositions[k] || []
-                                          const next = current.includes(p) ? current.filter((x) => x !== p) : [...current, p]
-                                          setSeatDefectPositions((prev) => ({ ...prev, [k]: next }))
-                                        }}
-                                      >
-                                        {p}
-                                      </Button>
-                                    )
-                                  })}
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                                <div style={{ color: '#666' }}>
+                                  缺陷描述预览：{seatPreviewWithRef}
                                 </div>
-                              </Form.Item>
-                              <Form.Item label="缺陷状态（必选一）" required style={{ marginBottom: 6 }}>
-                                <Radio.Group
-                                  value={status || undefined}
-                                  onChange={(e) => {
-                                    const v = String(e.target.value || '').trim()
-                                    setSeatDefectStatus((prev) => ({ ...prev, [k]: v }))
-                                  }}
-                                >
-                                  <Space wrap>
-                                    {defectStatusOptions.map((s) => (
-                                      <Radio key={s} value={s}>{s}</Radio>
-                                    ))}
-                                  </Space>
-                                </Radio.Group>
-                              </Form.Item>
-                              <Form.Item label="缺陷数量（可自定义）" style={{ marginBottom: 6 }}>
-                                <InputNumber
-                                  min={1}
-                                  precision={0}
-                                  style={{ width: '100%' }}
-                                  value={seatQty > 0 ? seatQty : undefined}
-                                  onChange={(v) => {
-                                    const qty = Number(v ?? 0)
-                                    if (Number.isFinite(qty) && qty > 0) {
-                                      setSeatDefectQuantity((prev) => ({ ...prev, [k]: Math.trunc(qty) }))
-                                      return
-                                    }
-                                    setSeatDefectQuantity((prev) => {
-                                      if (!(k in prev)) return prev
-                                      const next = { ...prev }
-                                      delete next[k]
-                                      return next
+                                <Button
+                                  size="small"
+                                  type="link"
+                                  onClick={() => {
+                                    setSeatDetailExpanded((prev) => {
+                                      const current = (k in prev) ? Boolean(prev[k]) : true
+                                      return { ...prev, [k]: !current }
                                     })
                                   }}
-                                />
-                              </Form.Item>
-                              <div style={{ color: '#666' }}>
-                                缺陷描述预览：{seatPreview}
+                                >
+                                  {(k in seatDetailExpanded ? Boolean(seatDetailExpanded[k]) : true) ? '收起' : '展开'}
+                                </Button>
                               </div>
+                              {(k in seatDetailExpanded ? Boolean(seatDetailExpanded[k]) : true) && (
+                                <>
+                                  <Form.Item label="缺陷照片（可选）" style={{ marginBottom: 8 }}>
+                                    <Space>
+                                      <Button
+                                        icon={<UploadOutlined />}
+                                        onClick={() => {
+                                          const draft = seatDefectPhotos[k] || {}
+                                          setSeatPhotoModalKey(k)
+                                          setSeatPhotoDraft({
+                                            local_photo_url: String(draft.local_photo_url || ''),
+                                            global_photo_url: String(draft.global_photo_url || ''),
+                                          })
+                                          setSeatPhotoModalOpen(true)
+                                        }}
+                                      >
+                                        拍照/相册
+                                      </Button>
+                                      {(String(seatDefectPhotos[k]?.local_photo_url || '').trim() || String(seatDefectPhotos[k]?.global_photo_url || '').trim())
+                                        ? <span style={{ color: '#52c41a' }}>已上传照片</span>
+                                        : <span style={{ color: '#999' }}>可选上传局部/全局照片</span>}
+                                    </Space>
+                                  </Form.Item>
+                                  <Form.Item label="缺陷位置（可多选）" required style={{ marginBottom: 8 }}>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                                      {activeSeatPositionOptions.map((p) => {
+                                        const selected = selectedPositions.includes(p)
+                                        return (
+                                          <Button
+                                            key={p}
+                                            size="small"
+                                            style={{
+                                              minWidth: 34,
+                                              background: selected ? '#1677ff' : '#fff',
+                                              color: selected ? '#fff' : 'rgba(0,0,0,0.88)',
+                                              borderColor: selected ? '#1677ff' : '#d9d9d9',
+                                            }}
+                                            onClick={() => {
+                                              const current = seatDefectPositions[k] || []
+                                              const next = current.includes(p) ? current.filter((x) => x !== p) : [...current, p]
+                                              setSeatDefectPositions((prev) => ({ ...prev, [k]: next }))
+                                              updateCrewSeatRefPnForItem(k, String(item?.standardized_desc || ''), next)
+                                            }}
+                                          >
+                                            {p}
+                                          </Button>
+                                        )
+                                      })}
+                                    </div>
+                                  </Form.Item>
+                                  <Form.Item label="缺陷状态（必选一）" required style={{ marginBottom: 6 }}>
+                                    <Radio.Group
+                                      value={status || undefined}
+                                      onChange={(e) => {
+                                        const v = String(e.target.value || '').trim()
+                                        setSeatDefectStatus((prev) => ({ ...prev, [k]: v }))
+                                      }}
+                                    >
+                                      <Space wrap>
+                                        {defectStatusOptions.map((s) => (
+                                          <Radio key={s} value={s}>{s}</Radio>
+                                        ))}
+                                      </Space>
+                                    </Radio.Group>
+                                  </Form.Item>
+                                  <Form.Item label="缺陷数量（可自定义）" style={{ marginBottom: 6 }}>
+                                    <InputNumber
+                                      min={1}
+                                      precision={0}
+                                      style={{ width: '100%' }}
+                                      value={seatQty > 0 ? seatQty : undefined}
+                                      onChange={(v) => {
+                                        const qty = Number(v ?? 0)
+                                        if (Number.isFinite(qty) && qty > 0) {
+                                          setSeatDefectQuantity((prev) => ({ ...prev, [k]: Math.trunc(qty) }))
+                                          return
+                                        }
+                                        setSeatDefectQuantity((prev) => {
+                                          if (!(k in prev)) return prev
+                                          const next = { ...prev }
+                                          delete next[k]
+                                          return next
+                                        })
+                                      }}
+                                    />
+                                  </Form.Item>
+                                </>
+                              )}
+                            </div>
+                          )}
+                          {item?.__custom && (
+                            <div style={{ marginTop: 8, display: 'flex', justifyContent: 'flex-end' }}>
+                              <Button
+                                size="small"
+                                danger
+                                onClick={() => {
+                                  setSeatCheckItems((prev) => prev.filter((p) => String(p.id) !== k))
+                                  setSeatAnswers((prev) => {
+                                    const next = { ...prev }
+                                    delete next[k]
+                                    return next
+                                  })
+                                  setSeatDefectPositions((prev) => {
+                                    if (!prev[k]) return prev
+                                    const next = { ...prev }
+                                    delete next[k]
+                                    return next
+                                  })
+                                  setSeatDefectStatus((prev) => {
+                                    if (!prev[k]) return prev
+                                    const next = { ...prev }
+                                    delete next[k]
+                                    return next
+                                  })
+                                  setSeatDefectQuantity((prev) => {
+                                    if (!(k in prev)) return prev
+                                    const next = { ...prev }
+                                    delete next[k]
+                                    return next
+                                  })
+                                  setSeatDefectPhotos((prev) => {
+                                    if (!prev[k]) return prev
+                                    const next = { ...prev }
+                                    delete next[k]
+                                    return next
+                                  })
+                                }}
+                              >
+                                移除
+                              </Button>
                             </div>
                           )}
                         </div>
@@ -3147,6 +3751,26 @@ const DefectCheck: React.FC = () => {
                     )
                   }}
                 />
+                <Modal
+                  title="新增自定义缺陷描述"
+                  open={customModalOpen}
+                  onOk={saveCustomCheckItem}
+                  onCancel={() => setCustomModalOpen(false)}
+                  okText="保存"
+                  cancelText="取消"
+                  destroyOnClose
+                >
+                  <Form layout="vertical">
+                    <Form.Item label="自定义缺陷描述" required>
+                      <Input.TextArea
+                        placeholder="请输入自定义缺陷描述"
+                        value={customDraftDesc}
+                        autoSize={{ minRows: 3, maxRows: 8 }}
+                        onChange={(e) => setCustomDraftDesc(e.target.value)}
+                      />
+                    </Form.Item>
+                  </Form>
+                </Modal>
               </Card>
               <Modal
                 title="缺陷照片"
@@ -3316,9 +3940,6 @@ const DefectCheck: React.FC = () => {
                 destroyOnClose
               >
                 <Form layout="vertical">
-                  <Form.Item label="序号（可选）">
-                    <Input placeholder="例如：1" value={customDraftSeq} onChange={(e) => setCustomDraftSeq(e.target.value)} />
-                  </Form.Item>
                   <Form.Item label="自定义缺陷描述" required>
                     <Input.TextArea
                       placeholder="请输入自定义缺陷描述"
@@ -3654,8 +4275,8 @@ const DefectCheck: React.FC = () => {
                         </Form.Item>
                       </Col>
                       <Col xs={12} sm={12}>
-                        <Form.Item label="定检年月（plan_year_month）" required>
-                          <Input placeholder="例如：2026-03" value={metaPlanYearMonth} onChange={(e) => setMetaPlanYearMonth(e.target.value)} />
+                        <Form.Item label="定检年月（plan_year_month）">
+                          <Input value={metaPlanYearMonth} disabled />
                         </Form.Item>
                       </Col>
                     </Row>
@@ -3862,13 +4483,13 @@ const DefectCheck: React.FC = () => {
               <Form layout="vertical">
                 <Row gutter={12}>
                   <Col xs={24} sm={12}>
-                    <Form.Item label="飞机号（aircraft_no）">
-                      <Input placeholder="模糊筛选" value={exportAircraftNo} onChange={(e) => setExportAircraftNo(e.target.value)} allowClear />
+                    <Form.Item label="飞机号（aircraft_no）" required>
+                      <Input placeholder="必填" value={exportAircraftNo} onChange={(e) => setExportAircraftNo(e.target.value)} allowClear />
                     </Form.Item>
                   </Col>
                   <Col xs={24} sm={12}>
-                    <Form.Item label="销售指令号（sale_wo）">
-                      <Input placeholder="模糊筛选" value={exportSaleWo} onChange={(e) => setExportSaleWo(e.target.value)} allowClear />
+                    <Form.Item label="销售指令号（sale_wo）" required>
+                      <Input placeholder="必填" value={exportSaleWo} onChange={(e) => setExportSaleWo(e.target.value)} allowClear />
                     </Form.Item>
                   </Col>
                   <Col xs={24} sm={12}>
@@ -3883,7 +4504,7 @@ const DefectCheck: React.FC = () => {
                   </Col>
                   <Col xs={24} sm={12}>
                     <Form.Item label="检查人（inspector）">
-                      <Input placeholder="模糊筛选" value={exportInspector} onChange={(e) => setExportInspector(e.target.value)} allowClear />
+                      <Input value={String(user?.username || '')} disabled />
                     </Form.Item>
                   </Col>
                 </Row>

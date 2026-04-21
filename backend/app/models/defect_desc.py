@@ -27,6 +27,7 @@ class SingleDefectCheck(Base):
     __tablename__ = "galley_lav_defect_checks"
 
     id = Column(Integer, primary_key=True, index=True)
+    created_by_user_id = Column(Integer, nullable=True, index=True)
     seq = Column(Integer, nullable=True)
     comp_pn = Column(String(50), nullable=True)
     standardized_desc = Column(Text, nullable=True)
@@ -54,6 +55,7 @@ class BatchDefectCheck(Base):
     __tablename__ = "panel_defect_checks"
 
     id = Column(Integer, primary_key=True, index=True)
+    created_by_user_id = Column(Integer, nullable=True, index=True)
     seq = Column(Integer, nullable=True)
     comp_pn = Column(String(50), nullable=True)
     standardized_desc = Column(Text, nullable=True)
@@ -81,6 +83,7 @@ class SeatDefectCheck(Base):
     __tablename__ = "seat_defect_checks"
 
     id = Column(Integer, primary_key=True, index=True)
+    created_by_user_id = Column(Integer, nullable=True, index=True)
     seq = Column(Integer, nullable=True)
     comp_pn = Column(String(50), nullable=True)
     standardized_desc = Column(Text, nullable=True)
@@ -100,6 +103,7 @@ class SeatDefectCheck(Base):
     local_photo_url = Column(String(500), nullable=True)
     global_photo_url = Column(String(500), nullable=True)
     custom_positions_input = Column(Text, nullable=True)
+    ref_pn = Column(Text, nullable=True)
     defect_desc_preview = Column(Text, nullable=True)
     desc_text = Column(Text, nullable=True)
     loc_text = Column(Text, nullable=True)
@@ -109,6 +113,7 @@ class CrewSeatDefectCheck(Base):
     __tablename__ = "crew_seat_defect_checks"
 
     id = Column(Integer, primary_key=True, index=True)
+    created_by_user_id = Column(Integer, nullable=True, index=True)
     seq = Column(Integer, nullable=True)
     comp_pn = Column(String(50), nullable=True)
     standardized_desc = Column(Text, nullable=True)
@@ -128,6 +133,7 @@ class CrewSeatDefectCheck(Base):
     local_photo_url = Column(String(500), nullable=True)
     global_photo_url = Column(String(500), nullable=True)
     custom_positions_input = Column(Text, nullable=True)
+    ref_pn = Column(Text, nullable=True)
     defect_desc_preview = Column(Text, nullable=True)
     desc_text = Column(Text, nullable=True)
     loc_text = Column(Text, nullable=True)

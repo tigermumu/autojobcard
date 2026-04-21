@@ -1,51 +1,162 @@
-import React, { useEffect, useState } from 'react'
-import { Routes, Route, useNavigate } from 'react-router-dom'
-import { Layout, Typography, Card, Row, Col, Button, Select, message } from 'antd'
-import ConfigurationIndexData from './pages/ConfigurationIndexData'
-import WorkCardManagement from './pages/WorkCardManagement'
-import AddWorkCardData from './pages/AddWorkCardData'
-import DefectProcessing from './pages/DefectProcessing'
-import BulkOpenWorkcards from './pages/BulkOpenWorkcards'
+import React, { useEffect, useMemo, useState } from 'react'
+import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
+import { Layout, Typography, Card, Row, Col, Select, Button, message, Result, Space, Tag, Modal, Form, Input } from 'antd'
 import EnglishBatchImportDebug from './pages/EnglishBatchImportDebug'
 import ChineseJobCardBatchProcess from './pages/ChineseJobCardBatchProcess'
-import DefectHistory from './pages/DefectHistory'
-import KeywordManager from './pages/KeywordManager'
-import DefectListProcessing from './pages/DefectListProcessing'
 import DefectCheck from './pages/DefectCheck'
+import Login from './pages/Login'
+import AdminUserManagement from './pages/AdminUserManagement'
+import ProtectedRoute from './components/ProtectedRoute'
+import { PermissionCodes } from './constants/permissions'
+import { useAuth } from './contexts/AuthContext'
+import { authApi } from './services/authApi'
 import { fetchLLMModels, selectLLMModel, LLMModelInfo } from './services/llmApi'
 
 const { Content } = Layout
 const { Title, Paragraph } = Typography
 
+const UserActionBar: React.FC = () => {
+  const navigate = useNavigate()
+  const { user, logout, loading, isAuthenticated } = useAuth()
+  const [open, setOpen] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [form] = Form.useForm()
+
+  if (loading || !isAuthenticated) return null
+
+  const close = () => {
+    setOpen(false)
+    form.resetFields()
+  }
+
+  const submit = async () => {
+    try {
+      const values = await form.validateFields()
+      setSubmitting(true)
+      const res = await authApi.changePassword({
+        old_password: String(values.old_password || ''),
+        new_password: String(values.new_password || ''),
+      })
+      message.success(res.message || '密码已修改')
+      close()
+    } catch (e: any) {
+      if (e?.errorFields) return
+      message.error(e?.message || '修改密码失败')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <>
+      <div style={{ position: 'fixed', left: 12, bottom: 12, zIndex: 1100, maxWidth: 320 }}>
+        <Card
+          size="small"
+          styles={{ body: { padding: 10 } }}
+          style={{ background: 'rgba(255,255,255,0.92)', boxShadow: '0 6px 16px rgba(0,0,0,0.12)', borderRadius: 10 }}
+        >
+          <Space direction="vertical" size={8} style={{ width: '100%' }}>
+            <Space wrap>
+              <Tag color="blue">{user?.display_name || user?.username || '未登录用户'}</Tag>
+              {user?.role_name && <Tag color="purple">{user.role_name}</Tag>}
+            </Space>
+            <Space wrap>
+              <Button size="small" onClick={() => navigate('/')}>首页</Button>
+              <Button size="small" onClick={() => setOpen(true)}>修改密码</Button>
+              <Button size="small" danger onClick={logout}>退出登录</Button>
+            </Space>
+          </Space>
+        </Card>
+      </div>
+      <Modal
+        title="修改密码"
+        open={open}
+        onCancel={close}
+        onOk={submit}
+        okText="确认修改"
+        cancelText="取消"
+        okButtonProps={{ loading: submitting }}
+        destroyOnClose
+      >
+        <Form form={form} layout="vertical" preserve={false}>
+          <Form.Item
+            name="old_password"
+            label="原密码"
+            rules={[{ required: true, message: '请输入原密码' }]}
+          >
+            <Input.Password autoComplete="current-password" />
+          </Form.Item>
+          <Form.Item
+            name="new_password"
+            label="新密码"
+            rules={[
+              { required: true, message: '请输入新密码' },
+              { min: 6, message: '密码长度不能少于 6 位' },
+            ]}
+          >
+            <Input.Password autoComplete="new-password" />
+          </Form.Item>
+          <Form.Item
+            name="confirm_password"
+            label="确认新密码"
+            dependencies={['new_password']}
+            rules={[
+              { required: true, message: '请再次输入新密码' },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  if (!value || getFieldValue('new_password') === value) {
+                    return Promise.resolve()
+                  }
+                  return Promise.reject(new Error('两次输入的新密码不一致'))
+                },
+              }),
+            ]}
+          >
+            <Input.Password autoComplete="new-password" />
+          </Form.Item>
+        </Form>
+      </Modal>
+    </>
+  )
+}
+
 const Home: React.FC = () => {
   const navigate = useNavigate()
+  const { hasAnyPermission } = useAuth()
   const [currentModel, setCurrentModel] = useState<LLMModelInfo | null>(null)
   const [modelOptions, setModelOptions] = useState<LLMModelInfo[]>([])
   const [modelLoading, setModelLoading] = useState(false)
-  const [showIdleModules, setShowIdleModules] = useState(false)
 
-  const menuItems = [
-    { title: '📁 构型与缺陷关键词库', path: '/configurations', color: '#1890ff', desc: '管理飞机构型及缺陷关键词库' },
-    { title: '📋 历史工卡数据库管理', path: '/workcards', color: '#52c41a', desc: '管理历史工卡数据库' },
-    { title: '🐛 缺陷处理与匹配', path: '/defect-processing', color: '#722ed1', desc: '缺陷清单处理、清洗与工卡匹配' },
-    { title: '🧩 本地词典管理', path: '/keyword-manager', color: '#13c2c2', desc: '本地清洗/匹配的关键词词典管理（按构型）' },
-    { title: '🔗 批量导入调试', path: '/defect-processing/batch-open', color: '#fa8c16', desc: '对接公司系统执行批量开卡导入' },
-    { title: '🌍 英文工卡批量导入调试', path: '/english-batch-import', color: '#eb2f96', desc: '英文工卡批量导入调试与验证' },
-    { title: '🏮 中文工卡批量处理', path: '/chinese-batch-import', color: '#d4380d', desc: '中文工卡批量导入调试与验证' },
-    { title: '📋 缺陷清单处理', path: '/defect-list', color: '#2f54eb', desc: '索引表管理与缺陷清单批量处理' },
-    { title: '🛡️ 缺陷检查', path: '/defect-check', color: '#0958d9', desc: '单一部件/批量缺陷检查（占位）' }
-  ]
-
-  const idlePaths = new Set([
-    '/configurations',
-    '/workcards',
-    '/defect-processing',
-    '/keyword-manager',
-    '/defect-processing/batch-open',
-    '/defect-list'
-  ])
-
-  const visibleMenuItems = menuItems.filter(item => showIdleModules || !idlePaths.has(item.path))
+  const menuItems = useMemo(() => [
+    {
+      title: '🌍 英文工卡批量导入调试',
+      path: '/english-batch-import',
+      color: '#eb2f96',
+      desc: '英文工卡批量导入调试与验证',
+      visible: hasAnyPermission([PermissionCodes.MODULE_ENGLISH, PermissionCodes.ENGLISH_MAIN]),
+    },
+    {
+      title: '🏮 中文工卡批量处理',
+      path: '/chinese-batch-import',
+      color: '#d4380d',
+      desc: '中文工卡批量导入调试与验证',
+      visible: hasAnyPermission([PermissionCodes.MODULE_CHINESE, PermissionCodes.CHINESE_MAIN]),
+    },
+    {
+      title: '🛡️ 缺陷检查',
+      path: '/defect-check',
+      color: '#0958d9',
+      desc: '单一部件与批量缺陷检查',
+      visible: hasAnyPermission([PermissionCodes.MODULE_DEFECT_CHECK]),
+    },
+    {
+      title: '👥 会员与权限管理',
+      path: '/admin/users',
+      color: '#531dab',
+      desc: '管理员维护会员身份、密码和模块权限',
+      visible: hasAnyPermission([PermissionCodes.MODULE_ADMIN, PermissionCodes.ADMIN_USER_MANAGEMENT]),
+    }
+  ].filter((item) => item.visible), [hasAnyPermission])
 
   useEffect(() => {
     const loadModels = async () => {
@@ -104,17 +215,11 @@ const Home: React.FC = () => {
               onChange={handleModelChange}
               disabled={!modelOptions.length}
             />
-            <Button
-              onClick={() => setShowIdleModules(v => !v)}
-              style={{ marginLeft: 8 }}
-            >
-              {showIdleModules ? '隐藏闲置模块' : '显示闲置模块'}
-            </Button>
           </div>
         </div>
 
         <Row gutter={[24, 24]} style={{ maxWidth: '1400px', margin: '0 auto' }}>
-          {visibleMenuItems.map((item) => (
+          {menuItems.map((item) => (
             <Col xs={24} sm={12} md={8} key={item.path}>
               <Card
                 hoverable
@@ -148,10 +253,7 @@ const Home: React.FC = () => {
                     borderColor: item.color,
                     borderRadius: '6px'
                   }}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleClick(item.path)
-                  }}
+                  onClick={() => handleClick(item.path)}
                 >
                   立即进入 →
                 </Button>
@@ -159,28 +261,66 @@ const Home: React.FC = () => {
             </Col>
           ))}
         </Row>
+        {!menuItems.length && (
+          <Result
+            status="403"
+            title="当前账号没有可访问模块"
+            subTitle="请联系管理员为此账号分配模块与功能页权限。"
+          />
+        )}
 
       </Content>
     </Layout>
   )
 }
 
+const LoginRoute: React.FC = () => {
+  const { isAuthenticated, loading } = useAuth()
+  if (loading) return null
+  return isAuthenticated ? <Navigate to="/" replace /> : <Login />
+}
+
 const App: React.FC = () => {
   return (
-    <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/configurations" element={<ConfigurationIndexData />} />
-      <Route path="/workcards" element={<WorkCardManagement />} />
-      <Route path="/workcard/add" element={<AddWorkCardData />} />
-      <Route path="/defect-processing" element={<DefectProcessing />} />
-      <Route path="/defect-processing/batch-open" element={<BulkOpenWorkcards />} />
-      <Route path="/english-batch-import" element={<EnglishBatchImportDebug />} />
-      <Route path="/chinese-batch-import" element={<ChineseJobCardBatchProcess />} />
-      <Route path="/defect-history" element={<DefectHistory />} />
-      <Route path="/keyword-manager" element={<KeywordManager />} />
-      <Route path="/defect-list" element={<DefectListProcessing />} />
-      <Route path="/defect-check" element={<DefectCheck />} />
-    </Routes>
+    <>
+      <UserActionBar />
+      <Routes>
+        <Route path="/login" element={<LoginRoute />} />
+        <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+        <Route
+          path="/english-batch-import"
+          element={
+            <ProtectedRoute permissions={[PermissionCodes.ENGLISH_MAIN]}>
+              <EnglishBatchImportDebug />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/chinese-batch-import"
+          element={
+            <ProtectedRoute permissions={[PermissionCodes.CHINESE_MAIN]}>
+              <ChineseJobCardBatchProcess />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/defect-check"
+          element={
+            <ProtectedRoute permissions={[PermissionCodes.MODULE_DEFECT_CHECK]}>
+              <DefectCheck />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <ProtectedRoute permissions={[PermissionCodes.ADMIN_USER_MANAGEMENT]}>
+              <AdminUserManagement />
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+    </>
   )
 }
 

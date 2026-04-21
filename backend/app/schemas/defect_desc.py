@@ -133,6 +133,7 @@ class SeatDefectCheckBase(BaseModel):
     local_photo_url: Optional[str] = None
     global_photo_url: Optional[str] = None
     custom_positions_input: Optional[str] = None
+    ref_pn: Optional[str] = None
     defect_desc_preview: Optional[str] = None
     desc_text: Optional[str] = None
     loc_text: Optional[str] = None
@@ -170,6 +171,7 @@ class CrewSeatDefectCheckBase(BaseModel):
     local_photo_url: Optional[str] = None
     global_photo_url: Optional[str] = None
     custom_positions_input: Optional[str] = None
+    ref_pn: Optional[str] = None
     defect_desc_preview: Optional[str] = None
     desc_text: Optional[str] = None
     loc_text: Optional[str] = None

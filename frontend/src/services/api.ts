@@ -3,6 +3,58 @@ const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
   (import.meta.env.DEV ? 'http://localhost:8000/api/v1' : '/api/v1')
 
+const AUTH_TOKEN_KEY = 'ajc_auth_token'
+const AUTH_UNAUTHORIZED_EVENT = 'ajc:auth-unauthorized'
+let authFetchInstalled = false
+
+export const getAuthToken = () => localStorage.getItem(AUTH_TOKEN_KEY)
+export const setAuthToken = (token: string) => localStorage.setItem(AUTH_TOKEN_KEY, token)
+export const clearAuthToken = () => localStorage.removeItem(AUTH_TOKEN_KEY)
+export const getAuthUnauthorizedEventName = () => AUTH_UNAUTHORIZED_EVENT
+
+const shouldAttachAuth = (input: RequestInfo | URL) => {
+  const raw = typeof input === 'string'
+    ? input
+    : input instanceof URL
+      ? input.toString()
+      : input.url
+
+  if (raw.startsWith('/api/') || raw.startsWith(API_BASE_URL)) return true
+
+  try {
+    const url = new URL(raw, window.location.origin)
+    return url.pathname.startsWith('/api/')
+  } catch {
+    return false
+  }
+}
+
+export const installAuthFetchInterceptor = () => {
+  if (authFetchInstalled) return
+  authFetchInstalled = true
+
+  const originalFetch = window.fetch.bind(window)
+  window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+    const headers = new Headers(init?.headers || {})
+    const token = getAuthToken()
+
+    if (token && shouldAttachAuth(input) && !headers.has('Authorization')) {
+      headers.set('Authorization', `Bearer ${token}`)
+    }
+
+    const response = await originalFetch(input, {
+      ...init,
+      headers,
+    })
+
+    if (response.status === 401 && shouldAttachAuth(input)) {
+      window.dispatchEvent(new CustomEvent(AUTH_UNAUTHORIZED_EVENT))
+    }
+
+    return response
+  }
+}
+
 export interface ApiResponse<T> {
   data: T
   message?: string
@@ -261,4 +313,3 @@ class ApiClient {
 }
 
 export const apiClient = new ApiClient(API_BASE_URL)
-

@@ -6,8 +6,8 @@ from .matching import MatchingResult, CandidateWorkCard
 from .import_batch import ImportBatch, ImportBatchItem
 from .index_data import IndexData
 from .localwash import KeywordDict, KeywordDictItem, GlobalKeyword, WorkcardCleanLocal, WorkcardCleanLocalUpload, DefectCleanLocal, DefectMatchLocal
-from .defect_list_index import DefectListIndex, DefectListIndexItem
 from .defect_scheme import DefectScheme, DefectStep, DefectMaterial
+from .user import User
 
 __all__ = [
     "WorkCard",
@@ -29,9 +29,8 @@ __all__ = [
     "WorkcardCleanLocalUpload",
     "DefectCleanLocal",
     "DefectMatchLocal",
-    "DefectListIndex",
-    "DefectListIndexItem",
     "DefectScheme",
     "DefectStep",
     "DefectMaterial",
+    "User",
 ]

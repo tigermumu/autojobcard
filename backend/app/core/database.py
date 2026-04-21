@@ -167,6 +167,7 @@ def _ensure_seat_defect_check_columns():
         ("local_photo_url", "local_photo_url VARCHAR(500)"),
         ("global_photo_url", "global_photo_url VARCHAR(500)"),
         ("custom_positions_input", "custom_positions_input TEXT"),
+        ("ref_pn", "ref_pn TEXT"),
         ("defect_desc_preview", "defect_desc_preview TEXT"),
         ("desc_text", "desc_text TEXT"),
         ("loc_text", "loc_text TEXT"),

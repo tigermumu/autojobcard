@@ -4,12 +4,23 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from app.models.import_batch import ImportBatch, ImportBatchItem
-from app.models.defect import DefectRecord
 
 
 class ImportBatchService:
     def __init__(self, db: Session):
         self.db = db
+
+    @staticmethod
+    def _format_workcard_number_to_short(original: Optional[str]) -> Optional[str]:
+        if not original:
+            return original
+        if original.isdigit() or (original.startswith("5") and original[1:].isdigit()):
+            return original
+        if not original.startswith("NR/"):
+            return original
+        num_part = original.replace("NR/", "")
+        last_4_digits = num_part[-4:].zfill(4)
+        return "5" + last_4_digits
 
     def delete_batch(self, batch_id: int) -> bool:
         batch = (
@@ -120,17 +131,6 @@ class ImportBatchService:
             .all()
         )
 
-        # 获取所有相关的缺陷记录ID，用于查询已开出的工卡号
-        defect_record_ids = [item.defect_record_id for item in items if item.defect_record_id]
-        defect_records_map = {}
-        if defect_record_ids:
-            defect_records = (
-                self.db.query(DefectRecord)
-                .filter(DefectRecord.id.in_(defect_record_ids))
-                .all()
-            )
-            defect_records_map = {dr.id: dr for dr in defect_records}
-
         return {
             "id": batch.id,
             "defect_list_id": batch.defect_list_id,
@@ -150,12 +150,7 @@ class ImportBatchService:
                     "workcard_number": item.workcard_number,
                     "selected_workcard_id": item.selected_workcard_id,
                     "similarity_score": item.similarity_score,
-                    "issued_workcard_number": (
-                        defect_records_map[item.defect_record_id].issued_workcard_number
-                        if item.defect_record_id and item.defect_record_id in defect_records_map
-                        and hasattr(defect_records_map[item.defect_record_id], 'issued_workcard_number')
-                        else item.issued_workcard_number
-                    ),
+                    "issued_workcard_number": item.issued_workcard_number,
                     # Add new fields
                     "reference_workcard_number": item.reference_workcard_number,
                     "reference_workcard_item": item.reference_workcard_item,
@@ -174,3 +169,16 @@ class ImportBatchService:
             ]
         }
 
+    def update_item_issued_workcard_number(self, item_id: int, issued_workcard_number: Optional[str]) -> Optional[ImportBatchItem]:
+        item = (
+            self.db.query(ImportBatchItem)
+            .filter(ImportBatchItem.id == item_id)
+            .first()
+        )
+        if not item:
+            return None
+
+        item.issued_workcard_number = self._format_workcard_number_to_short(issued_workcard_number)
+        self.db.commit()
+        self.db.refresh(item)
+        return item

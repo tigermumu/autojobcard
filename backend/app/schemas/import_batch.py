@@ -84,6 +84,10 @@ class ImportBatchItem(BaseModel):
         from_attributes = True
 
 
+class ImportBatchItemIssuedWorkcardNumberUpdate(BaseModel):
+    issued_workcard_number: Optional[str] = None
+
+
 class ImportBatchDetail(BaseModel):
     id: int
     aircraft_number: str
@@ -97,4 +101,3 @@ class ImportBatchDetail(BaseModel):
 
     class Config:
         from_attributes = True
-
