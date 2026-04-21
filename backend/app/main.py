@@ -1,5 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from app.core.database import SessionLocal
 from app.core.config import settings
@@ -54,6 +55,9 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 os.makedirs("uploads", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
+FRONTEND_DIST_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend_dist"))
+FRONTEND_INDEX_PATH = os.path.join(FRONTEND_DIST_DIR, "index.html")
+
 
 @app.on_event("startup")
 def startup_seed_admin():
@@ -68,10 +72,23 @@ def startup_seed_admin():
     finally:
         db.close()
 
-@app.get("/")
-async def root():
-    return {"message": "飞机方案处理系统 API"}
-
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
+
+if os.path.isdir(FRONTEND_DIST_DIR) and os.path.exists(FRONTEND_INDEX_PATH):
+    app.mount("/", StaticFiles(directory=FRONTEND_DIST_DIR, html=True), name="frontend")
+
+    @app.get("/{full_path:path}")
+    async def spa_fallback(full_path: str):
+        if full_path.startswith(settings.API_V1_STR.lstrip("/")):
+            raise HTTPException(status_code=404)
+        if full_path.startswith("uploads"):
+            raise HTTPException(status_code=404)
+        if full_path in {"health", "openapi.json", "docs", "redoc"}:
+            raise HTTPException(status_code=404)
+        return FileResponse(FRONTEND_INDEX_PATH)
+else:
+    @app.get("/")
+    async def root():
+        return {"message": "飞机方案处理系统 API"}
