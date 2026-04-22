@@ -1,6 +1,6 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Form
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, FileResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.core.database import get_db
@@ -354,6 +354,19 @@ def export_descs(
         "Content-Disposition": 'attachment; filename="standard_defect_desc.csv"'
     }
     return StreamingResponse(io.BytesIO(data), media_type="text/csv; charset=utf-8", headers=headers)
+
+@router.get("/template")
+def download_standard_desc_template():
+    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".."))
+    file_name = "标准缺陷描述模板示例.xlsx"
+    file_path = os.path.join(base_dir, file_name)
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="模板文件不存在")
+    return FileResponse(
+        path=file_path,
+        filename=file_name,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
 
 @router.get("/options")
 def get_standard_desc_options(

@@ -2174,6 +2174,27 @@ const DefectCheck: React.FC = () => {
     }
   }, [])
 
+  const downloadCatalogTemplate = useCallback(async () => {
+    try {
+      const res = await fetch('/api/v1/standard-defect-desc/template', { method: 'GET' })
+      if (!res.ok) {
+        const text = await res.text().catch(() => '')
+        throw new Error(text || res.statusText)
+      }
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = '标准缺陷描述模板示例.xlsx'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+    } catch (e: any) {
+      message.error(e?.message || '模板下载失败')
+    }
+  }, [])
+
   const onChooseFile = useCallback(() => {
     fileInputRef.current?.click()
   }, [])
@@ -4555,6 +4576,9 @@ const DefectCheck: React.FC = () => {
                           if (f) onUploadFile(f)
                         }}
                       />
+                      <Button onClick={downloadCatalogTemplate}>
+                        模板下载
+                      </Button>
                       <Button onClick={downloadCatalog}>
                         下载
                       </Button>
